@@ -115,8 +115,19 @@ export default function MerchantProducts() {
       
       const method = selectedProduct ? "PATCH" : "POST";
       
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fazer a chamada real à API
+      await apiRequest(
+        method,
+        endpoint,
+        {
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          price: parseFloat(formData.price),
+          inventory: formData.inventory ? parseInt(formData.inventory) : null,
+          active: formData.active
+        }
+      );
       
       toast({
         title: selectedProduct ? "Produto atualizado" : "Produto adicionado",
@@ -143,8 +154,11 @@ export default function MerchantProducts() {
     setIsSubmitting(true);
     
     try {
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Fazer chamada à API para excluir o produto
+      await apiRequest(
+        "DELETE",
+        `/api/merchant/products/${selectedProduct.id}`
+      );
       
       toast({
         title: "Produto removido",

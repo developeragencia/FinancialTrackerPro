@@ -92,6 +92,7 @@ export default function MerchantSales() {
   const [discount, setDiscount] = useState<number | string>("");
   const [notes, setNotes] = useState("");
   const [sendReceipt, setSendReceipt] = useState(true);
+  const [manualAmount, setManualAmount] = useState<number>(0);
   
   // Estado para processamento
   const [isProcessing, setIsProcessing] = useState(false);
@@ -261,37 +262,38 @@ export default function MerchantSales() {
       return;
     }
     
-    if (cartItems.length === 0) {
-      toast({
-        title: "Carrinho vazio",
-        description: "Adicione pelo menos um produto ao carrinho.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Nota: Removemos a verificação de carrinho vazio para permitir vendas sem produtos
     
     setIsProcessing(true);
+    
+    // Cálculo dos valores para o caso de venda manual sem produtos selecionados
+    const calculatedTotal = cartItems.length > 0 ? total : manualAmount;
+    const calculatedSubtotal = cartItems.length > 0 ? subtotal : manualAmount;
+    const calculatedCashback = cartItems.length > 0 ? cashbackAmount : (manualAmount * 0.02); // 2% padrão
+    const calculatedReferralBonus = selectedCustomer.referredBy ? 
+      (cartItems.length > 0 ? referralBonus : (manualAmount * 0.01)) : 0; // 1% padrão
     
     // Preparar dados da venda
     const saleData = {
       customerId: selectedCustomer.id,
-      items: cartItems.map(item => ({
+      items: cartItems.length > 0 ? cartItems.map(item => ({
         productId: item.id,
         quantity: item.quantity,
         price: item.price
-      })),
-      subtotal,
+      })) : [],
+      subtotal: calculatedSubtotal,
       discount: discountValue,
-      total,
-      cashback: cashbackAmount,
-      referralBonus: selectedCustomer.referredBy ? referralBonus : 0,
+      total: calculatedTotal,
+      cashback: calculatedCashback,
+      referralBonus: calculatedReferralBonus,
       referrerId: selectedCustomer.referredBy,
       paymentMethod: selectedPaymentMethod,
       notes,
-      sendReceipt
+      sendReceipt,
+      manualAmount: cartItems.length === 0 ? manualAmount : null
     };
     
-    // Registrar venda (usar mutation em vez de implementação direta)
+    // Registrar venda usando mutation
     registerSaleMutation.mutate(saleData);
   };
 
@@ -443,13 +445,34 @@ export default function MerchantSales() {
                 </Button>
               </div>
               
+              {/* Opção para venda manual sem produtos */}
+              {cartItems.length === 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="manualAmount">Valor Manual (R$)</Label>
+                  <Input
+                    id="manualAmount"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0,00"
+                    value={manualAmount || ""}
+                    onChange={(e) => setManualAmount(parseFloat(e.target.value) || 0)}
+                    disabled={isProcessing || cartItems.length > 0}
+                    className="bg-orange-50"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Informe o valor da venda manual quando não houver produtos específicos selecionados
+                  </div>
+                </div>
+              )}
+              
               {/* Resumo dos Valores */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="subtotal">Subtotal (R$)</Label>
                   <Input
                     id="subtotal"
-                    value={subtotal.toFixed(2)}
+                    value={cartItems.length > 0 ? subtotal.toFixed(2) : manualAmount.toFixed(2)}
                     readOnly
                     className="bg-muted"
                   />
@@ -474,7 +497,7 @@ export default function MerchantSales() {
                   <Label htmlFor="total">Total (R$)</Label>
                   <Input
                     id="total"
-                    value={total.toFixed(2)}
+                    value={cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}
                     readOnly
                     className="bg-muted font-medium"
                   />
@@ -483,7 +506,7 @@ export default function MerchantSales() {
                   <Label htmlFor="cashback">Cashback ({SYSTEM_SETTINGS.cashbackRate * 100}%)</Label>
                   <Input
                     id="cashback"
-                    value={cashbackAmount.toFixed(2)}
+                    value={cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}
                     readOnly
                     className="bg-muted text-green-600"
                   />
@@ -526,7 +549,7 @@ export default function MerchantSales() {
               <Button
                 type="submit"
                 className="w-full bg-accent hover:bg-accent/90"
-                disabled={isProcessing || !selectedCustomer || cartItems.length === 0}
+                disabled={isProcessing || !selectedCustomer || (cartItems.length === 0 && manualAmount <= 0)}
               >
                 {isProcessing || registerSaleMutation.isPending ? (
                   <>
@@ -558,30 +581,38 @@ export default function MerchantSales() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Valor da Venda:</span>
-                  <span className="font-medium">R$ {total.toFixed(2)}</span>
+                  <span className="font-medium">R$ {cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
-                  <span className="text-green-600">R$ {cashbackAmount.toFixed(2)}</span>
+                  <span className="text-green-600">R$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                  <span className="text-blue-600">R$ {(total * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
+                  <span className="text-blue-600">R$ {cartItems.length > 0 
+                    ? (total * SYSTEM_SETTINGS.referralRate).toFixed(2) 
+                    : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                 </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Bônus de Indicação para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                    <span className="text-blue-600">R$ {referralBonus.toFixed(2)}</span>
+                    <span className="text-blue-600">R$ {cartItems.length > 0 
+                      ? referralBonus.toFixed(2) 
+                      : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa do Lojista ({SYSTEM_SETTINGS.merchantCommission * 100}%):</span>
-                  <span className="text-orange-600">R$ {merchantCommission.toFixed(2)}</span>
+                  <span className="text-orange-600">R$ {cartItems.length > 0 
+                    ? merchantCommission.toFixed(2) 
+                    : (manualAmount * SYSTEM_SETTINGS.merchantCommission).toFixed(2)}</span>
                 </div>
                 <div className="pt-2 border-t">
                   <div className="flex justify-between font-medium">
                     <span>Valor Líquido:</span>
-                    <span>R$ {(total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
+                    <span>R$ {cartItems.length > 0 
+                      ? (total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)
+                      : (manualAmount - (manualAmount * SYSTEM_SETTINGS.merchantCommission) - (manualAmount * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
