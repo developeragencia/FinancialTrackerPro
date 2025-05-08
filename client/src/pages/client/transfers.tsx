@@ -45,6 +45,10 @@ export default function ClientTransfers() {
   // Query to get transfer history
   const { data, isLoading } = useQuery({
     queryKey: ['/api/client/transfers'],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/client/transfers");
+      return await response.json();
+    }
   });
   
   // Buscar usuário quando o termo de busca muda
@@ -397,35 +401,41 @@ export default function ClientTransfers() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(data?.transfers || transferHistory).map((transfer) => (
+                {(data || []).map((transfer) => (
                   <div key={transfer.id} className="p-3 border rounded-lg">
                     <div className="flex justify-between mb-1">
                       <span className="font-medium">
-                        {transfer.type === "sent" ? "Enviado para: " : "Recebido de: "}
-                        {transfer.user}
+                        {transfer.type === "outgoing" ? "Enviado para: " : "Recebido de: "}
+                        {transfer.type === "outgoing" ? transfer.to : transfer.from}
                       </span>
-                      <span className={transfer.type === "sent" ? "text-red-600" : "text-green-600"}>
-                        {transfer.type === "sent" ? "-" : "+"}$ {transfer.amount.toFixed(2)}
+                      <span className={transfer.type === "outgoing" ? "text-red-600" : "text-green-600"}>
+                        {transfer.type === "outgoing" ? "-" : "+"}R$ {transfer.amount.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <div className="flex items-center">
                         <Clock className="mr-1 h-3 w-3" />
-                        <span>{transfer.date} às {transfer.time}</span>
+                        <span>{transfer.date}</span>
                       </div>
                       <span className="truncate max-w-[150px]">{transfer.description}</span>
                     </div>
                     {transfer.status && (
                       <div className="mt-2 flex justify-end">
-                        <Badge variant={transfer.status === "completed" ? "success" : "pending"}>
-                          {transfer.status === "completed" ? "Concluída" : "Pendente"}
+                        <Badge variant="outline" className={
+                          transfer.status === "completed" ? "bg-green-50 text-green-700 border-green-200" :
+                          transfer.status === "pending" ? "bg-yellow-50 text-yellow-700 border-yellow-200" : 
+                          "bg-blue-50 text-blue-700 border-blue-200"
+                        }>
+                          {transfer.status === "completed" ? "Concluída" : 
+                           transfer.status === "pending" ? "Pendente" : 
+                           transfer.status}
                         </Badge>
                       </div>
                     )}
                   </div>
                 ))}
 
-                {(data?.transfers || transferHistory).length === 0 && (
+                {(!data || data.length === 0) && (
                   <div className="text-center py-4 text-muted-foreground">
                     Nenhuma transferência encontrada.
                   </div>
