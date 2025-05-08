@@ -54,8 +54,8 @@ export default function ClientDashboard() {
     );
   }
 
-  // Dados padrão caso a API não retorne
-  const defaultData: DashboardData = {
+  // Usar apenas dados da API
+  const data = dashboardData || {
     cashbackBalance: 0,
     referralBalance: 0,
     transactionsCount: 0,
@@ -65,18 +65,8 @@ export default function ClientDashboard() {
       transferred: 0,
       received: 0
     },
-    balanceHistory: [
-      { month: "Jan", value: 0 },
-      { month: "Fev", value: 0 },
-      { month: "Mar", value: 0 },
-      { month: "Abr", value: 0 },
-      { month: "Mai", value: 0 },
-      { month: "Jun", value: 0 },
-    ]
+    balanceHistory: []
   };
-
-  // Combinar dados de API com dados padrão
-  const data = dashboardData || defaultData;
 
   return (
     <DashboardLayout title="Dashboard" type="client">
@@ -120,7 +110,7 @@ export default function ClientDashboard() {
         {/* Balance Evolution Chart */}
         <LineChartComponent
           title="Evolução do Saldo"
-          data={data.balanceHistory || defaultData.balanceHistory}
+          data={data.balanceHistory || []}
           lines={[
             { dataKey: "value", name: "Saldo (R$)" }
           ]}
@@ -217,27 +207,27 @@ export default function ClientDashboard() {
         </CardContent>
       </Card>
 
-      {/* Promotions and Notifications */}
+      {/* Promoções e Informações */}
       <Card>
         <CardHeader>
-          <CardTitle>Promoções e Notificações</CardTitle>
+          <CardTitle>Informações e Dicas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-start p-3 bg-secondary/10 rounded-lg">
             <Tag className="text-secondary mt-1 mr-3 h-5 w-5" />
             <div>
-              <h4 className="font-medium">Supermercado Extra - Cashback Duplo!</h4>
+              <h4 className="font-medium">Como Funciona o Vale Cashback</h4>
               <p className="text-sm text-muted-foreground">
-                Ganhe o dobro de cashback em compras acima de R$ 100. Válido até 31/07.
+                Em cada compra que você faz, recebe 2% de volta como cashback. Indique amigos e ganhe 1% do valor de compras deles.
               </p>
             </div>
           </div>
           <div className="flex items-start p-3 bg-accent/10 rounded-lg">
             <Gift className="text-accent mt-1 mr-3 h-5 w-5" />
             <div>
-              <h4 className="font-medium">Bônus de Aniversário</h4>
+              <h4 className="font-medium">Acompanhe Seu Saldo</h4>
               <p className="text-sm text-muted-foreground">
-                Você tem R$ 10,00 em cashback de presente pelo seu aniversário. Válido por 7 dias.
+                Você pode transferir seu saldo de cashback para outras pessoas ou utilizá-lo em novos pagamentos através de QR Code.
               </p>
             </div>
           </div>
