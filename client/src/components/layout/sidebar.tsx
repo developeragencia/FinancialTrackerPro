@@ -61,11 +61,15 @@ export function Sidebar({
   
   const merchantLinks = [
     { href: "/merchant/dashboard", icon: <Home className="mr-2 h-5 w-5" />, label: "Dashboard" },
-    { href: "/merchant/sales", icon: <ShoppingCart className="mr-2 h-5 w-5" />, label: "Vendas" },
-    { href: "/merchant/products", icon: <Package className="mr-2 h-5 w-5" />, label: "Produtos/Serviços" },
-    { href: "/merchant/scanner", icon: <Scan className="mr-2 h-5 w-5" />, label: "Scanner QR Code" },
-    { href: "/merchant/customers", icon: <Users className="mr-2 h-5 w-5" />, label: "Clientes" },
-    { href: "/merchant/profile", icon: <Store className="mr-2 h-5 w-5" />, label: "Perfil da Loja" },
+    { href: "/merchant/sales", icon: <ShoppingCart className="mr-2 h-5 w-5" />, label: "Registrar Venda" },
+    { href: "/merchant/transactions", icon: <List className="mr-2 h-5 w-5" />, label: "Histórico" },
+    { href: "/merchant/products", icon: <Package className="mr-2 h-5 w-5" />, label: "Produtos" },
+    { href: "/merchant/scanner", icon: <Scan className="mr-2 h-5 w-5" />, label: "Leitor QR" },
+    { href: "/merchant/referrals", icon: <Users className="mr-2 h-5 w-5" />, label: "Indicações" },
+    { href: "/merchant/reports", icon: <BarChart className="mr-2 h-5 w-5" />, label: "Relatórios" },
+    { href: "/merchant/settings", icon: <Settings className="mr-2 h-5 w-5" />, label: "Configurações" },
+    { href: "/merchant/profile", icon: <Store className="mr-2 h-5 w-5" />, label: "Minha Loja" },
+    { href: "/merchant/support", icon: <Headphones className="mr-2 h-5 w-5" />, label: "Suporte" },
   ];
   
   const adminLinks = [

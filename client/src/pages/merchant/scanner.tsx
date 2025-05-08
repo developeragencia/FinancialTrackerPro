@@ -1,309 +1,536 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Search, Check, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { 
+  Camera, 
+  CameraOff, 
+  Info, 
+  AlertCircle, 
+  Check, 
+  X, 
+  QrCode,
+  RefreshCw,
+  User,
+  Clock,
+  CreditCard,
+  BadgePercent
+} from "lucide-react";
 
-export default function MerchantScanner() {
-  const [scannerActive, setScannerActive] = useState(false);
-  const [transactionCode, setTransactionCode] = useState("");
-  const [paymentInfo, setPaymentInfo] = useState<any | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const { toast } = useToast();
-
-  // Activate scanner
-  const activateScanner = async () => {
-    setScannerActive(true);
+// Simulação de um serviço de scanner QR
+// Em um cenário real, usaríamos uma biblioteca como react-qr-reader
+// ou integração com a câmera nativa
+function useQrScanner() {
+  const [scanning, setScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [permission, setPermission] = useState<boolean>(false);
+  
+  const startScanner = () => {
+    setError(null);
     
-    try {
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" }
+    // Simular verificação de permissões de câmera
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(() => {
+          setPermission(true);
+          setScanning(true);
+        })
+        .catch((err) => {
+          setError("Permissão de câmera negada. Por favor, conceda acesso à câmera para escanear QR codes.");
+          setScanning(false);
         });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
+    } else {
+      setError("Seu navegador não suporta acesso à câmera. Tente usar outro navegador.");
+      setScanning(false);
+    }
+  };
+  
+  const stopScanner = () => {
+    setScanning(false);
+  };
+  
+  return {
+    scanning,
+    error,
+    permission,
+    startScanner,
+    stopScanner
+  };
+}
+
+interface QrScannerProps {
+  onScan: (data: string) => void;
+  scanning: boolean;
+}
+
+function QrScanner({ onScan, scanning }: QrScannerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [fakeScanActive, setFakeScanActive] = useState(false);
+  
+  // Simulação de escanear um QR code após alguns segundos
+  useEffect(() => {
+    if (scanning) {
+      setFakeScanActive(true);
+      const timer = setTimeout(() => {
+        // Simular detecção de QR code com dados de cliente
+        const mockQrData = JSON.stringify({
+          type: "customer",
+          id: 123,
+          name: "Maria Silva",
+          email: "maria@example.com",
+          wallet_id: "WALLET123"
+        });
+        onScan(mockQrData);
+        setFakeScanActive(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [scanning, onScan]);
+  
+  return (
+    <div className="relative">
+      {/* Preview da câmera (simulado) */}
+      <div 
+        className="bg-gray-800 rounded-lg aspect-video flex items-center justify-center overflow-hidden"
+        style={{ minHeight: "300px" }}
+      >
+        {scanning ? (
+          fakeScanActive ? (
+            <div className="relative w-full h-full">
+              {/* Isso seria um vídeo real em uma implementação completa */}
+              <div className="absolute inset-0 bg-gradient-to-b from-gray-700 to-gray-900"></div>
+              
+              {/* Sobreposição de scan */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative">
+                  <div className="w-64 h-64 border-2 border-white/50 rounded-lg"></div>
+                  <div className="absolute top-0 left-0 w-64 h-64">
+                    <div className="w-16 h-2 bg-green-500 absolute top-0 left-0 animate-[scanline_2s_ease-in-out_infinite]"></div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Texto de ajuda */}
+              <div className="absolute bottom-4 left-0 right-0 text-center text-white">
+                <p>Posicione o QR code dentro da área</p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-white flex flex-col items-center">
+              <Camera className="h-12 w-12 mb-2 opacity-50" />
+              <p>Câmera inicializando...</p>
+            </div>
+          )
+        ) : (
+          <div className="text-white flex flex-col items-center">
+            <CameraOff className="h-12 w-12 mb-2 opacity-50" />
+            <p>Câmera desativada</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Barra de scanner (efeito animado) */}
+      <style jsx>{`
+        @keyframes scanline {
+          0% {
+            top: 0;
+          }
+          50% {
+            top: calc(100% - 8px);
+          }
+          100% {
+            top: 0;
+          }
         }
+      `}</style>
+    </div>
+  );
+}
+
+// Componente para entrada manual de código QR
+interface ManualEntryProps {
+  onSubmit: (code: string) => void;
+  isProcessing: boolean;
+}
+
+function ManualEntry({ onSubmit, isProcessing }: ManualEntryProps) {
+  const [code, setCode] = useState("");
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.trim()) {
+      onSubmit(code);
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <Label htmlFor="qr-code">Código QR</Label>
+        <Input
+          id="qr-code"
+          placeholder="Digite o código QR manualmente"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          disabled={isProcessing}
+        />
+      </div>
+      <Button 
+        type="submit" 
+        className="w-full" 
+        disabled={!code.trim() || isProcessing}
+      >
+        {isProcessing ? (
+          <>
+            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            Processando...
+          </>
+        ) : (
+          <>
+            <QrCode className="h-4 w-4 mr-2" />
+            Processar Código
+          </>
+        )}
+      </Button>
+    </form>
+  );
+}
+
+// Componente para exibir resultados do scan
+interface ScanResultProps {
+  result: any;
+  onReset: () => void;
+  onProceed: () => void;
+  isProcessing: boolean;
+}
+
+function ScanResult({ result, onReset, onProceed, isProcessing }: ScanResultProps) {
+  if (!result) return null;
+  
+  const isCustomer = result.type === "customer";
+  const isPayment = result.type === "payment";
+  
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center mb-2">
+        <div className="h-10 w-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center mr-3">
+          <Check className="h-6 w-6" />
+        </div>
+        <div>
+          <h3 className="font-medium text-lg">QR Code Válido</h3>
+          <p className="text-sm text-muted-foreground">
+            {isCustomer 
+              ? "Cliente identificado com sucesso!" 
+              : isPayment 
+                ? "Pagamento identificado com sucesso!"
+                : "Código processado com sucesso!"}
+          </p>
+        </div>
+      </div>
+      
+      <Card>
+        <CardContent className="pt-6">
+          {isCustomer && (
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <User className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Cliente</p>
+                  <p className="font-medium">{result.name}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <Mail className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p>{result.email}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <CreditCard className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Carteira</p>
+                  <p>{result.wallet_id}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {isPayment && (
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <User className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Cliente</p>
+                  <p className="font-medium">{result.customer_name}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <CreditCard className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Valor</p>
+                  <p className="font-medium">R$ {result.amount.toFixed(2)}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <Clock className="h-5 w-5 text-primary mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Data</p>
+                  <p>{result.date}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center">
+                <BadgePercent className="h-5 w-5 text-green-500 mr-3" />
+                <div>
+                  <p className="text-sm text-muted-foreground">Cashback</p>
+                  <p className="text-green-600">R$ {result.cashback.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      <div className="flex space-x-3">
+        <Button 
+          variant="outline" 
+          onClick={onReset} 
+          className="flex-1"
+          disabled={isProcessing}
+        >
+          <X className="h-4 w-4 mr-2" />
+          Cancelar
+        </Button>
         
-        // In a real implementation, this would use a QR code scanning library
-        toast({
-          title: "Scanner ativo",
-          description: "Posicione o QR Code dentro da área de leitura.",
-        });
-      } else {
-        toast({
-          title: "Camera não disponível",
-          description: "Seu dispositivo não suporta acesso à câmera.",
-          variant: "destructive",
-        });
-        setScannerActive(false);
-      }
-    } catch (error) {
-      console.error("Error accessing camera:", error);
+        <Button 
+          onClick={onProceed} 
+          className="flex-1"
+          disabled={isProcessing}
+        >
+          {isProcessing ? (
+            <>
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              Processando...
+            </>
+          ) : (
+            <>
+              <Check className="h-4 w-4 mr-2" />
+              {isCustomer ? "Registrar Venda" : isPayment ? "Confirmar Pagamento" : "Continuar"}
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// Componente principal do scanner
+export default function MerchantScanner() {
+  const [activeTab, setActiveTab] = useState("camera");
+  const [scanResult, setScanResult] = useState<any>(null);
+  const [processingComplete, setProcessingComplete] = useState(false);
+  const { toast } = useToast();
+  
+  const { scanning, error, permission, startScanner, stopScanner } = useQrScanner();
+  
+  const processQrMutation = useMutation({
+    mutationFn: async (qrData: string) => {
+      // Em um ambiente real, isso seria uma chamada de API para validar o código QR
+      return new Promise<any>((resolve) => {
+        setTimeout(() => {
+          try {
+            // Tentar analisar o QR como JSON
+            const data = JSON.parse(qrData);
+            resolve(data);
+          } catch (e) {
+            // Se não for JSON, tratar como código direto
+            resolve({
+              type: "generic",
+              code: qrData,
+              timestamp: new Date().toISOString()
+            });
+          }
+        }, 1500);
+      });
+    },
+    onSuccess: (data) => {
+      setScanResult(data);
+      stopScanner();
+    },
+    onError: () => {
       toast({
-        title: "Erro na câmera",
-        description: "Não foi possível acessar a câmera do dispositivo.",
+        title: "Erro ao processar QR Code",
+        description: "O código QR não pôde ser processado. Tente novamente.",
         variant: "destructive",
       });
-      setScannerActive(false);
+    },
+  });
+  
+  const handleScan = (data: string) => {
+    if (data) {
+      processQrMutation.mutate(data);
     }
   };
-
-  // Stop scanner
-  const stopScanner = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = (videoRef.current.srcObject as MediaStream).getTracks();
-      tracks.forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-    setScannerActive(false);
+  
+  const handleManualEntry = (code: string) => {
+    processQrMutation.mutate(code);
   };
-
-  // Clean up on unmount
+  
+  const handleReset = () => {
+    setScanResult(null);
+    setProcessingComplete(false);
+    
+    if (activeTab === "camera") {
+      startScanner();
+    }
+  };
+  
+  const handleProceed = () => {
+    // Simular processamento
+    setProcessingComplete(true);
+    
+    // Dependendo do tipo de QR escaneado, tomamos ações diferentes
+    if (scanResult.type === "customer") {
+      // Redirecionar para página de vendas com o cliente pré-selecionado
+      setTimeout(() => {
+        window.location.href = `/merchant/sales?customer=${scanResult.id}`;
+      }, 1500);
+    } else if (scanResult.type === "payment") {
+      // Registrar confirmação de pagamento
+      setTimeout(() => {
+        toast({
+          title: "Pagamento confirmado",
+          description: `Pagamento de R$ ${scanResult.amount.toFixed(2)} confirmado com sucesso.`,
+        });
+        handleReset();
+      }, 1500);
+    } else {
+      // Código genérico
+      setTimeout(() => {
+        toast({
+          title: "Código processado",
+          description: "O código QR foi processado com sucesso.",
+        });
+        handleReset();
+      }, 1500);
+    }
+  };
+  
+  // Iniciar scanner ao carregar ou trocar para aba da câmera
   useEffect(() => {
+    if (activeTab === "camera" && !scanResult) {
+      startScanner();
+    } else if (activeTab !== "camera" || scanResult) {
+      stopScanner();
+    }
+    
     return () => {
       stopScanner();
     };
-  }, []);
-
-  // Handle manual code lookup
-  const handleLookupCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!transactionCode) {
-      toast({
-        title: "Código obrigatório",
-        description: "Digite o código da transação para consultar.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setLoading(true);
-    
-    try {
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock payment info
-      setPaymentInfo({
-        amount: 35.00,
-        customer: {
-          name: "João Silva",
-          email: "joao@email.com",
-          balance: 235.50
-        },
-        code: transactionCode || "QR789012",
-        description: "Pagamento de compras"
-      });
-    } catch (error) {
-      toast({
-        title: "Código inválido",
-        description: "O código informado não é válido ou expirou.",
-        variant: "destructive",
-      });
-      setPaymentInfo(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle payment confirmation
-  const handleConfirmPayment = async () => {
-    if (!paymentInfo) return;
-    
-    setConfirming(true);
-    
-    try {
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Pagamento confirmado",
-        description: `Pagamento de R$ ${paymentInfo.amount.toFixed(2)} confirmado com sucesso.`,
-      });
-      
-      // Reset form and payment info
-      setTransactionCode("");
-      setPaymentInfo(null);
-      
-      // Refresh merchant sales data
-      queryClient.invalidateQueries({ queryKey: ['/api/merchant/sales'] });
-    } catch (error) {
-      toast({
-        title: "Erro no pagamento",
-        description: "Ocorreu um erro ao processar o pagamento. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setConfirming(false);
-    }
-  };
-
-  // Handle payment cancellation
-  const handleCancelPayment = () => {
-    setPaymentInfo(null);
-    setTransactionCode("");
-  };
-
+  }, [activeTab, scanResult]);
+  
   return (
     <DashboardLayout title="Scanner QR Code" type="merchant">
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Scanner Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Escaneie o QR Code</CardTitle>
-            <CardDescription>
-              Use a câmera para escanear o QR Code de pagamento do cliente
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="relative aspect-video rounded-lg overflow-hidden bg-muted flex items-center justify-center">
-              {scannerActive ? (
-                <video 
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="text-center p-8">
-                  <Camera className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">
-                    Clique no botão abaixo para ativar a câmera e escanear um QR Code
-                  </p>
-                </div>
-              )}
-            </div>
-            
-            <div className="flex justify-center">
-              <Button
-                onClick={scannerActive ? stopScanner : activateScanner}
-                variant={scannerActive ? "destructive" : "default"}
-                className={scannerActive ? "" : "bg-accent"}
-              >
-                {scannerActive ? "Parar Scanner" : "Ativar Scanner"}
-              </Button>
-            </div>
-            
-            <div className="text-center text-sm text-muted-foreground">
-              {scannerActive ? 
-                "Posicione o QR Code do cliente dentro da área de leitura" : 
-                "A câmera será usada apenas para leitura do QR Code"
-              }
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Manual Entry Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Entrada Manual</CardTitle>
-            <CardDescription>
-              Digite o código da transação manualmente
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {paymentInfo ? (
-              <div className="p-4 border rounded-lg">
-                <div className="text-center mb-4">
-                  <div className="text-xl font-bold">R$ {paymentInfo.amount.toFixed(2)}</div>
-                  <div className="text-sm text-muted-foreground">Pagamento via Cashback</div>
-                </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Scanner QR Code Vale Cashback</CardTitle>
+          <CardDescription>
+            Escaneie códigos QR para identificar clientes ou confirmar pagamentos
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {scanResult ? (
+            <ScanResult 
+              result={scanResult} 
+              onReset={handleReset} 
+              onProceed={handleProceed}
+              isProcessing={processingComplete}
+            />
+          ) : (
+            <div>
+              <Tabs defaultValue="camera" value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="camera">
+                    <Camera className="h-4 w-4 mr-2" />
+                    Câmera
+                  </TabsTrigger>
+                  <TabsTrigger value="manual">
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Entrada Manual
+                  </TabsTrigger>
+                </TabsList>
                 
-                <div className="space-y-3">
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-muted-foreground">Cliente:</span>
-                    <span className="font-medium">{paymentInfo.customer.name}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-muted-foreground">E-mail:</span>
-                    <span className="font-medium">{paymentInfo.customer.email}</span>
-                  </div>
-                  <div className="flex justify-between py-1 border-b">
-                    <span className="text-muted-foreground">Saldo disponível:</span>
-                    <span className="font-medium">R$ {paymentInfo.customer.balance.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-muted-foreground">Código da transação:</span>
-                    <span className="font-medium">{paymentInfo.code}</span>
-                  </div>
-                  {paymentInfo.description && (
-                    <div className="flex justify-between py-1 border-t">
-                      <span className="text-muted-foreground">Descrição:</span>
-                      <span className="font-medium">{paymentInfo.description}</span>
+                <TabsContent value="camera">
+                  {error ? (
+                    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 mb-4">
+                      <div className="flex items-start">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 mr-3 mt-0.5" />
+                        <div>
+                          <h4 className="font-medium text-yellow-800">Alerta de Câmera</h4>
+                          <p className="text-sm text-yellow-700">{error}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <QrScanner onScan={handleScan} scanning={scanning} />
+                  )}
+                  
+                  {!error && permission && !scanning && (
+                    <div className="mt-4 flex justify-center">
+                      <Button onClick={startScanner}>
+                        <Camera className="h-4 w-4 mr-2" />
+                        Ativar Câmera
+                      </Button>
                     </div>
                   )}
-                </div>
+                </TabsContent>
                 
-                <div className="mt-6 flex gap-2">
-                  <Button 
-                    className="flex-1 bg-accent"
-                    onClick={handleConfirmPayment}
-                    disabled={confirming}
-                  >
-                    {confirming ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Confirmando...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="mr-2 h-4 w-4" /> Confirmar
-                      </>
-                    )}
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={handleCancelPayment}
-                    disabled={confirming}
-                  >
-                    <X className="mr-2 h-4 w-4" /> Cancelar
-                  </Button>
+                <TabsContent value="manual">
+                  <ManualEntry 
+                    onSubmit={handleManualEntry}
+                    isProcessing={processQrMutation.isPending}
+                  />
+                </TabsContent>
+              </Tabs>
+              
+              <div className="mt-6 border-t pt-4">
+                <div className="flex items-start">
+                  <Info className="h-5 w-5 text-blue-500 mr-3 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium">Como usar o Scanner QR</h4>
+                    <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
+                      <li className="flex items-start">
+                        <span className="mr-2">1.</span>
+                        <span>Para identificar um cliente, peça que ele mostre o código QR do aplicativo Vale Cashback.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">2.</span>
+                        <span>Para confirmar um pagamento em cashback, escaneie o QR de pagamento gerado pelo cliente.</span>
+                      </li>
+                      <li className="flex items-start">
+                        <span className="mr-2">3.</span>
+                        <span>Se a câmera não funcionar, utilize a aba "Entrada Manual" para digitar o código.</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <form onSubmit={handleLookupCode} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="transaction-code">Código da Transação</Label>
-                  <Input
-                    id="transaction-code"
-                    value={transactionCode}
-                    onChange={(e) => setTransactionCode(e.target.value)}
-                    placeholder="Digite o código do QR Code"
-                    disabled={loading}
-                  />
-                </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full bg-accent"
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Buscando...
-                    </>
-                  ) : (
-                    <>
-                      <Search className="mr-2 h-4 w-4" /> Buscar
-                    </>
-                  )}
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </DashboardLayout>
   );
 }
