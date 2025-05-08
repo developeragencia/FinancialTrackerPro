@@ -2032,30 +2032,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cliente - Listar todas as lojas para exibição nos painéis
   app.get("/api/client/stores", isUserType("client"), async (req, res) => {
     try {
-      // Buscar todas as lojas ativas
-      const storesResult = await db.execute(
-        sql`
-        SELECT 
-          m.id, 
-          m.store_name, 
-          m.logo, 
-          m.category, 
-          m.commission_rate,
-          m.created_at,
-          u.id as user_id,
-          u.email,
-          u.phone,
-          u.name as owner_name,
-          u.type
-        FROM merchants m
-        JOIN users u ON m.user_id = u.id
-        WHERE m.approved = true
-        ORDER BY m.store_name ASC
-        `
-      );
+      // Buscar todas as lojas ativas usando consulta select
+      const storesResult = await db
+        .select({
+          id: merchants.id,
+          store_name: merchants.store_name,
+          logo: merchants.logo,
+          category: merchants.category,
+          commission_rate: merchants.commission_rate,
+          created_at: merchants.created_at,
+          user_id: users.id,
+          email: users.email,
+          phone: users.phone,
+          owner_name: users.name,
+          type: users.type
+        })
+        .from(merchants)
+        .innerJoin(users, eq(merchants.user_id, users.id))
+        .where(eq(merchants.approved, true))
+        .orderBy(merchants.store_name);
       
       // Formatar para o frontend
-      const stores = storesResult.rows.map(store => ({
+      const stores = storesResult.map(store => ({
         id: store.id,
         storeId: store.id,
         userId: store.user_id,
@@ -2063,7 +2061,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: store.store_name,
         logo: store.logo || null,
         category: store.category || 'Geral',
-        description: '',
+        description: '', // Campo vazio pois não existe na tabela
         ownerName: store.owner_name,
         email: store.email,
         phone: store.phone,
