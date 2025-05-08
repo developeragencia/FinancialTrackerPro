@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useQRCode } from "@/hooks/use-qr-code";
 import { 
   Camera, 
   CameraOff, 
@@ -20,7 +21,8 @@ import {
   User,
   Clock,
   CreditCard,
-  BadgePercent
+  BadgePercent,
+  Mail
 } from "lucide-react";
 
 // Simulação de um serviço de scanner QR
@@ -137,7 +139,7 @@ function QrScanner({ onScan, scanning }: QrScannerProps) {
       </div>
       
       {/* Barra de scanner (efeito animado) */}
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes scanline {
           0% {
             top: 0;
@@ -149,7 +151,7 @@ function QrScanner({ onScan, scanning }: QrScannerProps) {
             top: 0;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 }
@@ -345,29 +347,29 @@ export default function MerchantScanner() {
   
   const { scanning, error, permission, startScanner, stopScanner } = useQrScanner();
   
-  const processQrMutation = useMutation({
-    mutationFn: async (qrData: string) => {
-      // Em um ambiente real, isso seria uma chamada de API para validar o código QR
-      return new Promise<any>((resolve) => {
-        setTimeout(() => {
-          try {
-            // Tentar analisar o QR como JSON
-            const data = JSON.parse(qrData);
-            resolve(data);
-          } catch (e) {
-            // Se não for JSON, tratar como código direto
-            resolve({
-              type: "generic",
-              code: qrData,
-              timestamp: new Date().toISOString()
-            });
-          }
-        }, 1500);
-      });
-    },
+  // Utilizando o hook useQRCode para processar QR codes
+  const { processQrCode } = useQRCode({
     onSuccess: (data) => {
       setScanResult(data);
       stopScanner();
+      toast({
+        title: "QR Code processado",
+        description: "Código QR verificado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro ao processar QR Code",
+        description: error.message || "O código QR não pôde ser processado. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  const processQrMutation = useMutation({
+    mutationFn: (qrData: string) => {
+      // Agora encaminhamos para nosso hook useQRCode que faz a chamada API real
+      return processQrCode(qrData);
     },
     onError: () => {
       toast({

@@ -69,10 +69,36 @@ export function useQRCode({ onSuccess, onError }: UseQRCodeProps = {}) {
     }
   }, [toast, onSuccess, onError]);
 
+  // Função para processar QR code (usada pelo scanner do lojista)
+  const processQrCode = useCallback(async (qrData: string) => {
+    setLoading(true);
+    try {
+      const response = await apiRequest('POST', '/api/merchant/process-qrcode', {
+        qrData
+      });
+      
+      const data = await response.json();
+      onSuccess?.(data);
+      return data;
+    } catch (error) {
+      const err = error as Error;
+      toast({
+        title: 'Erro ao processar QR Code',
+        description: err.message,
+        variant: 'destructive',
+      });
+      onError?.(err);
+      throw err; // Propagar erro para o mutation
+    } finally {
+      setLoading(false);
+    }
+  }, [toast, onSuccess, onError]);
+
   return {
     loading,
     qrCode,
     generateQRCode,
     validateQRCode,
+    processQrCode
   };
 }
