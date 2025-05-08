@@ -2286,10 +2286,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Aqui implementaríamos a lógica de referência
         console.log(`Cliente ${newUser.id} registrado com referência ${referralInfo.referrerId}`);
         
+        // Buscar configuração de comissão para referências (ou usar valor padrão)
+        let referralBonus = 0.01; // 1% de bônus padrão
+        try {
+          const commissionResult = await db.execute(
+            sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
+          );
+          
+          // Usar o valor padrão do sistema se não houver configuração
+          if (commissionResult.rows.length > 0) {
+            referralBonus = parseFloat(commissionResult.rows[0].value);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar configuração de comissão:", error);
+        }
+        
         // Registrar a referência
         await db.insert(referrals).values({
           referrerId: referralInfo.referrerId,
           referredId: newUser.id,
+          bonus: "10.00", // Valor fixo de bônus para indicação de cliente
           status: "active",
           createdAt: new Date()
         });
@@ -2360,10 +2376,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Processar código de referência, se fornecido
       if (referralInfo && referralInfo.referrerId) {
-        // Registrar a referência
+        // Buscar configuração de comissão para referências de lojistas (ou usar valor padrão)
+        let referralBonus = 0.02; // 2% de bônus padrão para lojistas
+        try {
+          const commissionResult = await db.execute(
+            sql`SELECT value FROM commission_settings WHERE key = 'merchantReferralBonus'`
+          );
+          
+          // Usar o valor padrão do sistema se não houver configuração
+          if (commissionResult.rows.length > 0) {
+            referralBonus = parseFloat(commissionResult.rows[0].value);
+          }
+        } catch (error) {
+          console.error("Erro ao buscar configuração de comissão:", error);
+        }
+        
+        // Registrar a referência com o bônus
         await db.insert(referrals).values({
           referrerId: referralInfo.referrerId,
           referredId: newUser.id,
+          bonus: "25.00", // Valor fixo maior para indicação de lojista
           status: "active", 
           createdAt: new Date()
         });
