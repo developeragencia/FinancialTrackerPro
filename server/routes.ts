@@ -4,6 +4,7 @@ import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { db } from "./db";
 import { eq, and, desc, sql } from "drizzle-orm";
+import crypto from "crypto";
 import {
   users,
   merchants,
@@ -1349,75 +1350,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obter referências e indicações do lojista
   app.get("/api/merchant/referrals", isUserType("merchant"), async (req, res) => {
     try {
-      const merchantId = req.user.id;
+      const merchantId = req.user!.id;
       
-      // Obter referências (lojas indicadas)
-      const referrals = await db
+      // Buscar o código de referência do usuário
+      const userData = await db
         .select({
           id: users.id,
           name: users.name,
+          referralCode: users.referralCode
+        })
+        .from(users)
+        .where(eq(users.id, merchantId))
+        .limit(1);
+        
+      if (!userData || userData.length === 0) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Função auxiliar para gerar código de referência
+      const generateReferralCode = () => {
+        return "LJ" + crypto.randomBytes(3).toString('hex').toUpperCase();
+      };
+        
+      const referralCode = userData[0].referralCode || generateReferralCode();
+      
+      // Se não tiver um código de referência, gerar e salvar
+      if (!userData[0].referralCode) {
+        await db
+          .update(users)
+          .set({ referralCode: referralCode })
+          .where(eq(users.id, merchantId));
+      }
+      
+      // Obter referências (lojas indicadas)
+      const referrals_list = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          storeName: merchants.storeName,
           date: users.createdAt,
           status: users.status,
-          commission: sql`0.00`.as("commission") // Placeholder, será calculado abaixo
+          commission: sql`'0.00'`.as("commission") // Placeholder, será calculado 
         })
-        .from(referrals)
-        .innerJoin(users, eq(referrals.referredId, users.id))
-        .where(eq(referrals.referrerId, merchantId))
+        .from(users)
+        .innerJoin(merchants, eq(users.id, merchants.userId))
+        .where(eq(users.referralCode, referralCode))
         .orderBy(desc(users.createdAt));
       
-      // Calcular comissões para cada referral
-      const referralsWithCommission = await Promise.all(
-        referrals.map(async (referral) => {
-          // Calcular comissão total para esta referência
-          const commission = await db
-            .select({ sum: sql`SUM(amount)` })
-            .from(referrals)
-            .where(
-              and(
-                eq(referrals.referrerId, merchantId),
-                eq(referrals.referredId, referral.id)
-              )
-            );
-          
-          return {
-            ...referral,
-            commission: parseFloat(commission[0]?.sum || "0")
-          };
-        })
-      );
+      // Calcular estatísticas gerais
+      const activeReferrals = referrals_list.filter(r => r.status === "active").length;
       
-      // Obter estatísticas gerais
-      const totalEarned = await db
-        .select({ sum: sql`SUM(amount)` })
-        .from(referrals)
-        .where(eq(referrals.referrerId, merchantId));
-      
-      const activeReferrals = referralsWithCommission.filter(r => r.status === "active").length;
-      
-      // Gerar código de indicação baseado no ID do usuário
-      const referralCode = `MERCH${merchantId}`;
-      
-      // Transações de comissões recebidas
-      const commissionTransactions = await db
-        .select({
-          id: referrals.id,
-          date: referrals.createdAt,
-          amount: referrals.amount,
-          store: users.name,
-          type: sql`'Comissão de indicação'`.as("type")
-        })
-        .from(referrals)
-        .innerJoin(users, eq(referrals.referredId, users.id))
-        .where(eq(referrals.referrerId, merchantId))
-        .orderBy(desc(referrals.createdAt))
-        .limit(20);
+      // Buscar configurações de comissão
+      const [commissionRate] = await db
+        .select()
+        .from(commissionSettings)
+        .limit(1);
       
       res.json({
-        referrals: referralsWithCommission,
-        referralCode,
-        totalEarned: totalEarned[0]?.sum || 0,
-        activeReferrals,
-        commissionTransactions
+        referralCode: referralCode,
+        referralUrl: `https://valecashback.com/convite/${referralCode}`,
+        referralsCount: referrals_list.length,
+        pendingReferrals: referrals_list.filter(r => r.status === "pending").length,
+        activeReferrals: activeReferrals,
+        commission: commissionRate?.merchantReferralBonus || "1.0",
+        referrals: referrals_list
       });
     } catch (error) {
       console.error("Erro ao buscar referências:", error);
@@ -1686,17 +1682,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Histórico de indicações do cliente
   app.get("/api/client/referrals", isUserType("client"), async (req, res) => {
     try {
-      const clientId = req.user.id;
+      const clientId = req.user!.id;
+      
+      // Buscar o código de referência do usuário
+      const userData = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          referralCode: users.referralCode
+        })
+        .from(users)
+        .where(eq(users.id, clientId))
+        .limit(1);
+        
+      if (!userData || userData.length === 0) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+        
+      // Função auxiliar para gerar código de referência
+      const generateReferralCode = () => {
+        return crypto.randomBytes(3).toString('hex').toUpperCase();
+      };
+        
+      const referralCode = userData[0].referralCode || generateReferralCode();
+      
+      // Se não tiver um código de referência, gerar e salvar
+      if (!userData[0].referralCode) {
+        await db
+          .update(users)
+          .set({ referralCode: referralCode })
+          .where(eq(users.id, clientId));
+      }
       
       // Listar indicações onde o cliente é o indicador
       const referrals_list = await db
         .select({
           id: referrals.id,
-          transactionId: referrals.transactionId,
-          amount: referrals.amount,
+          name: users.name,
           date: referrals.createdAt,
           status: referrals.status,
-          referredName: users.name
+          commission: referrals.bonus
         })
         .from(referrals)
         .leftJoin(users, eq(referrals.referredId, users.id))
@@ -1704,13 +1729,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .orderBy(desc(referrals.createdAt));
         
       // Calcular saldo total de indicações
-      const totalBalance = await db
-        .select({ sum: sql`SUM(amount)` })
+      const total = await db
+        .select({ sum: sql`COALESCE(SUM(bonus)::text, '0.00')` })
         .from(referrals)
         .where(
           and(
             eq(referrals.referrerId, clientId),
-            eq(referrals.status, "active")
+            eq(referrals.status, "completed")
           )
         );
         
@@ -1727,10 +1752,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(referrals.referredId, clientId))
         .limit(1);
         
+      // Contar indicações pendentes
+      const pendingCount = referrals_list.filter(ref => ref.status === "pending").length;
+      
+      // Buscar configurações de comissão
+      const [commissionRate] = await db
+        .select()
+        .from(commissionSettings)
+        .limit(1);
+      
       res.json({
-        referrals: referrals_list,
-        balance: totalBalance[0].sum || 0,
-        referrer: referrer.length > 0 ? referrer[0] : null
+        referralCode: referralCode,
+        referralUrl: `https://valecashback.com/convite/${referralCode}`,
+        referralsCount: referrals_list.length,
+        pendingReferrals: pendingCount,
+        totalEarned: total[0].sum || "0.00",
+        commission: commissionRate?.referralBonus || "1.0",
+        referrals: referrals_list
       });
     } catch (error) {
       console.error("Erro ao buscar indicações:", error);
