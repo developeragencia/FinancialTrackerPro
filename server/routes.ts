@@ -70,12 +70,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingSettings.length === 0) {
         // Criar configurações padrão
         await db.insert(commissionSettings).values({
-          platformFee: DEFAULT_SETTINGS.platformFee.toString(),
-          merchantCommission: DEFAULT_SETTINGS.merchantCommission.toString(),
-          clientCashback: DEFAULT_SETTINGS.clientCashback.toString(),
-          referralBonus: DEFAULT_SETTINGS.referralBonus.toString(),
-          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal.toString(),
-          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+          platformFee: DEFAULT_SETTINGS.platformFee,
+          merchantCommission: DEFAULT_SETTINGS.merchantCommission,
+          clientCashback: DEFAULT_SETTINGS.clientCashback,
+          referralBonus: DEFAULT_SETTINGS.referralBonus,
+          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal,
+          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus,
         });
         
         console.log("Configurações de comissão padrão criadas com sucesso");
@@ -98,12 +98,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (settings.length === 0) {
         // Se não houver configurações, criar as padrões e retornar
         const [newSettings] = await db.insert(commissionSettings).values({
-          platformFee: DEFAULT_SETTINGS.platformFee.toString(),
-          merchantCommission: DEFAULT_SETTINGS.merchantCommission.toString(),
-          clientCashback: DEFAULT_SETTINGS.clientCashback.toString(),
-          referralBonus: DEFAULT_SETTINGS.referralBonus.toString(),
-          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal.toString(),
-          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+          platformFee: DEFAULT_SETTINGS.platformFee,
+          merchantCommission: DEFAULT_SETTINGS.merchantCommission,
+          clientCashback: DEFAULT_SETTINGS.clientCashback,
+          referralBonus: DEFAULT_SETTINGS.referralBonus,
+          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal,
+          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus,
         }).returning();
         
         return res.json(newSettings);
@@ -134,12 +134,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (settings.length === 0) {
         // Se não houver configurações, criar as novas
         const [newSettings] = await db.insert(commissionSettings).values({
-          platformFee: platformFee?.toString() || DEFAULT_SETTINGS.platformFee.toString(),
-          merchantCommission: merchantCommission?.toString() || DEFAULT_SETTINGS.merchantCommission.toString(),
-          clientCashback: clientCashback?.toString() || DEFAULT_SETTINGS.clientCashback.toString(),
-          referralBonus: referralBonus?.toString() || DEFAULT_SETTINGS.referralBonus.toString(),
-          minWithdrawal: minWithdrawal?.toString() || DEFAULT_SETTINGS.minWithdrawal.toString(),
-          maxCashbackBonus: maxCashbackBonus?.toString() || DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+          platformFee: platformFee ?? DEFAULT_SETTINGS.platformFee,
+          merchantCommission: merchantCommission ?? DEFAULT_SETTINGS.merchantCommission,
+          clientCashback: clientCashback ?? DEFAULT_SETTINGS.clientCashback,
+          referralBonus: referralBonus ?? DEFAULT_SETTINGS.referralBonus,
+          minWithdrawal: minWithdrawal ?? DEFAULT_SETTINGS.minWithdrawal,
+          maxCashbackBonus: maxCashbackBonus ?? DEFAULT_SETTINGS.maxCashbackBonus,
           updatedBy: req.user?.id,
         }).returning();
         
@@ -149,12 +149,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Atualizar configurações existentes
       const [updatedSettings] = await db.update(commissionSettings)
         .set({
-          ...(platformFee !== undefined && { platformFee: platformFee.toString() }),
-          ...(merchantCommission !== undefined && { merchantCommission: merchantCommission.toString() }),
-          ...(clientCashback !== undefined && { clientCashback: clientCashback.toString() }),
-          ...(referralBonus !== undefined && { referralBonus: referralBonus.toString() }),
-          ...(minWithdrawal !== undefined && { minWithdrawal: minWithdrawal.toString() }),
-          ...(maxCashbackBonus !== undefined && { maxCashbackBonus: maxCashbackBonus.toString() }),
+          ...(platformFee !== undefined && { platformFee }),
+          ...(merchantCommission !== undefined && { merchantCommission }),
+          ...(clientCashback !== undefined && { clientCashback }),
+          ...(referralBonus !== undefined && { referralBonus }),
+          ...(minWithdrawal !== undefined && { minWithdrawal }),
+          ...(maxCashbackBonus !== undefined && { maxCashbackBonus }),
           updatedAt: new Date(),
           updatedBy: req.user?.id,
         })
