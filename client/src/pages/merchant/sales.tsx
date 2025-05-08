@@ -328,12 +328,12 @@ export default function MerchantSales() {
     {
       header: "Valor",
       accessorKey: "amount" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `$ ${item.amount.toFixed(2)}`,
+      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.amount)).toFixed(2)}`,
     },
     {
       header: "Cashback",
       accessorKey: "cashback" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `$ ${item.cashback.toFixed(2)}`,
+      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.cashback)).toFixed(2)}`,
     }
   ];
 
@@ -345,7 +345,7 @@ export default function MerchantSales() {
       onClick: (sale: SaleTransaction) => {
         toast({
           title: `Venda #${sale.id}`,
-          description: `Cliente: ${sale.customer}, Valor: $ ${sale.amount.toFixed(2)}, Cashback: $ ${sale.cashback.toFixed(2)}`,
+          description: `Cliente: ${sale.customer}, Valor: $ ${parseFloat(String(sale.amount)).toFixed(2)}, Cashback: $ ${parseFloat(String(sale.cashback)).toFixed(2)}`,
         });
       },
     },
