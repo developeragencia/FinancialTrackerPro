@@ -98,6 +98,7 @@ export const transactions = pgTable("transactions", {
   merchantId: integer("merchant_id").notNull().references(() => merchants.id),
   amount: numeric("amount").notNull(),
   cashbackAmount: numeric("cashback_amount").notNull(),
+  referralAmount: numeric("referral_amount").default("0"),
   status: text("status").notNull().default("completed"),
   paymentMethod: text("payment_method").notNull(),
   description: text("description"),
