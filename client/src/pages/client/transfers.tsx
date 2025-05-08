@@ -58,9 +58,9 @@ export default function ClientTransfers() {
     const searchUsers = async () => {
       setIsSearching(true);
       try {
-        const response = await apiRequest("GET", `/api/users/search?term=${encodeURIComponent(searchTerm)}&by=${searchMethod}`);
+        const response = await apiRequest("GET", `/api/client/search-users?search=${encodeURIComponent(searchTerm)}&method=${searchMethod}`);
         const data = await response.json();
-        setSearchResults(data || []);
+        setSearchResults(data ? [data] : []);
       } catch (error) {
         console.error("Erro ao buscar usuários:", error);
         toast({

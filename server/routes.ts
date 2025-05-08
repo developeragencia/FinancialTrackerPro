@@ -2886,6 +2886,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Processar transferência entre clientes
+  // Rota para buscar usuários por email ou telefone
+  app.get("/api/client/search-users", isUserType("client"), async (req, res) => {
+    try {
+      const { search, method } = req.query;
+      
+      if (!search || !method) {
+        return res.status(400).json({ message: "Parâmetros de busca obrigatórios não informados" });
+      }
+      
+      let whereClause;
+      if (method === "email") {
+        whereClause = sql`email = ${search}`;
+      } else if (method === "phone") {
+        whereClause = sql`phone = ${search}`;
+      } else {
+        return res.status(400).json({ message: "Método de busca inválido" });
+      }
+      
+      const userResult = await db.execute(
+        sql`
+        SELECT id, name, email, phone, type 
+        FROM users 
+        WHERE ${whereClause} AND type = 'client'
+        LIMIT 1
+        `
+      );
+      
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Retorna os dados do usuário encontrado (sem informações sensíveis)
+      res.status(200).json(userResult.rows[0]);
+    } catch (error) {
+      console.error("Erro ao buscar usuário:", error);
+      res.status(500).json({ message: "Erro ao processar a busca" });
+    }
+  });
+
   app.post("/api/client/transfers", isUserType("client"), async (req, res) => {
     try {
       if (!req.user) {
