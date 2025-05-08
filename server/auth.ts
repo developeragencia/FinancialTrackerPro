@@ -50,12 +50,14 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "vale-cashback-secret-key",
-    resave: false,
+    resave: true, // Alterado para true para manter a sessão ativa
     saveUninitialized: false,
     store: storage.sessionStore,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 semana
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
       sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
     }
   };
 

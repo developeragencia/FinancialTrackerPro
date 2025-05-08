@@ -41,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const userData = await response.json();
           setUser(userData);
+        } else if (response.status === 401 && user) {
+          // Se recebermos 401 mas tínhamos um usuário antes, a sessão expirou
+          setUser(null);
+          navigate('/login');
+          toast({
+            title: 'Sessão expirada',
+            description: 'Sua sessão expirou. Por favor, faça login novamente.',
+            variant: 'destructive',
+          });
         }
       } catch (error) {
         console.error('Failed to load user', error);
@@ -49,8 +58,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     
+    // Carrega o usuário imediatamente
     loadUser();
-  }, []);
+    
+    // E então periodicamente a cada 30 segundos para manter a sessão ativa
+    const intervalId = setInterval(loadUser, 30000);
+    
+    // Limpar o intervalo quando o componente for desmontado
+    return () => clearInterval(intervalId);
+  }, [user, navigate, toast]);
 
   const login = async (email: string, password: string, type: UserType) => {
     setLoading(true);
