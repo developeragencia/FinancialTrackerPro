@@ -39,34 +39,33 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   phone: text("phone"),
-
   country: text("country"),
-  countryCode: text("country_code"),
+  country_code: text("country_code"),
   type: text("type").notNull(),
   status: text("status").notNull().default("active"),
   photo: text("photo"),
-  securityQuestion: text("security_question"),
-  securityAnswer: text("security_answer"),
-  invitationCode: text("invitation_code"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  lastLogin: timestamp("last_login"),
+  security_question: text("security_question"),
+  security_answer: text("security_answer"),
+  invitation_code: text("invitation_code"),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  last_login: timestamp("last_login"),
 });
 
 // Merchants table (extends users)
 export const merchants = pgTable("merchants", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  storeName: text("store_name").notNull(),
+  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  store_name: text("store_name").notNull(),
   logo: text("logo"),
   category: text("category").notNull(),
   address: text("address"),
   city: text("city"),
   state: text("state"),
   country: text("country"),
-  companyLogo: text("company_logo"),
-  commissionRate: numeric("commission_rate").notNull().default("2.0"),
+  company_logo: text("company_logo"),
+  commission_rate: numeric("commission_rate").notNull().default("2.0"),
   approved: boolean("approved").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Cashback balances
@@ -183,25 +182,25 @@ export const auditLogs = pgTable("audit_logs", {
 
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users)
-  .omit({ id: true, createdAt: true, lastLogin: true });
+  .omit({ id: true, created_at: true, last_login: true });
 
 export const insertMerchantSchema = createInsertSchema(merchants)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, created_at: true });
 
 export const insertTransactionSchema = createInsertSchema(transactions)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, created_at: true });
 
 export const insertTransferSchema = createInsertSchema(transfers)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, created_at: true });
 
 export const insertProductSchema = createInsertSchema(products)
-  .omit({ id: true, createdAt: true });
+  .omit({ id: true, created_at: true });
 
 export const insertQRCodeSchema = createInsertSchema(qrCodes)
-  .omit({ id: true, createdAt: true, used: true });
+  .omit({ id: true, created_at: true, used: true });
 
 export const insertCommissionSettingsSchema = createInsertSchema(commissionSettings)
-  .omit({ id: true, updatedAt: true });
+  .omit({ id: true, updated_at: true });
 
 // Types
 export type User = typeof users.$inferSelect;

@@ -42,11 +42,11 @@ export class DatabaseStorage implements IStorage {
           status: "active",
           phone: null,
           country: "Brasil",
-          countryCode: "BR",
-          securityQuestion: "Qual o nome do seu primeiro animal de estimação?",
-          securityAnswer: "Rex",
+          country_code: "BR",
+          security_question: "Qual o nome do seu primeiro animal de estimação?",
+          security_answer: "Rex",
           photo: null,
-          invitationCode: null,
+          invitation_code: null,
         };
         
         const clientUser: InsertUser = {
@@ -58,11 +58,11 @@ export class DatabaseStorage implements IStorage {
           status: "active",
           phone: "(11) 98765-4321",
           country: "Brasil",
-          countryCode: "BR",
-          securityQuestion: "Qual o nome da cidade onde você nasceu?",
-          securityAnswer: "São Paulo",
+          country_code: "BR",
+          security_question: "Qual o nome da cidade onde você nasceu?",
+          security_answer: "São Paulo",
           photo: null,
-          invitationCode: "CL123456",
+          invitation_code: "CL123456",
         };
         
         const merchantUser: InsertUser = {
@@ -74,11 +74,11 @@ export class DatabaseStorage implements IStorage {
           status: "active",
           phone: "(11) 3456-7890",
           country: "Brasil",
-          countryCode: "BR",
-          securityQuestion: "Qual o modelo do seu primeiro carro?",
-          securityAnswer: "Fusca",
+          country_code: "BR",
+          security_question: "Qual o modelo do seu primeiro carro?",
+          security_answer: "Fusca",
           photo: null,
-          invitationCode: "LJ123456",
+          invitation_code: "LJ123456",
         };
         
         await this.createUser(adminUser);
@@ -116,11 +116,11 @@ export class DatabaseStorage implements IStorage {
       username: insertUser.username || null,
       phone: insertUser.phone || null,
       country: insertUser.country || null,
-      countryCode: insertUser.countryCode || null,
-      securityQuestion: insertUser.securityQuestion || null,
-      securityAnswer: insertUser.securityAnswer || null,
+      country_code: insertUser.country_code || null,
+      security_question: insertUser.security_question || null,
+      security_answer: insertUser.security_answer || null,
       photo: insertUser.photo || null,
-      invitationCode: insertUser.invitationCode || null,
+      invitation_code: insertUser.invitation_code || null,
     };
 
     const result = await db.insert(users)
