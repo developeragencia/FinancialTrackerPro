@@ -22,6 +22,17 @@ const transferHistory = [
   { id: 4, type: "received", user: "ana@email.com", amount: 7.50, date: "28/06/2023", time: "11:05", description: "Presente", status: "completed" },
 ];
 
+interface Transfer {
+  id: number;
+  type: 'outgoing' | 'incoming';
+  from: string;
+  to: string;
+  amount: number;
+  date: string;
+  description: string;
+  status: 'completed' | 'pending' | 'failed';
+}
+
 interface RecipientInfo {
   id: number;
   name: string;
@@ -43,7 +54,7 @@ export default function ClientTransfers() {
   const { toast } = useToast();
 
   // Query to get transfer history
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<Transfer[]>({
     queryKey: ['/api/client/transfers'],
     queryFn: async () => {
       const response = await apiRequest("GET", "/api/client/transfers");
@@ -401,7 +412,7 @@ export default function ClientTransfers() {
               </div>
             ) : (
               <div className="space-y-3">
-                {(data || []).map((transfer) => (
+                {(data || []).map((transfer: Transfer) => (
                   <div key={transfer.id} className="p-3 border rounded-lg">
                     <div className="flex justify-between mb-1">
                       <span className="font-medium">
