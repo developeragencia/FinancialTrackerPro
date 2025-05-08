@@ -564,9 +564,13 @@ export default function MerchantSales() {
                   <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
                   <span className="text-green-600">R$ {cashbackAmount.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
+                  <span className="text-blue-600">R$ {(total * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
+                </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bônus de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
+                    <span className="text-muted-foreground">Bônus de Indicação para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
                     <span className="text-blue-600">R$ {referralBonus.toFixed(2)}</span>
                   </div>
                 )}
@@ -577,7 +581,7 @@ export default function MerchantSales() {
                 <div className="pt-2 border-t">
                   <div className="flex justify-between font-medium">
                     <span>Valor Líquido:</span>
-                    <span>R$ {(total - merchantCommission).toFixed(2)}</span>
+                    <span>R$ {(total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
