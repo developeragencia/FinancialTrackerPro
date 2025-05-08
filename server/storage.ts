@@ -35,35 +35,50 @@ export class DatabaseStorage implements IStorage {
         // Criar usuários padrão
         const adminUser: InsertUser = {
           name: "Administrador",
+          username: "admin",
           email: "admin@valecashback.com",
           password: "senha123", // Em produção usaríamos hash
           type: "admin",
           status: "active",
           phone: null,
-          cpfCnpj: null,
+          country: "Brasil",
+          countryCode: "BR",
+          securityQuestion: "Qual o nome do seu primeiro animal de estimação?",
+          securityAnswer: "Rex",
           photo: null,
+          invitationCode: null,
         };
         
         const clientUser: InsertUser = {
           name: "Cliente Teste",
+          username: "cliente",
           email: "cliente@valecashback.com",
           password: "senha123",
           type: "client",
           status: "active",
           phone: "(11) 98765-4321",
-          cpfCnpj: "123.456.789-00",
+          country: "Brasil",
+          countryCode: "BR",
+          securityQuestion: "Qual o nome da cidade onde você nasceu?",
+          securityAnswer: "São Paulo",
           photo: null,
+          invitationCode: "CL123456",
         };
         
         const merchantUser: InsertUser = {
           name: "Lojista Teste",
+          username: "lojista",
           email: "lojista@valecashback.com",
           password: "senha123",
           type: "merchant",
           status: "active",
           phone: "(11) 3456-7890",
-          cpfCnpj: "12.345.678/0001-90",
+          country: "Brasil",
+          countryCode: "BR",
+          securityQuestion: "Qual o modelo do seu primeiro carro?",
+          securityAnswer: "Fusca",
           photo: null,
+          invitationCode: "LJ123456",
         };
         
         await this.createUser(adminUser);
@@ -98,9 +113,14 @@ export class DatabaseStorage implements IStorage {
     const userWithDefaults = {
       ...insertUser,
       status: insertUser.status || "active",
+      username: insertUser.username || null,
       phone: insertUser.phone || null,
-      cpfCnpj: insertUser.cpfCnpj || null,
+      country: insertUser.country || null,
+      countryCode: insertUser.countryCode || null,
+      securityQuestion: insertUser.securityQuestion || null,
+      securityAnswer: insertUser.securityAnswer || null,
       photo: insertUser.photo || null,
+      invitationCode: insertUser.invitationCode || null,
     };
 
     const result = await db.insert(users)
