@@ -211,10 +211,12 @@ export default function Login() {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-gray-500">
-          Credenciais para teste:
+          <Link href="/forgot-password" className="text-blue-600 hover:underline">
+            Esqueceu sua senha?
+          </Link>
         </p>
         <p className="text-xs text-gray-400 mt-1">
-          Os dados acima são preenchidos automaticamente para cada tipo de usuário.
+          Não tem uma conta? <Link href="/register" className="text-blue-600 hover:underline">Cadastre-se</Link>
         </p>
       </div>
     </AuthLayout>
