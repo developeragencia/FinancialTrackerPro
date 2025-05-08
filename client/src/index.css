@@ -139,3 +139,89 @@
     @apply px-2 py-1 rounded-full text-xs bg-red-100 text-red-800;
   }
 }
+
+/* Animações e efeitos especiais */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 3s infinite ease-in-out;
+}
+
+/* Efeitos de transição */
+.transition-smooth {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 300ms;
+}
+
+/* Glassmorphism */
+.glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.glass-dark {
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Estilos específicos para cada tipo de usuário */
+.client-gradient {
+  background: linear-gradient(135deg, #0080ff, #0057a8);
+}
+
+.merchant-gradient {
+  background: linear-gradient(135deg, #ff9d2f, #ff8000);
+}
+
+.admin-gradient {
+  background: linear-gradient(135deg, #a855f7, #8b5cf6);
+}
+
+/* Estilos para botões específicos de cada tipo de usuário */
+.btn-client {
+  @apply bg-blue-600 hover:bg-blue-700 text-white;
+}
+
+.btn-merchant {
+  @apply bg-orange-500 hover:bg-orange-600 text-white;
+}
+
+.btn-admin {
+  @apply bg-purple-600 hover:bg-purple-700 text-white;
+}
