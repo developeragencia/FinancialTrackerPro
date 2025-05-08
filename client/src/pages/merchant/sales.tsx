@@ -103,29 +103,11 @@ export default function MerchantSales() {
 
   // Queries para obter dados
   const { data: products = [] } = useQuery<Product[]>({
-    queryKey: ['/api/merchant/products'],
-    // Se não tiver API implementada, usar dados mockados temporariamente
-    placeholderData: [
-      { id: 1, name: "Arroz Integral", price: 15.00, sku: "ARR001", category: "Alimentos" },
-      { id: 2, name: "Leite Desnatado", price: 5.00, sku: "LEI001", category: "Laticínios" },
-      { id: 3, name: "Café Gourmet", price: 12.90, sku: "CAF001", category: "Bebidas" },
-      { id: 4, name: "Pão Integral", price: 8.50, sku: "PAO001", category: "Padaria" },
-      { id: 5, name: "Sabonete", price: 3.99, sku: "HIG001", category: "Higiene" },
-    ]
+    queryKey: ['/api/merchant/products']
   });
 
   const { data: salesData = { transactions: [] } } = useQuery<{ transactions: SaleTransaction[] }>({
-    queryKey: ['/api/merchant/sales'],
-    // Se não tiver API implementada, usar dados mockados temporariamente
-    placeholderData: {
-      transactions: [
-        { id: 1, customerId: 1, customer: "Maria Silva", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, items: "5 itens", status: "completed" },
-        { id: 2, customerId: 2, customer: "José Santos", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, items: "3 itens", status: "completed" },
-        { id: 3, customerId: 3, customer: "Ana Oliveira", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, items: "7 itens", status: "completed" },
-        { id: 4, customerId: 4, customer: "Carlos Souza", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, items: "4 itens", status: "completed" },
-        { id: 5, customerId: 5, customer: "Juliana Lima", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, items: "12 itens", status: "completed" }
-      ]
-    }
+    queryKey: ['/api/merchant/sales']
   });
 
   // Mutation para registrar uma venda
@@ -183,37 +165,10 @@ export default function MerchantSales() {
     // Debounce de 500ms
     searchTimeoutRef.current = setTimeout(async () => {
       try {
-        // Em um cenário real, isso seria uma chamada de API
-        // const response = await apiRequest("GET", `/api/customers/search?term=${searchTerm}&by=${searchBy}`);
-        // const data = await response.json();
-        // setCustomerResults(data);
-        
-        // Temporariamente, usamos dados mockados
-        const mockCustomers: Customer[] = [
-          { id: 1, name: "Maria Silva", email: "maria@example.com", phone: "11999887766", cpfCnpj: "123.456.789-00", referredBy: null, referral_code: "MARIA123" },
-          { id: 2, name: "José Santos", email: "jose@example.com", phone: "11988776655", cpfCnpj: "987.654.321-00", referredBy: 1, referral_code: "JOSE456" },
-          { id: 3, name: "Ana Oliveira", email: "ana@example.com", phone: "11977665544", cpfCnpj: "456.789.123-00", referredBy: null, referral_code: "ANA789" },
-          { id: 4, name: "Carlos Souza", email: "carlos@example.com", phone: "11966554433", cpfCnpj: "789.123.456-00", referredBy: 2, referral_code: "CARLOS012" },
-          { id: 5, name: "Juliana Lima", email: "juliana@example.com", phone: "11955443322", cpfCnpj: "321.654.987-00", referredBy: 1, referral_code: "JULIANA345" }
-        ];
-        
-        // Filtrar clientes de acordo com o termo de busca e tipo de busca
-        const filteredCustomers = mockCustomers.filter(customer => {
-          switch(searchBy) {
-            case 'name':
-              return customer.name.toLowerCase().includes(searchTerm.toLowerCase());
-            case 'email':
-              return customer.email.toLowerCase().includes(searchTerm.toLowerCase());
-            case 'phone':
-              return customer.phone?.includes(searchTerm);
-            case 'code':
-              return customer.referral_code?.toLowerCase().includes(searchTerm.toLowerCase());
-            default:
-              return false;
-          }
-        });
-        
-        setCustomerResults(filteredCustomers);
+        // Buscar clientes via API
+        const response = await apiRequest("GET", `/api/merchant/customers?term=${encodeURIComponent(searchTerm)}&searchBy=${searchBy}`);
+        const data = await response.json();
+        setCustomerResults(data || []);
       } catch (error) {
         console.error("Erro ao buscar clientes:", error);
         toast({
