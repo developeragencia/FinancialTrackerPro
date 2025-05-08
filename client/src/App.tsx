@@ -18,6 +18,7 @@ import ClientTransfers from "@/pages/client/transfers";
 import ClientQRCode from "@/pages/client/qr-code";
 import ClientReferrals from "@/pages/client/referrals";
 import ClientProfile from "@/pages/client/profile";
+import ClientStores from "@/pages/client/stores";
 
 // Merchant Pages
 import MerchantDashboard from "@/pages/merchant/dashboard";
@@ -69,6 +70,7 @@ function Router() {
       <ProtectedRoute path="/client/qr-code" component={ClientQRCode} userType="client" />
       <ProtectedRoute path="/client/referrals" component={ClientReferrals} userType="client" />
       <ProtectedRoute path="/client/profile" component={ClientProfile} userType="client" />
+      <ProtectedRoute path="/client/stores" component={ClientStores} userType="client" />
       
       {/* Merchant Routes */}
       <ProtectedRoute path="/merchant" component={MerchantDashboard} userType="merchant" />

@@ -51,6 +51,377 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticação e rotas relacionadas
   setupAuth(app);
   
+  // Inicializa as configurações de comissão
+  await initializeCommissionSettings();
+  
+  // API para listar todas as lojas (pública)
+  app.get("/api/stores", async (req, res) => {
+    try {
+      const allStores = await db
+        .select({
+          id: merchants.id,
+          storeName: merchants.storeName,
+          logo: merchants.logo,
+          category: merchants.category,
+          address: merchants.address,
+          city: merchants.city,
+          state: merchants.state,
+          commissionRate: merchants.commissionRate,
+          approved: merchants.approved,
+          createdAt: merchants.createdAt,
+          userId: merchants.userId,
+        })
+        .from(merchants)
+        .where(eq(merchants.approved, true))
+        .orderBy(merchants.storeName);
+      
+      // Adicionar informações adicionais como avaliações e número de clientes
+      const storesWithDetails = await Promise.all(
+        allStores.map(async (store) => {
+          // Obter informações do usuário associado (lojista)
+          const [merchantUser] = await db
+            .select({
+              name: users.name,
+              email: users.email,
+              phone: users.phone,
+              photo: users.photo,
+            })
+            .from(users)
+            .where(eq(users.id, store.userId));
+            
+          // Contar o número de transações
+          const [transactionCount] = await db
+            .select({
+              count: sql`COUNT(*)`,
+            })
+            .from(transactions)
+            .where(eq(transactions.merchantId, store.id));
+          
+          // Calcular o volume de vendas
+          const [salesVolume] = await db
+            .select({
+              total: sql`COALESCE(SUM(amount), 0)`,
+            })
+            .from(transactions)
+            .where(eq(transactions.merchantId, store.id));
+          
+          return {
+            id: store.id,
+            name: store.storeName,
+            logo: store.logo,
+            category: store.category,
+            address: store.address,
+            city: store.city,
+            state: store.state,
+            commissionRate: store.commissionRate,
+            createdAt: store.createdAt,
+            owner: merchantUser.name,
+            email: merchantUser.email,
+            phone: merchantUser.phone,
+            photo: merchantUser.photo,
+            transactions: Number(transactionCount.count) || 0,
+            volume: Number(salesVolume.total) || 0,
+            rating: 4.5, // Valor padrão, seria substituído por real no futuro
+          };
+        })
+      );
+      
+      res.json(storesWithDetails);
+    } catch (error) {
+      console.error("Erro ao buscar lojas:", error);
+      res.status(500).json({ message: "Erro ao buscar lojas" });
+    }
+  });
+  
+  // API para buscar detalhes de uma loja específica
+  app.get("/api/stores/:id", async (req, res) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      
+      const [store] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, storeId));
+      
+      if (!store) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      // Obter informações do usuário associado (lojista)
+      const [merchantUser] = await db
+        .select({
+          name: users.name,
+          email: users.email,
+          phone: users.phone,
+          photo: users.photo,
+        })
+        .from(users)
+        .where(eq(users.id, store.userId));
+        
+      // Obter produtos da loja
+      const storeProducts = await db
+        .select()
+        .from(products)
+        .where(eq(products.merchantId, storeId))
+        .limit(10);
+        
+      // Obter transações recentes
+      const recentTransactions = await db
+        .select({
+          id: transactions.id,
+          amount: transactions.amount,
+          date: transactions.createdAt,
+          status: transactions.status,
+        })
+        .from(transactions)
+        .where(eq(transactions.merchantId, storeId))
+        .orderBy(desc(transactions.createdAt))
+        .limit(5);
+        
+      // Contar o número de transações
+      const [transactionCount] = await db
+        .select({
+          count: sql`COUNT(*)`,
+        })
+        .from(transactions)
+        .where(eq(transactions.merchantId, storeId));
+      
+      // Calcular o volume de vendas
+      const [salesVolume] = await db
+        .select({
+          total: sql`COALESCE(SUM(amount), 0)`,
+        })
+        .from(transactions)
+        .where(eq(transactions.merchantId, storeId));
+      
+      const storeDetails = {
+        ...store,
+        owner: merchantUser.name,
+        email: merchantUser.email,
+        phone: merchantUser.phone,
+        photo: merchantUser.photo,
+        products: storeProducts,
+        recentTransactions,
+        transactionCount: Number(transactionCount.count) || 0,
+        salesVolume: Number(salesVolume.total) || 0,
+        rating: 4.5, // Valor padrão, seria substituído por real no futuro
+      };
+      
+      res.json(storeDetails);
+    } catch (error) {
+      console.error("Erro ao buscar detalhes da loja:", error);
+      res.status(500).json({ message: "Erro ao buscar detalhes da loja" });
+    }
+  });
+  
+  // API para listar lojas para o painel de administração (completa)
+  app.get("/api/admin/stores", isUserType("admin"), async (req, res) => {
+    try {
+      const allStores = await db
+        .select({
+          id: merchants.id,
+          storeName: merchants.storeName,
+          logo: merchants.logo,
+          category: merchants.category,
+          address: merchants.address,
+          city: merchants.city,
+          state: merchants.state,
+          commissionRate: merchants.commissionRate,
+          approved: merchants.approved,
+          createdAt: merchants.createdAt,
+          userId: merchants.userId,
+        })
+        .from(merchants)
+        .orderBy(merchants.createdAt, "desc");
+      
+      // Adicionar informações adicionais como avaliações e número de clientes
+      const storesWithDetails = await Promise.all(
+        allStores.map(async (store) => {
+          // Obter informações do usuário associado (lojista)
+          const [merchantUser] = await db
+            .select({
+              name: users.name,
+              email: users.email,
+              phone: users.phone,
+              cpfCnpj: users.cpfCnpj,
+              status: users.status,
+            })
+            .from(users)
+            .where(eq(users.id, store.userId));
+            
+          // Contar o número de transações
+          const [transactionCount] = await db
+            .select({
+              count: sql`COUNT(*)`,
+            })
+            .from(transactions)
+            .where(eq(transactions.merchantId, store.id));
+          
+          // Calcular o volume de vendas
+          const [salesVolume] = await db
+            .select({
+              total: sql`COALESCE(SUM(amount), 0)`,
+            })
+            .from(transactions)
+            .where(eq(transactions.merchantId, store.id));
+          
+          return {
+            id: store.id,
+            name: store.storeName,
+            logo: store.logo,
+            category: store.category,
+            address: store.address,
+            city: store.city,
+            state: store.state,
+            commissionRate: store.commissionRate,
+            approved: store.approved,
+            createdAt: store.createdAt,
+            owner: merchantUser.name,
+            email: merchantUser.email,
+            phone: merchantUser.phone,
+            cnpj: merchantUser.cpfCnpj,
+            status: merchantUser.status,
+            transactions: Number(transactionCount.count) || 0,
+            volume: Number(salesVolume.total) || 0,
+          };
+        })
+      );
+      
+      res.json({ stores: storesWithDetails });
+    } catch (error) {
+      console.error("Erro ao buscar lojas:", error);
+      res.status(500).json({ message: "Erro ao buscar lojas" });
+    }
+  });
+  
+  // API para aprovar uma loja (admin)
+  app.post("/api/admin/stores/:id/approve", isUserType("admin"), async (req, res) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      
+      const [updatedStore] = await db
+        .update(merchants)
+        .set({
+          approved: true,
+        })
+        .where(eq(merchants.id, storeId))
+        .returning();
+        
+      if (!updatedStore) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      res.json({ message: "Loja aprovada com sucesso", store: updatedStore });
+    } catch (error) {
+      console.error("Erro ao aprovar loja:", error);
+      res.status(500).json({ message: "Erro ao aprovar loja" });
+    }
+  });
+  
+  // API para rejeitar uma loja (admin)
+  app.post("/api/admin/stores/:id/reject", isUserType("admin"), async (req, res) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      if (!reason) {
+        return res.status(400).json({ message: "Motivo da rejeição é obrigatório" });
+      }
+      
+      // Obter dados da loja
+      const [store] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, storeId));
+      
+      if (!store) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      // Atualizar status do usuário lojista
+      await db
+        .update(users)
+        .set({
+          status: "rejected",
+        })
+        .where(eq(users.id, store.userId));
+      
+      // Em uma implementação real, enviaríamos um email com o motivo da rejeição
+      
+      res.json({ message: "Loja rejeitada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao rejeitar loja:", error);
+      res.status(500).json({ message: "Erro ao rejeitar loja" });
+    }
+  });
+  
+  // API para ativar/desativar uma loja (admin)
+  app.post("/api/admin/stores/:id/toggle-status", isUserType("admin"), async (req, res) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      
+      // Obter dados da loja
+      const [store] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.id, storeId));
+      
+      if (!store) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      // Obter status atual do usuário
+      const [merchantUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, store.userId));
+      
+      const newStatus = merchantUser.status === "active" ? "inactive" : "active";
+      
+      // Atualizar status do usuário lojista
+      await db
+        .update(users)
+        .set({
+          status: newStatus,
+        })
+        .where(eq(users.id, store.userId));
+      
+      res.json({ message: `Loja ${newStatus === "active" ? "ativada" : "desativada"} com sucesso` });
+    } catch (error) {
+      console.error("Erro ao alterar status da loja:", error);
+      res.status(500).json({ message: "Erro ao alterar status da loja" });
+    }
+  });
+  
+  // API para atualizar taxa de comissão de uma loja (admin)
+  app.post("/api/admin/stores/:id/commission", isUserType("admin"), async (req, res) => {
+    try {
+      const storeId = parseInt(req.params.id);
+      const { commissionRate } = req.body;
+      
+      if (commissionRate === undefined || isNaN(Number(commissionRate))) {
+        return res.status(400).json({ message: "Taxa de comissão inválida" });
+      }
+      
+      const [updatedStore] = await db
+        .update(merchants)
+        .set({
+          commissionRate: Number(commissionRate),
+        })
+        .where(eq(merchants.id, storeId))
+        .returning();
+        
+      if (!updatedStore) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      res.json({ message: "Taxa de comissão atualizada com sucesso", store: updatedStore });
+    } catch (error) {
+      console.error("Erro ao atualizar taxa de comissão:", error);
+      res.status(500).json({ message: "Erro ao atualizar taxa de comissão" });
+    }
+  });
+  
   // Endpoint para obter dados do perfil autenticado
   app.get("/api/auth/me", (req, res) => {
     if (req.isAuthenticated()) {
