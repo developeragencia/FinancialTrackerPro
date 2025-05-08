@@ -1351,46 +1351,200 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obter referências e indicações do lojista
   app.get("/api/merchant/referrals", isUserType("merchant"), async (req, res) => {
     try {
-      const merchantId = req.user!.id;
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
       
-      // Gerar um código simples para teste
-      const merchantReferralCode = "LJ" + merchantId.toString().padStart(4, '0');
+      const merchantId = req.user.id;
+      let userReferralCode = "";
+      let referrals_list = [];
+      let totalEarned = 0;
+      let pendingReferrals = 0;
+      let activeReferrals = 0;
+      let referralsCount = 0;
       
-      // Mock de dados para testes
-      const referrals_list = [
-        {
-          id: 3,
-          name: "Loja do Pedro",
-          storeName: "Mercadinho do Pedro",
-          date: new Date(),
-          status: "active",
-          commission: "25.00"
-        },
-        {
-          id: 4,
-          name: "Farmácia da Ana",
-          storeName: "Droga Ana",
-          date: new Date(),
-          status: "pending",
-          commission: "0.00"
+      try {
+        // Buscar dados do usuário com SQL direto
+        const userResult = await db.execute(
+          sql`SELECT id, name, email, referral_code FROM users WHERE id = ${merchantId}`
+        );
+        
+        if (userResult.rows.length === 0) {
+          return res.status(404).json({ message: "Usuário não encontrado" });
         }
-      ];
+        
+        const userData = userResult.rows[0];
+        
+        // Se não houver código de referência, gerar um e salvar
+        userReferralCode = userData.referral_code;
+        if (!userReferralCode) {
+          userReferralCode = "LJ" + merchantId.toString().padStart(4, '0');
+          
+          // Atualizar código de referência do usuário com SQL direto
+          await db.execute(
+            sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${merchantId}`
+          );
+        }
+      } catch (error) {
+        console.error("Erro ao buscar/gerar código de referência:", error);
+        // Se ocorrer erro, gerar um código baseado apenas no ID
+        userReferralCode = "LJ" + merchantId.toString().padStart(4, '0');
+      }
       
-      // Calcular estatísticas gerais
-      const activeReferrals = referrals_list.filter(r => r.status === "active").length;
+      try {
+        // Obter dados do merchant
+        const merchantResult = await db.execute(
+          sql`SELECT id FROM merchants WHERE user_id = ${merchantId}`
+        );
+        
+        if (merchantResult.rows.length === 0) {
+          throw new Error("Dados do lojista não encontrados");
+        }
+        
+        const merchantStoreId = merchantResult.rows[0].id;
+        
+        // Buscar referrals do lojista - aqui precisamos adaptar para o caso específico de lojistas
+        // indicando outros lojistas, isso é diferente do caso de clientes
+        const referralsResult = await db.execute(
+          sql`
+          SELECT 
+            r.id, 
+            r.referred_id, 
+            r.bonus, 
+            r.status, 
+            r.created_at,
+            u.name as referred_name,
+            m.store_name as store_name
+          FROM referrals r
+          JOIN users u ON r.referred_id = u.id
+          LEFT JOIN merchants m ON m.user_id = u.id
+          WHERE r.referrer_id = ${merchantId} AND u.type = 'merchant'
+          ORDER BY r.created_at DESC
+          `
+        );
+        
+        // Formatar lista de referências para o frontend
+        referrals_list = referralsResult.rows.map(ref => ({
+          id: ref.id,
+          name: ref.referred_name || 'Usuário desconhecido',
+          storeName: ref.store_name || 'Loja sem nome',
+          date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
+          status: ref.status,
+          commission: parseFloat(ref.bonus || '0').toFixed(2)
+        }));
+        
+        // Calcular estatísticas
+        const totalEarnedResult = await db.execute(
+          sql`SELECT COALESCE(SUM(bonus), 0) as total
+              FROM referrals
+              WHERE referrer_id = ${merchantId} AND status = 'active'`
+        );
+        totalEarned = parseFloat(totalEarnedResult.rows[0]?.total || '0');
+        
+        const pendingResult = await db.execute(
+          sql`SELECT COUNT(*) as count
+              FROM referrals
+              WHERE referrer_id = ${merchantId} AND status = 'pending'`
+        );
+        pendingReferrals = parseInt(pendingResult.rows[0]?.count || '0');
+        
+        const activeResult = await db.execute(
+          sql`SELECT COUNT(*) as count
+              FROM referrals
+              WHERE referrer_id = ${merchantId} AND status = 'active'`
+        );
+        activeReferrals = parseInt(activeResult.rows[0]?.count || '0');
+        
+        // Contar total de referências
+        const refCountResult = await db.execute(
+          sql`SELECT COUNT(*) as count
+              FROM referrals
+              WHERE referrer_id = ${merchantId}`
+        );
+        referralsCount = parseInt(refCountResult.rows[0]?.count || '0');
+      } catch (error) {
+        console.error("Erro ao buscar dados de referência:", error);
+        // Em caso de erro, manter valores padrão (já inicializados acima)
+      }
+      
+      // Buscar configuração de comissão para referências (com tratamento de erro)
+      let commissionRate = DEFAULT_SETTINGS.merchantCommission;
+      try {
+        const commissionResult = await db.execute(
+          sql`SELECT value FROM commission_settings WHERE key = 'merchantCommission'`
+        );
+        
+        // Usar o valor padrão do sistema se não houver configuração
+        if (commissionResult.rows.length > 0) {
+          commissionRate = parseFloat(commissionResult.rows[0].value);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configuração de comissão:", error);
+      }
+      
+      // Construir URL completa com base no host da requisição
+      const host = req.get('host') || 'valecashback.com';
+      const protocol = req.protocol || 'https';
+      const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
       
       res.json({
-        referralCode: merchantReferralCode,
-        referralUrl: `https://valecashback.com/convite/${merchantReferralCode}`,
-        referralsCount: referrals_list.length,
-        pendingReferrals: referrals_list.filter(r => r.status === "pending").length,
-        activeReferrals: activeReferrals,
-        commission: "1.5",
-        referrals: referrals_list
+        referralCode: userReferralCode,
+        referralUrl,
+        referralsCount,
+        pendingReferrals,
+        activeReferrals,
+        totalEarned: totalEarned.toFixed(2),
+        commission: (commissionRate * 100).toFixed(1),
+        referrals: referrals_list,
+        monthlyEarnings: [
+          { month: "Jan", value: 0 },
+          { month: "Fev", value: 0 },
+          { month: "Mar", value: 0 },
+          { month: "Abr", value: 0 },
+          { month: "Mai", value: 0 },
+          { month: "Jun", value: 0 },
+          { month: "Jul", value: 0 },
+          { month: "Ago", value: 0 },
+          { month: "Set", value: 0 },
+          { month: "Out", value: 0 },
+          { month: "Nov", value: 0 },
+          { month: "Dez", value: 0 }
+        ]
       });
     } catch (error) {
       console.error("Erro ao buscar referências:", error);
-      res.status(500).json({ message: "Erro ao buscar referências" });
+      
+      // Em caso de erro, retornar pelo menos o código de referência básico
+      const merchantId = req.user?.id || 0;
+      const userReferralCode = "LJ" + merchantId.toString().padStart(4, '0');
+      const host = req.get('host') || 'valecashback.com';
+      const protocol = req.protocol || 'https';
+      const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
+      
+      res.json({
+        referralCode: userReferralCode,
+        referralUrl,
+        referralsCount: 0,
+        pendingReferrals: 0,
+        activeReferrals: 0,
+        totalEarned: "0.00",
+        commission: (DEFAULT_SETTINGS.merchantCommission * 100).toFixed(1),
+        referrals: [],
+        monthlyEarnings: [
+          { month: "Jan", value: 0 },
+          { month: "Fev", value: 0 },
+          { month: "Mar", value: 0 },
+          { month: "Abr", value: 0 },
+          { month: "Mai", value: 0 },
+          { month: "Jun", value: 0 },
+          { month: "Jul", value: 0 },
+          { month: "Ago", value: 0 },
+          { month: "Set", value: 0 },
+          { month: "Out", value: 0 },
+          { month: "Nov", value: 0 },
+          { month: "Dez", value: 0 }
+        ]
+      });
     }
   });
   
