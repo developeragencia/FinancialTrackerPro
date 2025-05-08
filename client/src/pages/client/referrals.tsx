@@ -22,8 +22,10 @@ export default function ClientReferrals() {
   const [activeTab, setActiveTab] = useState("overview");
   
   // Query para buscar informações sobre indicações do usuário
-  const { data: referralsData, isLoading: isReferralsLoading } = useQuery({
+  const { data: referralsData, isLoading: isReferralsLoading, error: referralsError } = useQuery({
     queryKey: ['/api/client/referrals'],
+    retry: 1,
+    refetchOnWindowFocus: false,
     placeholderData: {
       referralCode: user?.referralCode || "ABC123",
       referralUrl: `https://valecashback.com/convite/${user?.referralCode || "ABC123"}`,
@@ -34,6 +36,11 @@ export default function ClientReferrals() {
       referrals: []
     }
   });
+  
+  // Exibir erro no console para diagnóstico
+  if (referralsError) {
+    console.error("Erro ao buscar dados de referência:", referralsError);
+  }
   
   // Query para buscar informações sobre as taxas do sistema
   const { data: ratesSettings } = useQuery({
