@@ -1710,8 +1710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const merchantStoreId = merchantResult.rows[0].id;
         
-        // Buscar referrals do lojista - aqui precisamos adaptar para o caso específico de lojistas
-        // indicando outros lojistas, isso é diferente do caso de clientes
+        // Buscar referrals do lojista - incluindo tanto clientes quanto outros lojistas indicados
         const referralsResult = await db.execute(
           sql`
           SELECT 
@@ -1721,11 +1720,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             r.status, 
             r.created_at,
             u.name as referred_name,
+            u.type as user_type,
+            u.email,
+            u.phone,
             m.store_name as store_name
           FROM referrals r
           JOIN users u ON r.referred_id = u.id
           LEFT JOIN merchants m ON m.user_id = u.id
-          WHERE r.referrer_id = ${merchantId} AND u.type = 'merchant'
+          WHERE r.referrer_id = ${merchantId}
           ORDER BY r.created_at DESC
           `
         );
@@ -1734,7 +1736,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referrals_list = referralsResult.rows.map(ref => ({
           id: ref.id,
           name: ref.referred_name || 'Usuário desconhecido',
-          store_name: ref.store_name || 'Loja sem nome',
+          store_name: ref.store_name || (ref.user_type === 'merchant' ? 'Loja sem nome' : ''),
+          email: ref.email || '',
+          phone: ref.phone || '',
+          user_type: ref.user_type || 'unknown',
           date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
           status: ref.status,
           commission: parseFloat(ref.bonus || '0').toFixed(2)
@@ -2588,6 +2593,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referrals_list = referralsResult.rows.map(ref => ({
           id: ref.id,
           name: ref.referred_name || 'Usuário desconhecido',
+          store_name: ref.store_name || (ref.user_type === 'merchant' ? 'Loja sem nome' : ''),
+          email: ref.email || '',
+          phone: ref.phone || '',
+          user_type: ref.user_type || 'unknown',
           date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
           status: ref.status,
           commission: parseFloat(ref.bonus).toFixed(2)
