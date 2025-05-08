@@ -70,12 +70,22 @@ function Router() {
       <ProtectedRoute path="/merchant/scanner" component={MerchantScanner} userType="merchant" />
       <ProtectedRoute path="/merchant/customers" component={MerchantCustomers} userType="merchant" />
       <ProtectedRoute path="/merchant/profile" component={MerchantProfile} userType="merchant" />
+      <ProtectedRoute path="/merchant/transactions" component={MerchantTransactions} userType="merchant" />
+      <ProtectedRoute path="/merchant/reports" component={MerchantReports} userType="merchant" />
+      <ProtectedRoute path="/merchant/settings" component={MerchantSettings} userType="merchant" />
+      <ProtectedRoute path="/merchant/support" component={MerchantSupport} userType="merchant" />
+      <ProtectedRoute path="/merchant/referrals" component={MerchantReferrals} userType="merchant" />
       
       {/* Admin Routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} userType="admin" />
       <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} userType="admin" />
       <ProtectedRoute path="/admin/users" component={AdminUsers} userType="admin" />
       <ProtectedRoute path="/admin/stores" component={AdminStores} userType="admin" />
+      <ProtectedRoute path="/admin/transactions" component={AdminTransactions} userType="admin" />
+      <ProtectedRoute path="/admin/transfers" component={AdminTransfers} userType="admin" />
+      <ProtectedRoute path="/admin/settings" component={AdminSettings} userType="admin" />
+      <ProtectedRoute path="/admin/logs" component={AdminLogs} userType="admin" />
+      <ProtectedRoute path="/admin/support" component={AdminSupport} userType="admin" />
       
       {/* 404 */}
       <Route component={NotFound} />
