@@ -381,21 +381,21 @@ export default function Register() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={merchantForm.control}
-                  name="cnpj"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>CNPJ</FormLabel>
-                      <FormControl>
-                        <Input placeholder="12.345.678/0001-90" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={merchantForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome de usuário</FormLabel>
+                    <FormControl>
+                      <Input placeholder="lojasilva" {...field} disabled={loading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
+              <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={merchantForm.control}
                   name="category"
@@ -421,51 +421,91 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={merchantForm.control}
+                  name="country"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>País</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Brasil" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={merchantForm.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código do País</FormLabel>
+                      <FormControl>
+                        <Input placeholder="BR" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={merchantForm.control}
+                  name="invitationCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código de Convite</FormLabel>
+                      <FormControl>
+                        <Input placeholder="LJ123456" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <FormField
                 control={merchantForm.control}
-                name="address"
+                name="securityQuestion"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Endereço</FormLabel>
+                    <FormLabel>Pergunta de Segurança</FormLabel>
                     <FormControl>
-                      <Input placeholder="Rua, número, bairro" {...field} disabled={loading} />
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        disabled={loading}
+                      >
+                        <option value="">Selecione uma pergunta</option>
+                        <option value="Qual o nome do seu primeiro animal de estimação?">Qual o nome do seu primeiro animal de estimação?</option>
+                        <option value="Qual o nome da cidade onde você nasceu?">Qual o nome da cidade onde você nasceu?</option>
+                        <option value="Qual o nome do seu melhor amigo de infância?">Qual o nome do seu melhor amigo de infância?</option>
+                        <option value="Qual era o nome da sua primeira escola?">Qual era o nome da sua primeira escola?</option>
+                        <option value="Qual o modelo do seu primeiro carro?">Qual o modelo do seu primeiro carro?</option>
+                        <option value="Qual o nome de solteira da sua mãe?">Qual o nome de solteira da sua mãe?</option>
+                      </select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={merchantForm.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Cidade</FormLabel>
-                      <FormControl>
-                        <Input placeholder="São Paulo" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={merchantForm.control}
-                  name="state"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <FormControl>
-                        <Input placeholder="SP" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={merchantForm.control}
+                name="securityAnswer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Resposta de Segurança</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua resposta" {...field} disabled={loading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={merchantForm.control}
