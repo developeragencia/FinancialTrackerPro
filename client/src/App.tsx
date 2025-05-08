@@ -42,6 +42,9 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminLogs from "@/pages/admin/logs";
 import AdminSupport from "@/pages/admin/support";
 
+// Invitation Pages
+import InvitePage from "@/pages/invite";
+
 // Other
 import NotFound from "@/pages/not-found";
 
@@ -52,6 +55,11 @@ function Router() {
       <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/auth" component={Login} />
+      
+      {/* Invitation Routes */}
+      <Route path="/convite/:code" component={InvitePage} />
+      <Route path="/parceiro/:code" component={InvitePage} />
       
       {/* Client Routes */}
       <ProtectedRoute path="/client" component={ClientDashboard} userType="client" />

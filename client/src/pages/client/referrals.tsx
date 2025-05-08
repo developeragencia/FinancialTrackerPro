@@ -1,219 +1,380 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Copy, Share2, Users, Gift, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Mock referral data - would be replaced with real data from API
-const referrals = [
-  { id: 1, name: "Maria Silva", email: "maria@email.com", date: "15/07/2023", status: "completed", bonus: 5.00 },
-  { id: 2, name: "João Santos", email: "joao@email.com", date: "10/07/2023", status: "pending", bonus: 5.00 },
-  { id: 3, name: "Ana Oliveira", email: "ana@email.com", date: "05/07/2023", status: "completed", bonus: 5.00 },
-];
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { QRCodeDisplay } from "@/components/ui/qr-code";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DataTable } from "@/components/ui/data-table";
+import { Copy, UserPlus, Users, Percent, Share2, RefreshCw } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { WhatsAppIcon } from "@/components/ui/icons";
+import { useAuth } from "@/hooks/use-auth";
+import { SystemInfo } from "@/components/ui/system-info";
 
 export default function ClientReferrals() {
-  const [email, setEmail] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
-
-  // Query to get referral data
-  const { data, isLoading } = useQuery({
+  const [activeTab, setActiveTab] = useState("overview");
+  
+  // Query para buscar informações sobre indicações do usuário
+  const { data: referralsData, isLoading: isReferralsLoading } = useQuery({
     queryKey: ['/api/client/referrals'],
+    placeholderData: {
+      referralCode: user?.referralCode || "ABC123",
+      referralUrl: `https://valecashback.com/convite/${user?.referralCode || "ABC123"}`,
+      referralsCount: 0,
+      pendingReferrals: 0,
+      totalEarned: "0.00",
+      commission: "1.0", // Taxa de comissão - será substituída pelos dados do banco
+      referrals: []
+    }
   });
-
-  const referralCode = "ABC123XYZ"; // This would come from the API
-  const referralLink = `https://valecashback.com/register?ref=${referralCode}`;
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: "Copiado!",
-        description: "Link de indicação copiado para a área de transferência.",
-      });
+  
+  // Query para buscar informações sobre as taxas do sistema
+  const { data: ratesSettings } = useQuery({
+    queryKey: ['/api/admin/settings/rates'],
+  });
+  
+  // Função para copiar o link de indicação
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralsData?.referralUrl || "");
+    toast({
+      title: "Link copiado!",
+      description: "O link de indicação foi copiado para a área de transferência.",
+      variant: "default",
     });
   };
-
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Vale Cashback - Indicação",
-          text: "Use meu código de indicação para ganhar bônus no Vale Cashback!",
-          url: referralLink,
-        });
-      } catch (error) {
-        console.error("Error sharing:", error);
-      }
-    } else {
-      copyToClipboard(referralLink);
-    }
+  
+  // Função para compartilhar no WhatsApp
+  const shareOnWhatsApp = () => {
+    const text = `Olá! Use meu código de indicação ${referralsData?.referralCode} e ganhe cashback no Vale Cashback: ${referralsData?.referralUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank');
   };
-
-  const handleInvite = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email) return;
-
-    setLoading(true);
-    // This would be an API call in a real implementation
-    setTimeout(() => {
+  
+  // Mutation para enviar convite por email
+  const inviteMutation = useMutation({
+    mutationFn: async (data: { email: string; name: string }) => {
+      const res = await apiRequest("POST", "/api/client/referrals/invite", data);
+      return res.json();
+    },
+    onSuccess: () => {
       toast({
-        title: "Convite enviado",
-        description: `Um convite foi enviado para ${email}`,
+        title: "Convite enviado!",
+        description: "O convite foi enviado com sucesso para o email informado.",
+        variant: "default",
       });
       setEmail("");
-      setLoading(false);
-    }, 1000);
+      setName("");
+      queryClient.invalidateQueries({ queryKey: ['/api/client/referrals'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao enviar convite",
+        description: error.message || "Ocorreu um erro ao enviar o convite. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Estado para o formulário de convite
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  
+  // Função para enviar convite
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !name) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    inviteMutation.mutate({ email, name });
   };
-
+  
+  // Colunas para a tabela de indicados
+  const referralsColumns = [
+    { header: "Nome", accessorKey: "name" },
+    { header: "Data", accessorKey: "date" },
+    { 
+      header: "Status", 
+      accessorKey: "status",
+      cell: (row: any) => (
+        <div className="flex items-center">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.status === "completed" 
+              ? "bg-green-100 text-green-800" 
+              : "bg-yellow-100 text-yellow-800"
+          }`}>
+            {row.status === "completed" ? "Concluído" : "Pendente"}
+          </span>
+        </div>
+      )
+    },
+    { 
+      header: "Comissão", 
+      accessorKey: "commission",
+      cell: (row: any) => (
+        <div className="flex items-center">
+          <span className="font-medium">R$ {row.commission}</span>
+        </div>
+      )
+    },
+  ];
+  
   return (
-    <DashboardLayout title="Indicar Amigos" type="client">
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Referral Program */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Programa de Indicação</CardTitle>
-            <CardDescription>
-              Indique amigos e ganhe R$ 5,00 de cashback para cada pessoa que se cadastrar e fizer uma compra.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-secondary/10 rounded-lg">
-              <Label className="text-sm text-muted-foreground mb-2 block">Seu código de indicação</Label>
-              <div className="flex">
-                <Input 
-                  value={referralCode} 
-                  readOnly 
-                  className="font-mono bg-background"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="ml-2" 
-                  onClick={() => copyToClipboard(referralCode)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+    <DashboardLayout title="Programa de Indicações" type="client">
+      <div className="flex flex-col space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">
+              <Users className="h-4 w-4 mr-2" />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="invite">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Convidar Amigos
+            </TabsTrigger>
+            <TabsTrigger value="list">
+              <Percent className="h-4 w-4 mr-2" />
+              Meus Indicados
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Aba de Visão Geral */}
+          <TabsContent value="overview">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Seu Código de Indicação</CardTitle>
+                  <CardDescription>
+                    Compartilhe seu código e ganhe comissões por cada novo usuário
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="text-4xl font-bold border-2 border-primary px-8 py-4 rounded-lg text-primary">
+                      {referralsData?.referralCode || "..."}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={copyReferralLink}
+                        className="flex items-center"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copiar Link
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={shareOnWhatsApp}
+                        className="flex items-center text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        <WhatsAppIcon className="h-4 w-4 mr-2" />
+                        Compartilhar
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col items-start space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Taxa de comissão: <span className="font-medium">{ratesSettings?.referralCommission || referralsData?.commission}%</span> por indicação
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Compartilhe seu código ou link de indicação com amigos e conhecidos. Quando eles se cadastrarem e realizarem compras, você receberá uma comissão sobre todas as transações deles.
+                  </p>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estatísticas</CardTitle>
+                  <CardDescription>
+                    Acompanhe seus ganhos e indicações
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                      <span className="text-3xl font-bold">{referralsData?.referralsCount || 0}</span>
+                      <span className="text-sm text-muted-foreground">Total de Indicados</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                      <span className="text-3xl font-bold">{referralsData?.pendingReferrals || 0}</span>
+                      <span className="text-sm text-muted-foreground">Indicações Pendentes</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4 bg-primary/10 rounded-lg col-span-2">
+                      <span className="text-3xl font-bold text-primary">R$ {referralsData?.totalEarned || "0,00"}</span>
+                      <span className="text-sm text-muted-foreground">Total Ganho</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Alert variant="default" className="w-full">
+                    <UserPlus className="h-4 w-4" />
+                    <AlertTitle>Ganhe mais indicando</AlertTitle>
+                    <AlertDescription>
+                      Quanto mais amigos você indicar, maiores serão seus ganhos!
+                    </AlertDescription>
+                  </Alert>
+                </CardFooter>
+              </Card>
             </div>
-
-            <div className="p-4 bg-secondary/10 rounded-lg">
-              <Label className="text-sm text-muted-foreground mb-2 block">Link de indicação</Label>
-              <div className="flex">
-                <Input 
-                  value={referralLink} 
-                  readOnly 
-                  className="font-mono text-xs bg-background"
-                />
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="ml-2" 
-                  onClick={() => copyToClipboard(referralLink)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
+          </TabsContent>
+          
+          {/* Aba de Convidar Amigos */}
+          <TabsContent value="invite">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Convidar por E-mail</CardTitle>
+                  <CardDescription>
+                    Envie um convite diretamente para seus amigos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInvite} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome do Amigo</Label>
+                      <Input 
+                        id="name" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Digite o nome do seu amigo" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input 
+                        id="email" 
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)} 
+                        placeholder="Digite o e-mail do seu amigo" 
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={inviteMutation.isPending}
+                    >
+                      {inviteMutation.isPending ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Enviar Convite
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Compartilhar Convite</CardTitle>
+                  <CardDescription>
+                    Compartilhe seu link de indicação nas redes sociais
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center space-y-4">
+                  <div className="py-4">
+                    <QRCodeDisplay 
+                      value={referralsData?.referralUrl || ""}
+                      title="Escaneie para se cadastrar"
+                      description="Aponte a câmera do celular para o QR Code"
+                      downloadable
+                      shareable
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Button 
+                      onClick={copyReferralLink}
+                      className="flex items-center"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar Link
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={shareOnWhatsApp}
+                      className="flex items-center text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      <WhatsAppIcon className="h-4 w-4 mr-2" />
+                      Compartilhar no WhatsApp
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Outras Redes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
-
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button className="flex-1 bg-secondary" onClick={handleShare}>
-                <Share2 className="mr-2 h-4 w-4" /> Compartilhar
-              </Button>
-              <Button className="flex-1" variant="outline">
-                <Gift className="mr-2 h-4 w-4" /> Como funciona
-              </Button>
-            </div>
-
-            <div className="border-t pt-4 mt-4">
-              <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-2">
-                <Input
-                  type="email"
-                  placeholder="Email do amigo"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="flex-1"
-                  required
-                  disabled={loading}
-                />
-                <Button type="submit" disabled={loading}>
-                  {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Users className="mr-2 h-4 w-4" />}
-                  Convidar
-                </Button>
-              </form>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Referrals List */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Amigos Indicados</CardTitle>
-            <CardDescription>
-              Acompanhe o status das suas indicações
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Data</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Bônus</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(data?.referrals || referrals).map((referral) => (
-                    <TableRow key={referral.id}>
-                      <TableCell className="font-medium">
-                        {referral.name}
-                        <div className="text-xs text-muted-foreground">{referral.email}</div>
-                      </TableCell>
-                      <TableCell>{referral.date}</TableCell>
-                      <TableCell>
-                        <Badge variant={referral.status === "completed" ? "success" : "warning"}>
-                          {referral.status === "completed" ? "Concluída" : "Pendente"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        R$ {referral.bonus.toFixed(2)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  
-                  {(data?.referrals || referrals).length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                        Você ainda não indicou nenhum amigo.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            )}
-
-            <div className="mt-4 p-4 bg-accent/10 rounded-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-medium">Total acumulado em bônus</h3>
-                  <p className="text-sm text-muted-foreground">Bônus recebidos por indicações</p>
-                </div>
-                <div className="text-xl font-bold">R$ 10,00</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          </TabsContent>
+          
+          {/* Aba de Indicados */}
+          <TabsContent value="list">
+            <Card>
+              <CardHeader>
+                <CardTitle>Meus Indicados</CardTitle>
+                <CardDescription>
+                  Lista de todas as suas indicações e comissões
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isReferralsLoading ? (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : referralsData?.referrals?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-center">
+                    <Users className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">Nenhuma indicação ainda</h3>
+                    <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                      Convide seus amigos para usar o Vale Cashback e comece a ganhar comissões em todas as compras deles!
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      className="mt-4"
+                      onClick={() => setActiveTab("invite")}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Convidar Amigos
+                    </Button>
+                  </div>
+                ) : (
+                  <DataTable 
+                    data={referralsData?.referrals || []}
+                    columns={referralsColumns}
+                    searchable
+                    onSearch={() => {}}
+                  />
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+        
+        <SystemInfo className="mt-6" />
       </div>
     </DashboardLayout>
   );

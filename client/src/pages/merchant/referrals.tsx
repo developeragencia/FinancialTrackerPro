@@ -1,479 +1,460 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { QRCodeDisplay } from "@/components/ui/qr-code";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable } from "@/components/ui/data-table";
-import { useToast } from "@/hooks/use-toast";
-import { 
-  Copy, 
-  Share2, 
-  Users, 
-  Store, 
-  ChevronRight, 
-  RefreshCw, 
-  QrCode, 
-  Facebook,
-  Twitter,
-  Mail,
-  Smartphone,
-  Link as LinkIcon,
-  CheckIcon,
-  AlertCircle
-} from "lucide-react";
-import { ShareIcon } from "@/components/ui/icons";
-import { QRCodeDisplay } from "@/components/ui/qr-code";
-
-// Mock data - this would be replaced by API data
-const referredStores = [
-  { id: 1, name: "Supermercado Mais", date: "10/07/2023", status: "active", commission: 150.25 },
-  { id: 2, name: "Padaria do João", date: "15/08/2023", status: "active", commission: 75.50 },
-  { id: 3, name: "Farmácia Saúde", date: "01/09/2023", status: "pending", commission: 0 },
-];
-
-const commissionHistory = [
-  { id: 1, store: "Supermercado Mais", date: "10/08/2023", amount: 25.35, type: "sale" },
-  { id: 2, store: "Supermercado Mais", date: "15/08/2023", amount: 18.75, type: "sale" },
-  { id: 3, store: "Padaria do João", date: "20/08/2023", amount: 12.80, type: "sale" },
-  { id: 4, store: "Supermercado Mais", date: "25/08/2023", amount: 100.00, type: "monthly" },
-  { id: 5, store: "Padaria do João", date: "01/09/2023", amount: 55.60, type: "monthly" },
-];
-
-// Commission rates
-const COMMISSION_RATES = {
-  salePercent: 0.5, // 0.5% commission on sales
-  monthlyFixed: 50, // R$50 fixed monthly commission 
-};
+import { Copy, Store, UserPlus, DollarSign, Share2, RefreshCw, BarChart4, Users } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { WhatsAppIcon } from "@/components/ui/icons";
+import { useAuth } from "@/hooks/use-auth";
+import { SystemInfo } from "@/components/ui/system-info";
+import { BarChartComponent } from "@/components/ui/charts";
 
 export default function MerchantReferrals() {
-  const [tabValue, setTabValue] = useState("overview");
-  const [copied, setCopied] = useState(false);
-  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("overview");
   
-  // Get merchant data (would normally be fetched from API)
-  const { data: merchant } = useQuery({
-    queryKey: ['/api/merchant/profile'],
-    placeholderData: {
-      id: 1,
-      name: "Loja Example",
-      email: "lojista@example.com",
-      referralCode: "LOJA123",
-      balance: 225.75,
-      pendingCommission: 135.00,
-      totalCommission: 360.75
-    }
-  });
-  
-  const { data: referralData } = useQuery({
+  // Query para buscar informações sobre indicações do lojista
+  const { data: referralsData, isLoading: isReferralsLoading } = useQuery({
     queryKey: ['/api/merchant/referrals'],
     placeholderData: {
-      referrals: referredStores,
-      commissions: commissionHistory,
-      stats: {
-        totalReferrals: referredStores.length,
-        activeReferrals: referredStores.filter(r => r.status === "active").length,
-        totalCommission: 360.75,
-        lastMonthCommission: 255.50
-      }
+      referralCode: user?.referralCode || "LJ123",
+      referralUrl: `https://valecashback.com/parceiro/${user?.referralCode || "LJ123"}`,
+      referralsCount: 0,
+      approvedStores: 0,
+      pendingStores: 0,
+      totalEarned: "0.00",
+      commission: "2.0", // Taxa de comissão - será substituída pelos dados do banco
+      monthlyEarnings: [
+        { month: "Jan", value: 0 },
+        { month: "Fev", value: 0 },
+        { month: "Mar", value: 0 },
+        { month: "Abr", value: 0 },
+        { month: "Mai", value: 0 },
+        { month: "Jun", value: 0 },
+        { month: "Jul", value: 120 },
+        { month: "Ago", value: 0 },
+        { month: "Set", value: 0 },
+        { month: "Out", value: 0 },
+        { month: "Nov", value: 0 },
+        { month: "Dez", value: 0 }
+      ],
+      referrals: []
     }
   });
   
-  const referralUrl = `https://valecashback.com/register?referral=${merchant?.referralCode}`;
+  // Query para buscar informações sobre as taxas do sistema
+  const { data: ratesSettings } = useQuery({
+    queryKey: ['/api/admin/settings/rates'],
+  });
   
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(referralUrl);
-    setCopied(true);
-    
+  // Função para copiar o link de indicação
+  const copyReferralLink = () => {
+    navigator.clipboard.writeText(referralsData?.referralUrl || "");
     toast({
       title: "Link copiado!",
       description: "O link de indicação foi copiado para a área de transferência.",
+      variant: "default",
     });
-    
-    setTimeout(() => setCopied(false), 2000);
   };
   
-  const handleShare = (platform: string) => {
-    let shareUrl = "";
-    
-    const text = `Junte-se ao Vale Cashback como lojista parceiro! Use meu código de indicação ${merchant?.referralCode} e ganhe vantagens exclusivas.`;
-    
-    switch (platform) {
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralUrl)}&quote=${encodeURIComponent(text)}`;
-        break;
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(referralUrl)}`;
-        break;
-      case "email":
-        shareUrl = `mailto:?subject=Junte-se%20ao%20Vale%20Cashback&body=${encodeURIComponent(text + '\n\n' + referralUrl)}`;
-        break;
-      case "whatsapp":
-        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + '\n\n' + referralUrl)}`;
-        break;
-      default:
-        return;
+  // Função para compartilhar no WhatsApp
+  const shareOnWhatsApp = () => {
+    const text = `Olá! Seja um parceiro do Vale Cashback. Use meu código de indicação ${referralsData?.referralCode} para se cadastrar: ${referralsData?.referralUrl}`;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+  
+  // Mutation para enviar convite por email
+  const inviteMutation = useMutation({
+    mutationFn: async (data: { email: string; name: string; storeName: string }) => {
+      const res = await apiRequest("POST", "/api/merchant/referrals/invite", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Convite enviado!",
+        description: "O convite foi enviado com sucesso para o lojista informado.",
+        variant: "default",
+      });
+      setEmail("");
+      setName("");
+      setStoreName("");
+      queryClient.invalidateQueries({ queryKey: ['/api/merchant/referrals'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao enviar convite",
+        description: error.message || "Ocorreu um erro ao enviar o convite. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Estado para o formulário de convite
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [storeName, setStoreName] = useState("");
+  
+  // Função para enviar convite
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !name || !storeName) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Por favor, preencha todos os campos.",
+        variant: "destructive",
+      });
+      return;
     }
     
-    window.open(shareUrl, "_blank");
+    inviteMutation.mutate({ email, name, storeName });
   };
   
+  // Colunas para a tabela de indicados
   const referralsColumns = [
-    {
-      header: "Loja",
-      accessorKey: "name",
-    },
-    {
-      header: "Data de Indicação",
-      accessorKey: "date",
-    },
-    {
-      header: "Status",
+    { header: "Nome", accessorKey: "name" },
+    { header: "Loja", accessorKey: "storeName" },
+    { header: "Data", accessorKey: "date" },
+    { 
+      header: "Status", 
       accessorKey: "status",
-      cell: (item: any) => (
-        <div className={`px-2 py-1 rounded-full text-xs inline-flex items-center ${
-          item.status === "active" ? "bg-green-100 text-green-800" : 
-          item.status === "pending" ? "bg-yellow-100 text-yellow-800" : 
-          "bg-gray-100 text-gray-800"
-        }`}>
-          {item.status === "active" ? (
-            <>
-              <CheckIcon className="w-3 h-3 mr-1" />
-              <span>Ativo</span>
-            </>
-          ) : item.status === "pending" ? (
-            <>
-              <RefreshCw className="w-3 h-3 mr-1" />
-              <span>Pendente</span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-3 h-3 mr-1" />
-              <span>Inativo</span>
-            </>
-          )}
+      cell: (row: any) => (
+        <div className="flex items-center">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.status === "approved" 
+              ? "bg-green-100 text-green-800" 
+              : "bg-yellow-100 text-yellow-800"
+          }`}>
+            {row.status === "approved" ? "Aprovado" : "Pendente"}
+          </span>
         </div>
-      ),
+      )
     },
-    {
-      header: "Comissão Total",
+    { 
+      header: "Comissão", 
       accessorKey: "commission",
-      cell: (item: any) => `R$ ${item.commission.toFixed(2)}`,
-    },
-  ];
-  
-  const commissionsColumns = [
-    {
-      header: "Loja",
-      accessorKey: "store",
-    },
-    {
-      header: "Data",
-      accessorKey: "date",
-    },
-    {
-      header: "Tipo",
-      accessorKey: "type",
-      cell: (item: any) => (
-        <span className={`px-2 py-1 rounded-full text-xs ${
-          item.type === "sale" ? "bg-blue-100 text-blue-800" : "bg-purple-100 text-purple-800"
-        }`}>
-          {item.type === "sale" ? "Venda" : "Mensal"}
-        </span>
-      ),
-    },
-    {
-      header: "Valor",
-      accessorKey: "amount",
-      cell: (item: any) => `R$ ${item.amount.toFixed(2)}`,
+      cell: (row: any) => (
+        <div className="flex items-center">
+          <span className="font-medium">R$ {row.commission}</span>
+        </div>
+      )
     },
   ];
   
   return (
-    <DashboardLayout title="Programa de Indicações" type="merchant">
-      <Tabs defaultValue="overview" value={tabValue} onValueChange={setTabValue}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
-          <TabsTrigger value="invite">Indicar Lojas</TabsTrigger>
-          <TabsTrigger value="commissions">Comissões</TabsTrigger>
-        </TabsList>
-      
-        {/* Overview Tab */}
-        <TabsContent value="overview">
-          <div className="grid md:grid-cols-3 gap-6">
+    <DashboardLayout title="Programa de Indicação para Parceiros" type="merchant">
+      <div className="flex flex-col space-y-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="overview">
+              <Store className="h-4 w-4 mr-2" />
+              Visão Geral
+            </TabsTrigger>
+            <TabsTrigger value="invite">
+              <UserPlus className="h-4 w-4 mr-2" />
+              Convidar Lojistas
+            </TabsTrigger>
+            <TabsTrigger value="earnings">
+              <BarChart4 className="h-4 w-4 mr-2" />
+              Ganhos
+            </TabsTrigger>
+            <TabsTrigger value="list">
+              <Users className="h-4 w-4 mr-2" />
+              Parceiros Indicados
+            </TabsTrigger>
+          </TabsList>
+          
+          {/* Aba de Visão Geral */}
+          <TabsContent value="overview">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Seu Código de Indicação</CardTitle>
+                  <CardDescription>
+                    Indique novos lojistas e ganhe comissões por cada venda realizada
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="text-4xl font-bold border-2 border-primary px-8 py-4 rounded-lg text-primary">
+                      {referralsData?.referralCode || "..."}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={copyReferralLink}
+                        className="flex items-center"
+                      >
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copiar Link
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={shareOnWhatsApp}
+                        className="flex items-center text-green-600 border-green-600 hover:bg-green-50"
+                      >
+                        <WhatsAppIcon className="h-4 w-4 mr-2" />
+                        Compartilhar
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="flex flex-col items-start space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Taxa de comissão: <span className="font-medium">{ratesSettings?.merchantCommission || referralsData?.commission}%</span> por indicação
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Aumente sua rede de parceiros indicando outros lojistas para o Vale Cashback. Você ganhará uma comissão sobre as vendas dos lojistas indicados.
+                  </p>
+                </CardFooter>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Estatísticas</CardTitle>
+                  <CardDescription>
+                    Acompanhe seus parceiros e ganhos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                      <span className="text-3xl font-bold">{referralsData?.referralsCount || 0}</span>
+                      <span className="text-sm text-muted-foreground">Total de Parceiros</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4 bg-muted rounded-lg">
+                      <span className="text-3xl font-bold">{referralsData?.approvedStores || 0}</span>
+                      <span className="text-sm text-muted-foreground">Parceiros Ativos</span>
+                    </div>
+                    <div className="flex flex-col items-center justify-center p-4 bg-primary/10 rounded-lg col-span-2">
+                      <span className="text-3xl font-bold text-primary">R$ {referralsData?.totalEarned || "0,00"}</span>
+                      <span className="text-sm text-muted-foreground">Total Ganho</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter>
+                  <Alert variant="default" className="w-full">
+                    <Store className="h-4 w-4" />
+                    <AlertTitle>Comissão recorrente</AlertTitle>
+                    <AlertDescription>
+                      Você recebe comissão sobre todas as vendas que seus parceiros indicados realizarem!
+                    </AlertDescription>
+                  </Alert>
+                </CardFooter>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Aba de Convidar Lojistas */}
+          <TabsContent value="invite">
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Convidar Parceiro</CardTitle>
+                  <CardDescription>
+                    Envie um convite diretamente para novos lojistas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleInvite} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Nome do Responsável</Label>
+                      <Input 
+                        id="name" 
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Digite o nome do responsável" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="storeName">Nome da Loja</Label>
+                      <Input 
+                        id="storeName" 
+                        value={storeName}
+                        onChange={(e) => setStoreName(e.target.value)}
+                        placeholder="Digite o nome da loja" 
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="email">E-mail</Label>
+                      <Input 
+                        id="email" 
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)} 
+                        placeholder="Digite o e-mail para contato" 
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full"
+                      disabled={inviteMutation.isPending}
+                    >
+                      {inviteMutation.isPending ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                          Enviando...
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Enviar Convite
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Compartilhar Convite</CardTitle>
+                  <CardDescription>
+                    Compartilhe seu link de indicação com outros lojistas
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center space-y-4">
+                  <div className="py-4">
+                    <QRCodeDisplay 
+                      value={referralsData?.referralUrl || ""}
+                      title="Escaneie para se cadastrar"
+                      description="Aponte a câmera do celular para o QR Code"
+                      downloadable
+                      shareable
+                    />
+                  </div>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <Button 
+                      onClick={copyReferralLink}
+                      className="flex items-center"
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copiar Link
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={shareOnWhatsApp}
+                      className="flex items-center text-green-600 border-green-600 hover:bg-green-50"
+                    >
+                      <WhatsAppIcon className="h-4 w-4 mr-2" />
+                      Compartilhar no WhatsApp
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="flex items-center"
+                    >
+                      <Share2 className="h-4 w-4 mr-2" />
+                      Outras Redes
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+          
+          {/* Aba de Ganhos */}
+          <TabsContent value="earnings">
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Total de Indicações</CardTitle>
-                <CardDescription>Lojas que você indicou</CardDescription>
+              <CardHeader>
+                <CardTitle>Ganhos Mensais</CardTitle>
+                <CardDescription>
+                  Acompanhe suas comissões de indicação ao longo do tempo
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold mb-1">
-                  {referralData?.stats.totalReferrals || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  {referralData?.stats.activeReferrals || 0} lojas ativas
+                <div className="h-[400px]">
+                  {isReferralsLoading ? (
+                    <div className="flex justify-center items-center h-full">
+                      <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                    </div>
+                  ) : (
+                    <BarChartComponent
+                      title="Comissões de Indicação (R$)"
+                      data={referralsData?.monthlyEarnings || []}
+                      bars={[
+                        { dataKey: "value", name: "Valor (R$)", fill: "#0ea5e9" }
+                      ]}
+                      xAxisDataKey="month"
+                      grid
+                      height={350}
+                    />
+                  )}
                 </div>
               </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Comissão Total</CardTitle>
-                <CardDescription>Valor ganho com indicações</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600 mb-1">
-                  R$ {referralData?.stats.totalCommission.toFixed(2) || "0.00"}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  R$ {referralData?.stats.lastMonthCommission.toFixed(2) || "0.00"} no último mês
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Seu Código</CardTitle>
-                <CardDescription>Compartilhe com outras lojas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between bg-muted p-2 rounded-md">
-                  <span className="font-mono font-medium">{merchant?.referralCode}</span>
-                  <Button variant="ghost" size="icon" onClick={handleCopyLink}>
-                    <Copy className="h-4 w-4" />
+              <CardFooter>
+                <div className="flex w-full justify-between items-center">
+                  <div className="text-sm text-muted-foreground">
+                    Total ganho com indicações: <span className="font-semibold">R$ {referralsData?.totalEarned || "0,00"}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setActiveTab("list")} 
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Ver Detalhes
                   </Button>
                 </div>
-              </CardContent>
-              <CardFooter className="pt-0">
-                <Button variant="outline" className="w-full" onClick={() => setTabValue("invite")}>
-                  <Users className="mr-2 h-4 w-4" />
-                  Indicar Agora
-                </Button>
               </CardFooter>
             </Card>
-          </div>
+          </TabsContent>
           
-          <div className="mt-6 space-y-6">
+          {/* Aba de Parceiros Indicados */}
+          <TabsContent value="list">
             <Card>
               <CardHeader>
-                <CardTitle>Lojas Indicadas</CardTitle>
-                <CardDescription>Histórico de todas as suas indicações</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DataTable
-                  data={referralData?.referrals || []}
-                  columns={referralsColumns}
-                  searchable={false}
-                  pagination={{
-                    pageIndex: 0,
-                    pageSize: 5,
-                    pageCount: Math.ceil((referralData?.referrals.length || 0) / 5),
-                    onPageChange: () => {},
-                  }}
-                />
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        
-        {/* Invite Tab */}
-        <TabsContent value="invite">
-          <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Indique e Ganhe</CardTitle>
+                <CardTitle>Parceiros Indicados</CardTitle>
                 <CardDescription>
-                  Convide outras lojas e ganhe comissões sobre as vendas delas no aplicativo.
+                  Lista de todos os lojistas indicados por você
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="bg-muted rounded-lg p-4 space-y-2">
-                  <h4 className="font-medium">Como funciona:</h4>
-                  <ul className="space-y-2">
-                    <li className="flex items-start">
-                      <div className="bg-primary text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">1</div>
-                      <div className="flex-1">
-                        <p>Compartilhe seu link ou código de indicação com outras lojas</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="bg-primary text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">2</div>
-                      <div className="flex-1">
-                        <p>Quando uma loja se cadastrar usando seu código, ela será vinculada à sua indicação</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="bg-primary text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">3</div>
-                      <div className="flex-1">
-                        <p>Ganhe {COMMISSION_RATES.salePercent * 100}% de comissão sobre as vendas processadas pela loja indicada</p>
-                      </div>
-                    </li>
-                    <li className="flex items-start">
-                      <div className="bg-primary text-white rounded-full h-5 w-5 flex items-center justify-center text-xs mr-2 mt-0.5">4</div>
-                      <div className="flex-1">
-                        <p>Receba R$ {COMMISSION_RATES.monthlyFixed.toFixed(2)} por mês para cada loja ativa indicada</p>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="border border-primary/20 rounded-lg p-4">
-                  <h4 className="font-medium text-primary flex items-center mb-3">
-                    <LinkIcon className="h-4 w-4 mr-2" />
-                    Seu Link de Convite
-                  </h4>
-                  <div className="flex items-center">
-                    <Input 
-                      value={referralUrl}
-                      readOnly
-                      className="mr-2 font-mono text-sm"
-                    />
+              <CardContent>
+                {isReferralsLoading ? (
+                  <div className="flex justify-center items-center h-[300px]">
+                    <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : referralsData?.referrals?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[300px] text-center">
+                    <Store className="h-16 w-16 text-muted-foreground mb-4" />
+                    <h3 className="text-lg font-medium">Nenhum parceiro indicado</h3>
+                    <p className="text-sm text-muted-foreground mt-2 max-w-md">
+                      Indique outros lojistas para o Vale Cashback e ganhe comissões sobre as vendas deles!
+                    </p>
                     <Button 
                       variant="outline" 
-                      size="icon"
-                      onClick={handleCopyLink}
-                      className={copied ? "text-green-600 border-green-600" : ""}
+                      className="mt-4"
+                      onClick={() => setActiveTab("invite")}
                     >
-                      {copied ? <CheckIcon className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Convidar Parceiros
                     </Button>
                   </div>
-                </div>
-                
-                <div className="border border-primary/20 rounded-lg p-4">
-                  <h4 className="font-medium text-primary flex items-center mb-3">
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Compartilhar
-                  </h4>
-                  <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => handleShare("facebook")}
-                      className="bg-blue-50 border-blue-200 hover:bg-blue-100 text-blue-600"
-                    >
-                      <Facebook className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => handleShare("twitter")}
-                      className="bg-sky-50 border-sky-200 hover:bg-sky-100 text-sky-600"
-                    >
-                      <Twitter className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => handleShare("email")}
-                      className="bg-red-50 border-red-200 hover:bg-red-100 text-red-600"
-                    >
-                      <Mail className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => handleShare("whatsapp")}
-                      className="bg-green-50 border-green-200 hover:bg-green-100 text-green-600"
-                    >
-                      <Smartphone className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="bg-gradient-to-br from-accent/90 to-accent via-accent/80 text-white">
-              <CardHeader>
-                <CardTitle className="text-white">Código QR de Indicação</CardTitle>
-                <CardDescription className="text-white/80">
-                  Escaneie para se cadastrar
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center justify-center">
-                <div className="bg-white p-4 rounded-lg shadow-lg">
-                  <QRCodeDisplay 
-                    value={referralUrl}
-                    size={180}
-                    downloadable
-                    title={`Indicação: ${merchant?.name}`}
-                    description="Escaneie para se cadastrar"
+                ) : (
+                  <DataTable 
+                    data={referralsData?.referrals || []}
+                    columns={referralsColumns}
+                    searchable
+                    onSearch={() => {}}
                   />
-                </div>
-                <div className="mt-4 text-center">
-                  <p className="text-white/90 text-sm mb-2">Ou use o código:</p>
-                  <div className="bg-white text-accent font-mono font-bold px-4 py-2 rounded-md text-center text-lg">
-                    {merchant?.referralCode}
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
-          </div>
-        </TabsContent>
+          </TabsContent>
+        </Tabs>
         
-        {/* Commissions Tab */}
-        <TabsContent value="commissions">
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Comissões Totais</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-green-600">
-                  R$ {referralData?.stats.totalCommission.toFixed(2) || "0.00"}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Comissões Pendentes</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-yellow-600">
-                  R$ {merchant?.pendingCommission.toFixed(2) || "0.00"}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle>Lojas Indicadas Ativas</CardTitle>
-              </CardHeader>
-              <CardContent className="pb-2">
-                <div className="text-3xl font-bold">
-                  {referralData?.stats.activeReferrals || 0}
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  gerando comissões mensais
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Comissões</CardTitle>
-              <CardDescription>Registros de todos os ganhos de comissões</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <DataTable
-                data={referralData?.commissions || []}
-                columns={commissionsColumns}
-                searchable
-                pagination={{
-                  pageIndex: 0,
-                  pageSize: 10,
-                  pageCount: Math.ceil((referralData?.commissions.length || 0) / 10),
-                  onPageChange: () => {},
-                }}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        <SystemInfo className="mt-6" />
+      </div>
     </DashboardLayout>
   );
 }
