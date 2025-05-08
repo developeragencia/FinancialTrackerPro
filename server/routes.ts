@@ -2213,46 +2213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para verificar um código de convite
-  app.get("/api/invite/:code", async (req, res) => {
-    try {
-      const { code } = req.params;
-      
-      // Verificar se o código começa com CL (cliente) ou LJ (lojista)
-      const isClientCode = code.startsWith("CL");
-      const isMerchantCode = code.startsWith("LJ");
-      
-      if (!isClientCode && !isMerchantCode) {
-        return res.status(400).json({ message: "Código de convite inválido" });
-      }
-      
-      // Buscar referenciador pelo código
-      const referralType = isClientCode ? "client" : "merchant";
-      const userCode = isClientCode ? code.replace("CL", "") : code.replace("LJ", "");
-      
-      const referrer = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, parseInt(userCode, 10)))
-        .limit(1);
-      
-      if (!referrer.length) {
-        return res.status(404).json({ message: "Referenciador não encontrado" });
-      }
-      
-      // Retornar informações do convite
-      return res.status(200).json({
-        referrerId: referrer[0].id,
-        referrerName: referrer[0].name,
-        referrerType: referrer[0].type,
-        referralCode: code,
-        referralType
-      });
-    } catch (error) {
-      console.error("Erro ao verificar código de convite:", error);
-      return res.status(500).json({ message: "Erro ao processar o convite" });
-    }
-  });
+  // Esta implementação foi removida para evitar duplicação de rotas
   
   // Endpoint para cadastro de cliente via convite
   app.post("/api/register/client", async (req, res) => {
