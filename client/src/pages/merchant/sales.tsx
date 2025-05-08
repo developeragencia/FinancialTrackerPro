@@ -417,7 +417,7 @@ export default function MerchantSales() {
                           <TableRow key={item.id}>
                             <TableCell>{item.name}</TableCell>
                             <TableCell className="text-center">{item.quantity}</TableCell>
-                            <TableCell className="text-right">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               <Button
                                 variant="ghost"
@@ -448,7 +448,7 @@ export default function MerchantSales() {
               {/* Opção para venda manual sem produtos */}
               {cartItems.length === 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="manualAmount">Valor Manual (R$)</Label>
+                  <Label htmlFor="manualAmount">Valor Manual ($)</Label>
                   <Input
                     id="manualAmount"
                     type="number"
@@ -469,7 +469,7 @@ export default function MerchantSales() {
               {/* Resumo dos Valores */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="subtotal">Subtotal (R$)</Label>
+                  <Label htmlFor="subtotal">Subtotal ($)</Label>
                   <Input
                     id="subtotal"
                     value={cartItems.length > 0 ? subtotal.toFixed(2) : manualAmount.toFixed(2)}
@@ -478,7 +478,7 @@ export default function MerchantSales() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="discount">Desconto (R$)</Label>
+                  <Label htmlFor="discount">Desconto ($)</Label>
                   <Input
                     id="discount"
                     type="number"
