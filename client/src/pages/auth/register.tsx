@@ -25,9 +25,14 @@ import { Loader2 } from "lucide-react";
 
 const clientFormSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
+  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
-  cpf: z.string().min(11, { message: "CPF inválido" }).optional(),
+  country: z.string().optional(),
+  countryCode: z.string().optional(),
+  invitationCode: z.string().optional(),
+  securityQuestion: z.string().min(1, { message: "Selecione uma pergunta de segurança" }),
+  securityAnswer: z.string().min(2, { message: "Forneça uma resposta para a pergunta de segurança" }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -37,14 +42,17 @@ const clientFormSchema = z.object({
 
 const merchantFormSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
+  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
   storeName: z.string().min(3, { message: "Nome da loja deve ter pelo menos 3 caracteres" }),
-  cnpj: z.string().min(14, { message: "CNPJ inválido" }),
   category: z.string().min(1, { message: "Selecione uma categoria" }),
-  address: z.string().min(5, { message: "Endereço deve ter pelo menos 5 caracteres" }).optional(),
-  city: z.string().min(2, { message: "Cidade inválida" }).optional(),
-  state: z.string().min(2, { message: "Estado inválido" }).optional(),
+  country: z.string().optional(),
+  countryCode: z.string().optional(),
+  companyLogo: z.any().optional(),
+  invitationCode: z.string().optional(),
+  securityQuestion: z.string().min(1, { message: "Selecione uma pergunta de segurança" }),
+  securityAnswer: z.string().min(2, { message: "Forneça uma resposta para a pergunta de segurança" }),
   password: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
   confirmPassword: z.string().min(6, { message: "A senha deve ter pelo menos 6 caracteres" }),
 }).refine((data) => data.password === data.confirmPassword, {

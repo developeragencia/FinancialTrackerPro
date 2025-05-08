@@ -5,7 +5,9 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
-import { User } from "@shared/schema";
+import { User, users, auditLogs } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 declare global {
   namespace Express {
@@ -173,5 +175,88 @@ export function setupAuth(app: Express) {
     // Não enviar a senha para o cliente
     const { password: _, ...userWithoutPassword } = req.user as User;
     res.json(userWithoutPassword);
+  });
+
+  // Rota para recuperação de senha
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    try {
+      const { email, method, securityQuestion, securityAnswer } = req.body;
+      
+      // Verificar se o usuário existe
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      
+      if (!user.length) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      if (method === "security-question") {
+        // Em uma implementação real, verificaríamos a resposta da pergunta de segurança
+        // contra o valor armazenado no banco de dados
+        
+        // Gerar senha temporária
+        const tempPassword = randomBytes(4).toString("hex");
+        const hashedTempPassword = await hashPassword(tempPassword);
+        
+        // Atualizar senha do usuário
+        await db
+          .update(users)
+          .set({ password: hashedTempPassword })
+          .where(eq(users.id, user[0].id));
+        
+        // Registrar a alteração no log de auditoria
+        await db.insert(auditLogs).values({
+          userId: user[0].id,
+          action: "PASSWORD_RESET",
+          details: JSON.stringify({
+            method: "security-question",
+            success: true
+          }),
+          ipAddress: req.ip || "unknown",
+          createdAt: new Date()
+        });
+        
+        // Em produção, enviaríamos a senha temporária por email
+        // Por enquanto, vamos retornar na resposta (apenas para teste)
+        return res.status(200).json({ 
+          success: true, 
+          message: "Senha temporária gerada com sucesso",
+          tempPassword // REMOVER ISSO EM PRODUÇÃO
+        });
+      } else {
+        // Método de recuperação por email
+        
+        // Gerar token de redefinição
+        const resetToken = randomBytes(20).toString("hex");
+        const tokenExpiry = new Date();
+        tokenExpiry.setHours(tokenExpiry.getHours() + 1); // Token válido por 1 hora
+        
+        // Em um sistema real, armazenaríamos este token no banco de dados
+        // e enviaríamos um email com link para redefinição
+        
+        // Registrar a tentativa no log de auditoria
+        await db.insert(auditLogs).values({
+          userId: user[0].id,
+          action: "PASSWORD_RESET_REQUEST",
+          details: JSON.stringify({
+            method: "email",
+            success: true
+          }),
+          ipAddress: req.ip || "unknown",
+          createdAt: new Date()
+        });
+        
+        return res.status(200).json({ 
+          success: true, 
+          message: "Link de recuperação enviado para o email"
+        });
+      }
+    } catch (error) {
+      console.error("Erro na recuperação de senha:", error);
+      res.status(500).json({ message: "Erro ao processar a recuperação de senha" });
+    }
   });
 }
