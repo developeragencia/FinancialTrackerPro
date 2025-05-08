@@ -61,12 +61,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Carrega o usuário imediatamente
     loadUser();
     
-    // E então periodicamente a cada 30 segundos para manter a sessão ativa
-    const intervalId = setInterval(loadUser, 30000);
+    // E então periodicamente a cada 5 minutos (300000ms) para manter a sessão ativa
+    // Aumentamos o intervalo para evitar chamadas excessivas
+    const intervalId = setInterval(loadUser, 300000);
     
     // Limpar o intervalo quando o componente for desmontado
     return () => clearInterval(intervalId);
-  }, [user, navigate, toast]);
+  }, [navigate, toast]); // Removido o 'user' das dependências para evitar atualizações excessivas
 
   const login = async (email: string, password: string, type: UserType) => {
     setLoading(true);
