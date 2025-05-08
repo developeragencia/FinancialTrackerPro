@@ -157,7 +157,7 @@ export default function ClientReferrals() {
       accessorKey: "commission",
       cell: (row: any) => (
         <div className="flex items-center">
-          <span className="font-medium">R$ {row.commission}</span>
+          <span className="font-medium">$ {row.commission}</span>
         </div>
       )
     },
@@ -247,7 +247,7 @@ export default function ClientReferrals() {
                       <span className="text-sm text-muted-foreground">Indicações Pendentes</span>
                     </div>
                     <div className="flex flex-col items-center justify-center p-4 bg-primary/10 rounded-lg col-span-2">
-                      <span className="text-3xl font-bold text-primary">R$ {referralsData?.totalEarned || "0,00"}</span>
+                      <span className="text-3xl font-bold text-primary">$ {referralsData?.totalEarned || "0.00"}</span>
                       <span className="text-sm text-muted-foreground">Total Ganho</span>
                     </div>
                   </div>
