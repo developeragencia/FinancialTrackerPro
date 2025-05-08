@@ -2885,6 +2885,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Processar transferência entre clientes
+  app.post("/api/client/transfers", isUserType("client"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const { recipient, recipientId, searchMethod, amount, description } = req.body;
+      
+      if (!recipient || !amount) {
+        return res.status(400).json({ message: "Campos obrigatórios não informados" });
+      }
+      
+      const fromUserId = req.user.id;
+      let toUserId;
+      
+      // Se temos um ID direto do recipiente, usamos ele
+      if (recipientId) {
+        toUserId = recipientId;
+      } else {
+        // Caso contrário, buscamos o usuário pelo email ou telefone
+        let whereClause;
+        if (searchMethod === "email") {
+          whereClause = sql`email = ${recipient}`;
+        } else if (searchMethod === "phone") {
+          whereClause = sql`phone = ${recipient}`;
+        } else {
+          return res.status(400).json({ message: "Método de busca inválido" });
+        }
+        
+        // Buscar ID do destinatário
+        const recipientResult = await db.execute(
+          sql`SELECT id FROM users WHERE ${whereClause} AND type = 'client'`
+        );
+        
+        if (recipientResult.rows.length === 0) {
+          return res.status(404).json({ message: "Destinatário não encontrado" });
+        }
+        
+        toUserId = recipientResult.rows[0].id;
+      }
+      
+      // Verificar se não é o mesmo usuário
+      if (fromUserId === toUserId) {
+        return res.status(400).json({ message: "Não é possível transferir para si mesmo" });
+      }
+      
+      // Verificar saldo disponível do usuário enviador
+      const balanceResult = await db.execute(
+        sql`SELECT SUM(
+              CASE WHEN from_user_id = ${fromUserId} THEN -amount ELSE amount END
+            ) as balance
+            FROM transfers
+            WHERE from_user_id = ${fromUserId} OR to_user_id = ${fromUserId}`
+      );
+      
+      const currentBalance = parseFloat(balanceResult.rows[0]?.balance || 0);
+      const transferAmount = parseFloat(amount);
+      
+      if (currentBalance < transferAmount) {
+        return res.status(400).json({ message: "Saldo insuficiente para esta transferência" });
+      }
+      
+      // Criar a transferência
+      const [transfer] = await db
+        .insert(transfers)
+        .values({
+          from_user_id: fromUserId,
+          to_user_id: toUserId,
+          amount: transferAmount.toString(),
+          status: "completed",
+          description: description || "Transferência entre clientes",
+          created_at: new Date()
+        })
+        .returning();
+      
+      res.status(201).json({
+        id: transfer.id,
+        fromUserId: transfer.from_user_id,
+        toUserId: transfer.to_user_id,
+        amount: parseFloat(transfer.amount),
+        status: transfer.status,
+        description: transfer.description,
+        createdAt: transfer.created_at
+      });
+    } catch (error) {
+      console.error("Erro ao processar transferência:", error);
+      res.status(500).json({ message: "Erro ao processar transferência" });
+    }
+  });
+  
   // Histórico de transferências do cliente
   app.get("/api/client/transfers", isUserType("client"), async (req, res) => {
     try {
