@@ -23,29 +23,15 @@ export default function MerchantProfile() {
     queryKey: ['/api/merchant/profile'],
   });
 
-  // Mock merchant data until API is available
-  const merchantData = merchant || {
-    id: 1,
-    name: "Supermercado Boa Compra",
-    logo: "",
-    owner: "Carlos Mendes",
-    email: "contato@boacompra.com",
-    phone: "(11) 3456-7890",
-    category: "Supermercado",
-    description: "Supermercado completo com os melhores preços da região.",
-    address: "Av. Brasil, 1234",
-    city: "São Paulo",
-    state: "SP",
-    website: "www.boacompra.com.br",
-    businessHours: "Seg-Sáb: 08h-22h, Dom: 08h-20h",
-    commissionRate: 2,
-    active: true,
-    cashbackPromotions: {
-      enabled: true,
-      doubleOnWeekends: true,
-      specialCategories: false,
-      minimumPurchase: 50
-    }
+  // Handle received merchant data and provide fallback values for missing fields
+  const merchantData = merchant || {};
+
+  // Ensure cashbackPromotions object exists (this may be null from API)
+  const cashbackPromotions = merchantData.cashbackPromotions || {
+    enabled: false,
+    doubleOnWeekends: false,
+    specialCategories: false,
+    minimumPurchase: 0
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -259,7 +245,7 @@ export default function MerchantProfile() {
                     </div>
                     <Switch 
                       id="enable-promotions"
-                      checked={merchantData.cashbackPromotions.enabled}
+                      checked={cashbackPromotions.enabled}
                     />
                   </div>
                   
@@ -272,7 +258,7 @@ export default function MerchantProfile() {
                     </div>
                     <Switch 
                       id="weekend-double"
-                      checked={merchantData.cashbackPromotions.doubleOnWeekends}
+                      checked={cashbackPromotions.doubleOnWeekends}
                     />
                   </div>
                   
@@ -285,7 +271,7 @@ export default function MerchantProfile() {
                     </div>
                     <Switch 
                       id="special-categories"
-                      checked={merchantData.cashbackPromotions.specialCategories}
+                      checked={cashbackPromotions.specialCategories}
                     />
                   </div>
                   

@@ -789,11 +789,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Inserindo transação com valores:", insertValues);
       
-      // Registrar a transação
-      const [transaction] = await db.insert(transactions).values(insertValues).returning();
+      console.log("Iniciando inserção da transação...");
+      
+      // Registrar a transação com manejo de erro mais detalhado
+      let transaction;
+      try {
+        const [transactionResult] = await db.insert(transactions).values(insertValues).returning();
+        transaction = transactionResult;
+        console.log("Transação registrada com sucesso:", transaction);
+      } catch (dbError) {
+        console.error("Erro ao inserir transação:", dbError);
+        throw new Error(`Falha ao registrar transação: ${dbError.message}`);
+      }
       
       // Registrar os itens da transação
-      if (items && items.length > 0) {
+      if (items && items.length > 0 && transaction) {
         for (const item of items) {
           await db.insert(transactionItems).values({
             transaction_id: transaction.id,

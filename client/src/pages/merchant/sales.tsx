@@ -118,6 +118,9 @@ export default function MerchantSales() {
       return await res.json();
     },
     onSuccess: () => {
+      // Definir isProcessing como false para evitar problemas de UI
+      setIsProcessing(false);
+      
       toast({
         title: "Venda registrada com sucesso",
         description: `Venda para ${selectedCustomer?.name} foi processada e os valores de cashback foram distribuídos automaticamente.`,
@@ -131,6 +134,9 @@ export default function MerchantSales() {
       queryClient.invalidateQueries({ queryKey: ['/api/merchant/dashboard'] });
     },
     onError: (error: any) => {
+      // Definir isProcessing como false para permitir nova tentativa
+      setIsProcessing(false);
+      
       toast({
         title: "Erro ao registrar venda",
         description: error.message || "Ocorreu um erro ao processar a venda. Tente novamente.",
