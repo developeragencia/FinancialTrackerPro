@@ -5,39 +5,78 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard, StatCardGrid } from "@/components/ui/stat-card";
 import { LineChartComponent } from "@/components/ui/charts";
-import { Wallet, ArrowRightLeft, QrCode, History, Tag, Gift } from "lucide-react";
+import { Wallet, ArrowRightLeft, QrCode, History, Tag, Gift, Loader2 } from "lucide-react";
 import { Link } from "wouter";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
-// Mock data - would be replaced with real data from API in production
-const balanceData = [
-  { month: "Jan", value: 50 },
-  { month: "Fev", value: 90 },
-  { month: "Mar", value: 150 },
-  { month: "Abr", value: 180 },
-  { month: "Mai", value: 210 },
-  { month: "Jun", value: 235.5 },
-];
+// Interfaces para tipagem
+interface Transaction {
+  id: number;
+  merchant: string;
+  date: string;
+  amount: number;
+  cashback: number;
+  status: string;
+}
 
-const recentTransactions = [
-  { id: 1, store: "Mercado Central", date: "15/07/2023", amount: 150.00, cashback: 3.00, status: "completed" },
-  { id: 2, store: "Farmácia Popular", date: "12/07/2023", amount: 75.20, cashback: 1.50, status: "completed" },
-  { id: 3, store: "Posto Shell", date: "10/07/2023", amount: 200.00, cashback: 4.00, status: "completed" },
-  { id: 4, store: "Livraria Cultura", date: "05/07/2023", amount: 120.50, cashback: 2.41, status: "completed" },
-  { id: 5, store: "Shopping Center Norte", date: "01/07/2023", amount: 350.75, cashback: 7.01, status: "completed" }
-];
-
-const monthSummary = {
-  earned: 17.92,
-  transferred: 5.00,
-  received: 10.00
-};
+interface DashboardData {
+  cashbackBalance: number;
+  referralBalance: number;
+  transactionsCount: number;
+  recentTransactions: Transaction[];
+  monthStats?: {
+    earned: number;
+    transferred: number;
+    received: number;
+  };
+  balanceHistory?: Array<{
+    month: string;
+    value: number;
+  }>;
+}
 
 export default function ClientDashboard() {
-  // Example query to get client data
-  const { data: clientData, isLoading } = useQuery({
+  // Consulta para obter dados do dashboard do cliente
+  const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/client/dashboard'],
     retry: false,
   });
+
+  // Estado de carregamento
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Dashboard" type="client">
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-10 w-10 animate-spin text-secondary" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Dados padrão caso a API não retorne
+  const defaultData: DashboardData = {
+    cashbackBalance: 0,
+    referralBalance: 0,
+    transactionsCount: 0,
+    recentTransactions: [],
+    monthStats: {
+      earned: 0,
+      transferred: 0,
+      received: 0
+    },
+    balanceHistory: [
+      { month: "Jan", value: 0 },
+      { month: "Fev", value: 0 },
+      { month: "Mar", value: 0 },
+      { month: "Abr", value: 0 },
+      { month: "Mai", value: 0 },
+      { month: "Jun", value: 0 },
+    ]
+  };
+
+  // Combinar dados de API com dados padrão
+  const data = dashboardData || defaultData;
 
   return (
     <DashboardLayout title="Dashboard" type="client">
@@ -48,8 +87,13 @@ export default function ClientDashboard() {
             <div>
               <p className="text-muted-foreground mb-1">Seu saldo de cashback</p>
               <h2 className="text-3xl font-bold text-primary">
-                R$ {isLoading ? "..." : (clientData?.balance || 235.50).toFixed(2)}
+                R$ {data.cashbackBalance.toFixed(2)}
               </h2>
+              {data.referralBalance > 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  + R$ {data.referralBalance.toFixed(2)} em bônus de indicação
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 mt-4 md:mt-0">
               <Link href="/client/transfers">
@@ -76,7 +120,7 @@ export default function ClientDashboard() {
         {/* Balance Evolution Chart */}
         <LineChartComponent
           title="Evolução do Saldo"
-          data={balanceData}
+          data={data.balanceHistory || defaultData.balanceHistory}
           lines={[
             { dataKey: "value", name: "Saldo (R$)" }
           ]}
@@ -98,7 +142,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Ganho</span>
               </div>
-              <div className="font-medium">R$ {monthSummary.earned.toFixed(2)}</div>
+              <div className="font-medium">R$ {data.monthStats?.earned.toFixed(2) || '0.00'}</div>
             </div>
             <div className="flex justify-between items-center pb-2 border-b">
               <div className="flex items-center text-muted-foreground">
@@ -109,7 +153,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Transferido</span>
               </div>
-              <div className="font-medium">R$ {monthSummary.transferred.toFixed(2)}</div>
+              <div className="font-medium">R$ {data.monthStats?.transferred.toFixed(2) || '0.00'}</div>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center text-muted-foreground">
@@ -120,7 +164,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Recebido</span>
               </div>
-              <div className="font-medium">R$ {monthSummary.received.toFixed(2)}</div>
+              <div className="font-medium">R$ {data.monthStats?.received.toFixed(2) || '0.00'}</div>
             </div>
           </CardContent>
         </Card>
@@ -135,32 +179,41 @@ export default function ClientDashboard() {
           </Link>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-muted-foreground text-left border-b">
-                  <th className="pb-2 font-medium">Loja</th>
-                  <th className="pb-2 font-medium">Data</th>
-                  <th className="pb-2 font-medium text-right">Valor</th>
-                  <th className="pb-2 font-medium text-right">Cashback</th>
-                  <th className="pb-2 font-medium">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentTransactions.map((transaction) => (
-                  <tr key={transaction.id} className="border-b">
-                    <td className="py-3">{transaction.store}</td>
-                    <td className="py-3">{transaction.date}</td>
-                    <td className="py-3 text-right">R$ {transaction.amount.toFixed(2)}</td>
-                    <td className="py-3 text-right">R$ {transaction.cashback.toFixed(2)}</td>
-                    <td className="py-3">
-                      <span className="status-completed">Concluída</span>
-                    </td>
+          {data.recentTransactions.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              Nenhuma transação encontrada
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-muted-foreground text-left border-b">
+                    <th className="pb-2 font-medium">Loja</th>
+                    <th className="pb-2 font-medium">Data</th>
+                    <th className="pb-2 font-medium text-right">Valor</th>
+                    <th className="pb-2 font-medium text-right">Cashback</th>
+                    <th className="pb-2 font-medium">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {data.recentTransactions.map((transaction) => (
+                    <tr key={transaction.id} className="border-b">
+                      <td className="py-3">{transaction.merchant}</td>
+                      <td className="py-3">{transaction.date}</td>
+                      <td className="py-3 text-right">R$ {transaction.amount.toFixed(2)}</td>
+                      <td className="py-3 text-right">R$ {transaction.cashback.toFixed(2)}</td>
+                      <td className="py-3">
+                        <span className={`status-${transaction.status}`}>
+                          {transaction.status === 'completed' ? 'Concluída' : 
+                           transaction.status === 'pending' ? 'Pendente' : 'Cancelada'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
