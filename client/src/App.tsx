@@ -26,11 +26,21 @@ import MerchantProducts from "@/pages/merchant/products";
 import MerchantScanner from "@/pages/merchant/scanner";
 import MerchantCustomers from "@/pages/merchant/customers";
 import MerchantProfile from "@/pages/merchant/profile";
+import MerchantTransactions from "@/pages/merchant/transactions";
+import MerchantReports from "@/pages/merchant/reports";
+import MerchantSettings from "@/pages/merchant/settings";
+import MerchantSupport from "@/pages/merchant/support";
+import MerchantReferrals from "@/pages/merchant/referrals";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/dashboard";
 import AdminUsers from "@/pages/admin/users";
 import AdminStores from "@/pages/admin/stores";
+import AdminTransactions from "@/pages/admin/transactions";
+import AdminTransfers from "@/pages/admin/transfers";
+import AdminSettings from "@/pages/admin/settings";
+import AdminLogs from "@/pages/admin/logs";
+import AdminSupport from "@/pages/admin/support";
 
 // Other
 import NotFound from "@/pages/not-found";

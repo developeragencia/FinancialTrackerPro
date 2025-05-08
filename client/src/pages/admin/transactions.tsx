@@ -1,0 +1,507 @@
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { 
+  Calendar as CalendarIcon,
+  Search,
+  Download,
+  ChevronDown,
+  FileText,
+  Eye,
+  Printer,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  User,
+  CreditCard,
+  QrCode,
+  Wallet,
+  Store
+} from "lucide-react";
+import { DataTable } from "@/components/ui/data-table";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
+// Componentes e tipos
+const PaymentMethodIcons: Record<string, React.ReactNode> = {
+  "cash": <Wallet className="h-4 w-4" />,
+  "credit_card": <CreditCard className="h-4 w-4" />,
+  "debit_card": <CreditCard className="h-4 w-4" />,
+  "pix": <QrCode className="h-4 w-4" />,
+  "cashback": <Wallet className="h-4 w-4" />,
+};
+
+const TransactionStatusIcons: Record<string, React.ReactNode> = {
+  "completed": <CheckCircle2 className="h-4 w-4 text-green-500" />,
+  "pending": <Clock className="h-4 w-4 text-yellow-500" />,
+  "cancelled": <XCircle className="h-4 w-4 text-red-500" />,
+};
+
+interface Transaction {
+  id: number;
+  customer: string;
+  merchant: string;
+  date: string;
+  amount: number;
+  cashback: number;
+  paymentMethod: string;
+  items: string;
+  status: string;
+}
+
+export default function AdminTransactions() {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [dateRange, setDateRange] = useState<{from: Date | null, to: Date | null}>({
+    from: null,
+    to: null,
+  });
+  const [status, setStatus] = useState<string | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [merchantFilter, setMerchantFilter] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  
+  const { toast } = useToast();
+  
+  // Query para buscar as transações
+  const { data, isLoading } = useQuery<{ 
+    transactions: Transaction[], 
+    totalAmount: number,
+    totalCashback: number,
+    statusCounts: { status: string, count: number }[],
+    paymentMethodSummary: { method: string, sum: number }[],
+    pageCount: number
+  }>({
+    queryKey: ['/api/admin/transactions', {
+      page,
+      pageSize,
+      status,
+      paymentMethod,
+      merchantFilter,
+      dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
+      dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
+      search: searchTerm
+    }],
+    placeholderData: {
+      transactions: [
+        { id: 1, customer: "Maria Silva", merchant: "Supermercado ABC", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, paymentMethod: "credit_card", items: "5 itens", status: "completed" },
+        { id: 2, customer: "José Santos", merchant: "Farmácia XYZ", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, paymentMethod: "pix", items: "3 itens", status: "completed" },
+        { id: 3, customer: "Ana Oliveira", merchant: "Loja de Roupas 123", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, paymentMethod: "cash", items: "7 itens", status: "completed" },
+        { id: 4, customer: "Carlos Souza", merchant: "Restaurante Bom Sabor", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, paymentMethod: "debit_card", items: "4 itens", status: "pending" },
+        { id: 5, customer: "Juliana Lima", merchant: "Supermercado ABC", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, paymentMethod: "credit_card", items: "12 itens", status: "completed" },
+        { id: 6, customer: "Roberto Alves", merchant: "Farmácia XYZ", date: "20/07/2023 16:10", amount: 89.99, cashback: 1.80, paymentMethod: "pix", items: "2 itens", status: "completed" },
+        { id: 7, customer: "Fernanda Costa", merchant: "Loja de Eletrônicos Top", date: "20/07/2023 14:25", amount: 45.50, cashback: 0.91, paymentMethod: "cash", items: "1 item", status: "completed" },
+        { id: 8, customer: "Pedro Dias", merchant: "Padaria Pão Quente", date: "20/07/2023 11:30", amount: 135.75, cashback: 2.71, paymentMethod: "credit_card", items: "4 itens", status: "cancelled" },
+        { id: 9, customer: "Camila Luz", merchant: "Supermercado ABC", date: "19/07/2023 17:15", amount: 220.00, cashback: 4.40, paymentMethod: "debit_card", items: "8 itens", status: "completed" },
+        { id: 10, customer: "Rodrigo Mendes", merchant: "Restaurante Bom Sabor", date: "19/07/2023 13:40", amount: 67.80, cashback: 1.36, paymentMethod: "cashback", items: "3 itens", status: "completed" }
+      ],
+      totalAmount: 1455.49,
+      totalCashback: 29.10,
+      statusCounts: [
+        { status: "completed", count: 8 },
+        { status: "pending", count: 1 },
+        { status: "cancelled", count: 1 }
+      ],
+      paymentMethodSummary: [
+        { method: "credit_card", sum: 636.50 },
+        { method: "debit_card", sum: 340.50 },
+        { method: "cash", sum: 245.50 },
+        { method: "pix", sum: 165.19 },
+        { method: "cashback", sum: 67.80 }
+      ],
+      pageCount: 2
+    }
+  });
+  
+  // Filtrar transações
+  const filteredTransactions = data?.transactions || [];
+  
+  // Exportar dados
+  const handleExport = () => {
+    toast({
+      title: "Exportação iniciada",
+      description: "Seus dados estão sendo exportados para CSV.",
+    });
+    
+    // Em uma implementação real, aqui iríamos gerar um arquivo CSV e fazer o download
+    setTimeout(() => {
+      toast({
+        title: "Exportação concluída",
+        description: "Arquivo CSV exportado com sucesso.",
+      });
+    }, 1500);
+  };
+  
+  // Visualizar detalhes da transação
+  const handleViewTransaction = (transaction: Transaction) => {
+    toast({
+      title: `Transação #${transaction.id}`,
+      description: `Cliente: ${transaction.customer}, Loja: ${transaction.merchant}, Valor: R$ ${transaction.amount.toFixed(2)}`,
+    });
+  };
+  
+  // Imprimir recibo
+  const handlePrintReceipt = (transaction: Transaction) => {
+    toast({
+      title: "Imprimindo recibo",
+      description: `Preparando impressão do recibo para a transação #${transaction.id}`,
+    });
+  };
+  
+  // Definição das colunas da tabela
+  const columns = [
+    {
+      header: "ID",
+      accessorKey: "id" as keyof Transaction,
+    },
+    {
+      header: "Cliente",
+      accessorKey: "customer" as keyof Transaction,
+      cell: (transaction: Transaction) => (
+        <div className="flex items-center">
+          <User className="h-4 w-4 text-muted-foreground mr-2" />
+          <span>{transaction.customer}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Loja",
+      accessorKey: "merchant" as keyof Transaction,
+      cell: (transaction: Transaction) => (
+        <div className="flex items-center">
+          <Store className="h-4 w-4 text-muted-foreground mr-2" />
+          <span>{transaction.merchant}</span>
+        </div>
+      ),
+    },
+    {
+      header: "Data",
+      accessorKey: "date" as keyof Transaction,
+    },
+    {
+      header: "Valor",
+      accessorKey: "amount" as keyof Transaction,
+      cell: (transaction: Transaction) => (
+        <span className="font-medium">
+          R$ {transaction.amount.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      header: "Cashback",
+      accessorKey: "cashback" as keyof Transaction,
+      cell: (transaction: Transaction) => (
+        <span className="text-green-600">
+          R$ {transaction.cashback.toFixed(2)}
+        </span>
+      ),
+    },
+    {
+      header: "Pagamento",
+      accessorKey: "paymentMethod" as keyof Transaction,
+      cell: (transaction: Transaction) => {
+        const paymentLabels: Record<string, string> = {
+          "cash": "Dinheiro",
+          "credit_card": "Crédito",
+          "debit_card": "Débito",
+          "pix": "Pix",
+          "cashback": "Cashback"
+        };
+        
+        return (
+          <div className="flex items-center">
+            {PaymentMethodIcons[transaction.paymentMethod] || <CreditCard className="h-4 w-4 mr-2" />}
+            <span className="ml-1">{paymentLabels[transaction.paymentMethod] || transaction.paymentMethod}</span>
+          </div>
+        );
+      },
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as keyof Transaction,
+      cell: (transaction: Transaction) => {
+        const statusLabels: Record<string, string> = {
+          "completed": "Concluída",
+          "pending": "Pendente",
+          "cancelled": "Cancelada"
+        };
+        
+        const statusColors: Record<string, string> = {
+          "completed": "bg-green-100 text-green-800",
+          "pending": "bg-yellow-100 text-yellow-800",
+          "cancelled": "bg-red-100 text-red-800"
+        };
+        
+        return (
+          <div className={`rounded-full px-2 py-1 text-xs font-medium inline-flex items-center ${statusColors[transaction.status]}`}>
+            {TransactionStatusIcons[transaction.status]}
+            <span className="ml-1">{statusLabels[transaction.status]}</span>
+          </div>
+        );
+      },
+    },
+  ];
+  
+  // Ações para a tabela
+  const actions = [
+    {
+      label: "Ver detalhes",
+      icon: <Eye className="h-4 w-4" />,
+      onClick: (transaction: Transaction) => handleViewTransaction(transaction),
+    },
+    {
+      label: "Imprimir recibo",
+      icon: <Printer className="h-4 w-4" />,
+      onClick: (transaction: Transaction) => handlePrintReceipt(transaction),
+    },
+  ];
+  
+  return (
+    <DashboardLayout title="Histórico de Transações" type="admin">
+      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <TabsList>
+            <TabsTrigger value="all">Todas</TabsTrigger>
+            <TabsTrigger value="completed">Concluídas</TabsTrigger>
+            <TabsTrigger value="pending">Pendentes</TabsTrigger>
+            <TabsTrigger value="cancelled">Canceladas</TabsTrigger>
+          </TabsList>
+          
+          <div className="flex space-x-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[240px] justify-start text-left font-normal">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {dateRange.from ? (
+                    dateRange.to ? (
+                      <>
+                        {format(dateRange.from, "dd/MM/yyyy")} -{" "}
+                        {format(dateRange.to, "dd/MM/yyyy")}
+                      </>
+                    ) : (
+                      format(dateRange.from, "dd/MM/yyyy")
+                    )
+                  ) : (
+                    <span>Selecione um período</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={new Date()}
+                  selected={{
+                    from: dateRange.from ?? undefined,
+                    to: dateRange.to ?? undefined,
+                  }}
+                  onSelect={range => {
+                    if (range?.from) {
+                      setDateRange({ from: range.from, to: range.to });
+                    }
+                  }}
+                  locale={ptBR}
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+          </div>
+        </div>
+        
+        <div className="grid md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Total Vendas</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                R$ {data?.totalAmount.toFixed(2) || "0.00"}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {filteredTransactions.length} transações
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Total Cashback</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                R$ {data?.totalCashback.toFixed(2) || "0.00"}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {data?.totalAmount ? ((data.totalCashback / data.totalAmount) * 100).toFixed(1) : "0"}% do total
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Por Status</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
+                {data?.statusCounts.map((statusCount) => {
+                  const statusIcons: Record<string, JSX.Element> = {
+                    "completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />,
+                    "pending": <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />,
+                    "cancelled": <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                  };
+                  
+                  const statusLabels: Record<string, string> = {
+                    "completed": "Concluídas",
+                    "pending": "Pendentes",
+                    "cancelled": "Canceladas"
+                  };
+                  
+                  return (
+                    <div key={statusCount.status} className="flex items-center justify-between">
+                      <div className="flex items-center text-sm">
+                        {statusIcons[statusCount.status]}
+                        <span>{statusLabels[statusCount.status]}</span>
+                      </div>
+                      <span className="text-sm font-medium">{statusCount.count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Por Pagamento</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-1.5">
+                {data?.paymentMethodSummary.map((methodSummary) => {
+                  const paymentLabels: Record<string, string> = {
+                    "cash": "Dinheiro",
+                    "credit_card": "Crédito",
+                    "debit_card": "Débito",
+                    "pix": "Pix",
+                    "cashback": "Cashback"
+                  };
+                  
+                  return (
+                    <div key={methodSummary.method} className="flex items-center justify-between">
+                      <div className="flex items-center text-sm">
+                        {PaymentMethodIcons[methodSummary.method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
+                        <span className="ml-1">{paymentLabels[methodSummary.method] || methodSummary.method}</span>
+                      </div>
+                      <span className="text-sm font-medium">R$ {methodSummary.sum.toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Transações</CardTitle>
+            <CardDescription>
+              Histórico completo de transações no sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="relative w-full md:w-[300px]">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por cliente ou loja..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <div className="flex flex-1 gap-4">
+                <Select value={status || ""} onValueChange={(val) => setStatus(val || null)}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="completed">Concluídas</SelectItem>
+                    <SelectItem value="pending">Pendentes</SelectItem>
+                    <SelectItem value="cancelled">Canceladas</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={paymentMethod || ""} onValueChange={(val) => setPaymentMethod(val || null)}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Forma de pagamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todos os pagamentos</SelectItem>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                    <SelectItem value="debit_card">Cartão de Débito</SelectItem>
+                    <SelectItem value="pix">Pix</SelectItem>
+                    <SelectItem value="cashback">Cashback</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                <Select value={merchantFilter || ""} onValueChange={(val) => setMerchantFilter(val || null)}>
+                  <SelectTrigger className="w-full md:w-[180px]">
+                    <SelectValue placeholder="Todas as lojas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas as lojas</SelectItem>
+                    <SelectItem value="1">Supermercado ABC</SelectItem>
+                    <SelectItem value="2">Farmácia XYZ</SelectItem>
+                    <SelectItem value="3">Loja de Roupas 123</SelectItem>
+                    <SelectItem value="4">Restaurante Bom Sabor</SelectItem>
+                    <SelectItem value="5">Loja de Eletrônicos Top</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            <DataTable
+              data={filteredTransactions}
+              columns={columns}
+              actions={actions}
+              searchable={false}
+              pagination={{
+                pageIndex: page - 1,
+                pageSize: pageSize,
+                pageCount: data?.pageCount || 1,
+                onPageChange: (newPage) => setPage(newPage + 1),
+              }}
+            />
+          </CardContent>
+        </Card>
+      </Tabs>
+    </DashboardLayout>
+  );
+}
