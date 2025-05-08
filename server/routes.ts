@@ -556,15 +556,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: transactions.id,
           amount: transactions.amount,
-          date: transactions.createdAt,
+          date: transactions.created_at,
           customerName: users.name,
-          merchantName: merchants.name,
+          merchantName: merchants.storeName,
           status: transactions.status
         })
         .from(transactions)
-        .innerJoin(users, eq(transactions.customerId, users.id))
-        .innerJoin(merchants, eq(transactions.merchantId, merchants.id))
-        .orderBy(desc(transactions.createdAt))
+        .innerJoin(users, eq(transactions.user_id, users.id))
+        .innerJoin(merchants, eq(transactions.merchant_id, merchants.id))
+        .orderBy(desc(transactions.created_at))
         .limit(5);
       
       res.json({
@@ -752,7 +752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const productsList = await db
         .select()
         .from(products)
-        .where(eq(products.merchantId, merchant.id))
+        .where(eq(products.merchant_id, merchant.id))
         .orderBy(products.name);
         
       res.json(productsList);

@@ -81,14 +81,14 @@ export const cashbacks = pgTable("cashbacks", {
 // Products/Services
 export const products = pgTable("products", {
   id: serial("id").primaryKey(),
-  merchantId: integer("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
+  merchant_id: integer("merchant_id").notNull().references(() => merchants.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   description: text("description"),
   price: numeric("price").notNull(),
   category: text("category"),
-  inventoryCount: integer("inventory_count"),
+  inventory_count: integer("inventory_count"),
   active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Transactions
@@ -120,34 +120,34 @@ export const transactionItems = pgTable("transaction_items", {
 // Transfers
 export const transfers = pgTable("transfers", {
   id: serial("id").primaryKey(),
-  fromUserId: integer("from_user_id").notNull().references(() => users.id),
-  toUserId: integer("to_user_id").notNull().references(() => users.id),
+  from_user_id: integer("from_user_id").notNull().references(() => users.id),
+  to_user_id: integer("to_user_id").notNull().references(() => users.id),
   amount: numeric("amount").notNull(),
   description: text("description"),
   status: text("status").notNull().default("completed"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Referrals
 export const referrals = pgTable("referrals", {
   id: serial("id").primaryKey(),
-  referrerId: integer("referrer_id").notNull().references(() => users.id),
-  referredId: integer("referred_id").notNull().references(() => users.id),
+  referrer_id: integer("referrer_id").notNull().references(() => users.id),
+  referred_id: integer("referred_id").notNull().references(() => users.id),
   bonus: numeric("bonus").notNull(),
   status: text("status").notNull().default("pending"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // QR Codes
 export const qrCodes = pgTable("qr_codes", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
+  user_id: integer("user_id").notNull().references(() => users.id),
   code: text("code").notNull().unique(),
   amount: numeric("amount").notNull(),
   description: text("description"),
-  expiresAt: timestamp("expires_at").notNull(),
+  expires_at: timestamp("expires_at").notNull(),
   used: boolean("used").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // System settings
@@ -155,30 +155,30 @@ export const settings = pgTable("settings", {
   id: serial("id").primaryKey(),
   key: text("key").notNull().unique(),
   value: text("value").notNull(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Commission settings
 export const commissionSettings = pgTable("commission_settings", {
   id: serial("id").primaryKey(),
-  platformFee: numeric("platform_fee").notNull().default("2.0"),
-  merchantCommission: numeric("merchant_commission").notNull().default("2.0"),
-  clientCashback: numeric("client_cashback").notNull().default("2.0"),
-  referralBonus: numeric("referral_bonus").notNull().default("1.0"),
-  minWithdrawal: numeric("min_withdrawal").notNull().default("50.0"),
-  maxCashbackBonus: numeric("max_cashback_bonus").notNull().default("10.0"),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-  updatedBy: integer("updated_by").references(() => users.id),
+  platform_fee: numeric("platform_fee").notNull().default("2.0"),
+  merchant_commission: numeric("merchant_commission").notNull().default("2.0"),
+  client_cashback: numeric("client_cashback").notNull().default("2.0"),
+  referral_bonus: numeric("referral_bonus").notNull().default("1.0"),
+  min_withdrawal: numeric("min_withdrawal").notNull().default("50.0"),
+  max_cashback_bonus: numeric("max_cashback_bonus").notNull().default("10.0"),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
+  updated_by: integer("updated_by").references(() => users.id),
 });
 
 // Audit logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  user_id: integer("user_id").references(() => users.id),
   action: text("action").notNull(),
   details: text("details"),
-  ipAddress: text("ip_address"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  ip_address: text("ip_address"),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Insert schemas
