@@ -170,6 +170,51 @@ export default function ClientReferrals() {
     },
   ];
   
+  // Se o usuário não for do tipo cliente, exiba uma mensagem de erro
+  if (user?.type !== "client") {
+    return (
+      <DashboardLayout title="Programa de Indicações" type="client">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Acesso Restrito</CardTitle>
+            <CardDescription>
+              Esta página é exclusiva para clientes do Vale Cashback.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Você não tem permissão para acessar esta página. Faça login como cliente para acessar o programa de indicações.</p>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+  
+  // Se houver um erro na busca, exiba uma mensagem para o usuário
+  if (referralsError) {
+    return (
+      <DashboardLayout title="Programa de Indicações" type="client">
+        <Card className="border-destructive">
+          <CardHeader>
+            <CardTitle className="text-destructive">Erro ao carregar dados</CardTitle>
+            <CardDescription>
+              Não foi possível carregar suas informações de indicações.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p>Tente recarregar a página. Se o problema persistir, entre em contato com o suporte.</p>
+            <Button 
+              onClick={() => window.location.reload()} 
+              className="mt-4"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Recarregar página
+            </Button>
+          </CardContent>
+        </Card>
+      </DashboardLayout>
+    );
+  }
+  
   return (
     <DashboardLayout title="Programa de Indicações" type="client">
       <div className="flex flex-col space-y-4">

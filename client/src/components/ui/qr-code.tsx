@@ -3,7 +3,7 @@ import { QRCodeCanvas } from "qrcode.react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Download, Share2 } from "lucide-react";
+import { Download, Share2, AlertCircle } from "lucide-react";
 
 interface QRCodeDisplayProps {
   value: string;
@@ -29,24 +29,39 @@ export function QRCodeDisplay({
   loading = false,
 }: QRCodeDisplayProps) {
   const [timeLeft, setTimeLeft] = useState<string>("");
+  const [qrError, setQrError] = useState<boolean>(false);
+  
+  // Validar se o valor do QR Code é válido
+  useEffect(() => {
+    if (!value || value.trim() === '') {
+      setQrError(true);
+    } else {
+      setQrError(false);
+    }
+  }, [value]);
   
   // Calculate time left if expiresAt is provided
   useEffect(() => {
     if (!expiresAt) return;
     
     const calculateTimeLeft = () => {
-      const now = new Date();
-      const difference = expiresAt.getTime() - now.getTime();
-      
-      if (difference <= 0) {
-        setTimeLeft("Expirado");
-        return;
+      try {
+        const now = new Date();
+        const difference = expiresAt.getTime() - now.getTime();
+        
+        if (difference <= 0) {
+          setTimeLeft("Expirado");
+          return;
+        }
+        
+        const minutes = Math.floor(difference / 1000 / 60);
+        const seconds = Math.floor((difference / 1000) % 60);
+        
+        setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
+      } catch (error) {
+        console.error("Erro ao calcular tempo restante:", error);
+        setTimeLeft("--:--");
       }
-      
-      const minutes = Math.floor(difference / 1000 / 60);
-      const seconds = Math.floor((difference / 1000) % 60);
-      
-      setTimeLeft(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
     };
     
     calculateTimeLeft();
@@ -105,11 +120,21 @@ export function QRCodeDisplay({
       <CardContent className="flex flex-col items-center justify-center p-6">
         {loading ? (
           <Skeleton className="rounded-md" style={{ width: size, height: size }} />
+        ) : qrError ? (
+          <div 
+            className="flex flex-col items-center justify-center bg-muted rounded-md" 
+            style={{ width: size, height: size }}
+          >
+            <AlertCircle className="h-12 w-12 text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground text-center">
+              QR Code não disponível
+            </p>
+          </div>
         ) : (
           <>
             <QRCodeCanvas
               id="qr-code-canvas"
-              value={value}
+              value={value || "https://valecashback.com"}
               size={size}
               level="H"
               includeMargin={true}
@@ -138,16 +163,26 @@ export function QRCodeDisplay({
         )}
       </CardContent>
       
-      {(downloadable || shareable) && !loading && (
+      {(downloadable || shareable) && !loading && !qrError && (
         <CardFooter className="flex justify-center gap-2 pb-6">
           {downloadable && (
-            <Button variant="outline" size="sm" onClick={handleDownload}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownload}
+              disabled={!value || value.trim() === ''}
+            >
               <Download className="mr-2 h-4 w-4" />
               Baixar
             </Button>
           )}
           {shareable && typeof navigator !== 'undefined' && 'share' in navigator && (
-            <Button variant="outline" size="sm" onClick={handleShare}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleShare}
+              disabled={!value || value.trim() === ''}
+            >
               <Share2 className="mr-2 h-4 w-4" />
               Compartilhar
             </Button>
