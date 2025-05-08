@@ -202,7 +202,7 @@ export default function ClientStores() {
               ))}
             </CardContent>
             <CardFooter>
-              <Button variant="ghost" size="sm" className="w-full" onClick={() => alert("Esta funcionalidade será implementada em breve!")}>
+              <Button variant="ghost" size="sm" className="w-full">
                 Ver todas as promoções
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
@@ -443,7 +443,7 @@ export default function ClientStores() {
                             </p>
                           </div>
                           
-                          <Button variant="default" className="w-full" onClick={() => alert("Esta funcionalidade será implementada em breve!")}>
+                          <Button variant="default" className="w-full">
                             Visitar Loja
                             <ExternalLink className="h-4 w-4 ml-2" />
                           </Button>
