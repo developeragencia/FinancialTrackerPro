@@ -196,7 +196,13 @@ export default function MerchantSales() {
   }, [searchTerm, searchBy, toast]);
 
   // Selecionar um cliente da lista de resultados
-  const handleSelectCustomer = (customer: Customer) => {
+  const handleSelectCustomer = (customer: Customer, e?: React.MouseEvent) => {
+    // Prevenir propagação do evento para evitar fechamentos inesperados
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
     setSelectedCustomer(customer);
     setSearchTerm("");
     setCustomerResults([]);
@@ -204,11 +210,17 @@ export default function MerchantSales() {
     // Fechar diálogo explicitamente para evitar problemas
     setTimeout(() => {
       setShowCustomerDialog(false);
-    }, 100);
+    }, 200); // Aumentado para 200ms para garantir que a UI tenha tempo de responder
   };
 
   // Adicionar produto ao carrinho
-  const handleAddToCart = () => {
+  const handleAddToCart = (e?: React.MouseEvent) => {
+    // Prevenir propagação do evento para evitar fechamentos inesperados
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+    
     if (!selectedProduct) return;
     
     // Verificar se o produto já está no carrinho
@@ -228,10 +240,10 @@ export default function MerchantSales() {
     setSelectedProduct(null);
     setQuantity(1);
     
-    // Fechar diálogo explicitamente para evitar problemas
+    // Fechar diálogo explicitamente para evitar problemas - com temporizador maior
     setTimeout(() => {
       setShowProductDialog(false);
-    }, 100);
+    }, 200);
   };
 
   // Remover produto do carrinho
@@ -660,7 +672,13 @@ export default function MerchantSales() {
         open={showCustomerDialog} 
         onOpenChange={(open) => {
           // Só permite fechar se for explicitamente fechado clicando em botões
-          if (!open) setShowCustomerDialog(false);
+          // Não fechamos automaticamente - o usuário precisa usar os botões explícitos
+          if (!open && !isSearching) {
+            setShowCustomerDialog(false);
+          } else if (!open && isSearching) {
+            // Se estiver buscando, não permite fechar o diálogo
+            return;
+          }
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -715,7 +733,7 @@ export default function MerchantSales() {
                     <div 
                       key={customer.id} 
                       className="p-3 hover:bg-muted cursor-pointer transition-colors"
-                      onClick={() => handleSelectCustomer(customer)}
+                      onClick={(e) => handleSelectCustomer(customer, e)}
                     >
                       <div className="font-medium">{customer.name}</div>
                       <div className="text-sm text-muted-foreground flex flex-wrap gap-x-3">
@@ -761,7 +779,14 @@ export default function MerchantSales() {
         open={showProductDialog} 
         onOpenChange={(open) => {
           // Só permite fechar se for explicitamente fechado clicando em botões
-          if (!open) setShowProductDialog(false);
+          // Implementando lógica mais robusta de controle de diálogo
+          if (!open && !isProcessing) {
+            // Só permite fechar se não estiver processando uma operação
+            setShowProductDialog(false);
+          } else if (!open && isProcessing) {
+            // Se estiver processando, não permite fechar
+            return;
+          }
         }}
       >
         <DialogContent className="sm:max-w-md">
@@ -849,7 +874,7 @@ export default function MerchantSales() {
             </Button>
             <Button 
               type="button" 
-              onClick={handleAddToCart}
+              onClick={(e) => handleAddToCart(e)}
               disabled={!selectedProduct}
               className="bg-accent hover:bg-accent/90"
             >
