@@ -85,12 +85,12 @@ export default function MerchantDashboard() {
         />
         <StatCard
           title="Valor Médio"
-          value={`R$ ${dashboardData.salesSummary.today.average.toFixed(2)}`}
+          value={formatCurrency(dashboardData.salesSummary.today.average)}
           icon={<Users className="h-5 w-5 text-accent" />}
         />
         <StatCard
           title="Comissão (2%)"
-          value={`R$ ${dashboardData.salesSummary.today.commission.toFixed(2)}`}
+          value={formatCurrency(dashboardData.salesSummary.today.commission)}
           icon={<Percent className="h-5 w-5 text-accent" />}
         />
       </StatCardGrid>
@@ -99,7 +99,7 @@ export default function MerchantDashboard() {
       <BarChartComponent
         title="Vendas da Semana"
         data={dashboardData.weekSalesData}
-        bars={[{ dataKey: "value", name: "Vendas Diárias (R$)" }]}
+        bars={[{ dataKey: "value", name: "Vendas Diárias ($)" }]}
         xAxisDataKey="day"
         className="mb-6"
       />
@@ -122,7 +122,7 @@ export default function MerchantDashboard() {
                 <div key={sale.id} className="p-3 border rounded-lg">
                   <div className="flex justify-between mb-1">
                     <span className="font-medium">{sale.customer}</span>
-                    <span className="font-medium">R$ {sale.amount.toFixed(2)}</span>
+                    <span className="font-medium">{formatCurrency(sale.amount)}</span>
                   </div>
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>{sale.date}</span>
@@ -148,7 +148,7 @@ export default function MerchantDashboard() {
                   <div className="flex-1">
                     <div className="font-medium">{product.name}</div>
                     <div className="text-sm text-muted-foreground">
-                      {product.sales} vendas · R$ {product.total.toFixed(2)}
+                      {product.sales} vendas · {formatCurrency(product.total)}
                     </div>
                   </div>
                   <div className="w-24 bg-muted rounded-full h-2">
