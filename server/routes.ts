@@ -766,24 +766,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Iniciar transação
       // Registrar a transação
       const [transaction] = await db.insert(transactions).values({
-        userId: customerId,        // Aqui modificamos para usar userId em vez de customerId
-        merchantId: merchant.id,
-        amount: total.toString(),  // Convertemos para string já que é numeric no schema
-        cashbackAmount: cashback.toString(),
+        user_id: customerId,        // Usando nome exato da coluna no banco
+        merchant_id: merchant.id,
+        amount: total.toString(),   // Convertemos para string já que é numeric no schema
+        cashback_amount: cashback.toString(),
         status: TransactionStatus.COMPLETED,
-        paymentMethod: paymentMethod,
-        description: notes || null
+        payment_method: paymentMethod,
+        description: notes || null,
+        created_at: new Date()
       }).returning();
       
       // Registrar os itens da transação
       if (items && items.length > 0) {
         for (const item of items) {
           await db.insert(transactionItems).values({
-            transactionId: transaction.id,
-            productId: item.productId || null,
-            productName: item.productName || `Produto ${item.id}`,
+            transaction_id: transaction.id,
+            product_id: item.productId || null,
+            product_name: item.productName || `Produto ${item.id}`,
             quantity: item.quantity,
-            price: item.price.toString()
+            price: item.price.toString(),
+            created_at: new Date()
           });
         }
       }
@@ -792,28 +794,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const existingCashback = await db
         .select()
         .from(cashbacks)
-        .where(eq(cashbacks.userId, customerId));
+        .where(eq(cashbacks.user_id, customerId));
         
       if (existingCashback.length > 0) {
         // Atualizar cashback existente
         const currentBalance = parseFloat(existingCashback[0].balance.toString());
-        const currentTotalEarned = parseFloat(existingCashback[0].totalEarned.toString());
+        const currentTotalEarned = parseFloat(existingCashback[0].total_earned.toString());
         
         await db
           .update(cashbacks)
           .set({
             balance: (currentBalance + parseFloat(cashback.toString())).toString(),
-            totalEarned: (currentTotalEarned + parseFloat(cashback.toString())).toString(),
-            updatedAt: new Date()
+            total_earned: (currentTotalEarned + parseFloat(cashback.toString())).toString(),
+            updated_at: new Date()
           })
-          .where(eq(cashbacks.userId, customerId));
+          .where(eq(cashbacks.user_id, customerId));
       } else {
         // Criar novo registro de cashback
         await db.insert(cashbacks).values({
-          userId: customerId,
+          user_id: customerId,
           balance: cashback.toString(),
-          totalEarned: cashback.toString(),
-          updatedAt: new Date()
+          total_earned: cashback.toString(),
+          updated_at: new Date()
         });
       }
       

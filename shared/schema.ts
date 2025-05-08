@@ -72,10 +72,10 @@ export const merchants = pgTable("merchants", {
 // Cashback balances
 export const cashbacks = pgTable("cashbacks", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   balance: numeric("balance").notNull().default("0.0"),
-  totalEarned: numeric("total_earned").notNull().default("0.0"),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  total_earned: numeric("total_earned").notNull().default("0.0"),
+  updated_at: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Products/Services
@@ -94,26 +94,27 @@ export const products = pgTable("products", {
 // Transactions
 export const transactions = pgTable("transactions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id),
-  merchantId: integer("merchant_id").notNull().references(() => merchants.id),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  merchant_id: integer("merchant_id").notNull().references(() => merchants.id),
   amount: numeric("amount").notNull(),
-  cashbackAmount: numeric("cashback_amount").notNull(),
-  referralAmount: numeric("referral_amount").default("0"),
-  status: text("status").notNull().default("completed"),
-  paymentMethod: text("payment_method").notNull(),
+  cashback_amount: numeric("cashback_amount").notNull(),
   description: text("description"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  status: text("status").notNull().default("completed"),
+  payment_method: text("payment_method").notNull(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
+  // Optional fields that might not be in all database instances
+  manual_amount: numeric("manual_amount"),
 });
 
 // Transaction Items
 export const transactionItems = pgTable("transaction_items", {
   id: serial("id").primaryKey(),
-  transactionId: integer("transaction_id").notNull().references(() => transactions.id, { onDelete: "cascade" }),
-  productId: integer("product_id").references(() => products.id),
-  productName: text("product_name").notNull(),
+  transaction_id: integer("transaction_id").notNull().references(() => transactions.id, { onDelete: "cascade" }),
+  product_id: integer("product_id").references(() => products.id),
+  product_name: text("product_name").notNull(),
   quantity: integer("quantity").notNull(),
   price: numeric("price").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  created_at: timestamp("created_at").notNull().defaultNow(),
 });
 
 // Transfers
