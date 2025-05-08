@@ -1,67 +1,315 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DataTable } from "@/components/ui/data-table";
-import { Eye, Plus, Trash2, ShoppingCart, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { 
+  Eye, 
+  Plus, 
+  Trash2, 
+  ShoppingCart, 
+  Loader2, 
+  Search, 
+  User, 
+  Phone, 
+  Mail,
+  CreditCard,
+  BadgePercent,
+  RefreshCw
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 
-// Mock data - would be replaced with real data from API
-const recentSales = [
-  { id: 1, customer: "Maria Silva", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, items: "5 itens" },
-  { id: 2, customer: "José Santos", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, items: "3 itens" },
-  { id: 3, customer: "Ana Oliveira", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, items: "7 itens" },
-  { id: 4, customer: "Carlos Souza", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, items: "4 itens" },
-  { id: 5, customer: "Juliana Lima", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, items: "12 itens" }
-];
+// Tipos de dados para o sistema
+interface Customer {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  cpfCnpj: string | null;
+  referredBy: number | null;
+  referral_code?: string;
+}
 
-const productItems = [
-  { id: 1, name: "Arroz Integral", price: 15.00 },
-  { id: 2, name: "Leite Desnatado", price: 5.00 },
-];
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  description?: string;
+  category?: string;
+  sku?: string;
+}
+
+interface CartItem extends Product {
+  quantity: number;
+}
+
+interface SaleTransaction {
+  id: number;
+  customer: string;
+  customerId: number;
+  date: string;
+  amount: number;
+  cashback: number;
+  referralBonus?: number;
+  items: string;
+  status: string;
+}
+
+// Configurações globais do sistema
+const SYSTEM_SETTINGS = {
+  cashbackRate: 0.02, // 2%
+  referralRate: 0.01, // 1%
+  merchantCommission: 0.02, // 2%
+  minWithdrawal: 50, // R$ 50,00
+};
 
 export default function MerchantSales() {
-  const [customerName, setCustomerName] = useState("");
-  const [items, setItems] = useState(productItems);
+  // Estados para o formulário de venda
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchBy, setSearchBy] = useState<'name' | 'email' | 'phone' | 'code'>('name');
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [customerResults, setCustomerResults] = useState<Customer[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showCustomerDialog, setShowCustomerDialog] = useState(false);
+  
+  // Estados para itens do carrinho
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [showProductDialog, setShowProductDialog] = useState(false);
+  
+  // Estados para pagamento
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("cash");
   const [discount, setDiscount] = useState<number | string>("");
-  const [sendReceipt, setSendReceipt] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [sendReceipt, setSendReceipt] = useState(true);
+  
+  // Estado para processamento
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Timeout para pesquisa de cliente
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   const { toast } = useToast();
 
-  // Calculate totals
-  const totalAmount = items.reduce((sum, item) => sum + item.price, 0);
-  const cashbackAmount = totalAmount * 0.02; // 2% cashback
+  // Queries para obter dados
+  const { data: products = [] } = useQuery<Product[]>({
+    queryKey: ['/api/merchant/products'],
+    // Se não tiver API implementada, usar dados mockados temporariamente
+    placeholderData: [
+      { id: 1, name: "Arroz Integral", price: 15.00, sku: "ARR001", category: "Alimentos" },
+      { id: 2, name: "Leite Desnatado", price: 5.00, sku: "LEI001", category: "Laticínios" },
+      { id: 3, name: "Café Gourmet", price: 12.90, sku: "CAF001", category: "Bebidas" },
+      { id: 4, name: "Pão Integral", price: 8.50, sku: "PAO001", category: "Padaria" },
+      { id: 5, name: "Sabonete", price: 3.99, sku: "HIG001", category: "Higiene" },
+    ]
+  });
+
+  const { data: salesData = { transactions: [] } } = useQuery<{ transactions: SaleTransaction[] }>({
+    queryKey: ['/api/merchant/sales'],
+    // Se não tiver API implementada, usar dados mockados temporariamente
+    placeholderData: {
+      transactions: [
+        { id: 1, customerId: 1, customer: "Maria Silva", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, items: "5 itens", status: "completed" },
+        { id: 2, customerId: 2, customer: "José Santos", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, items: "3 itens", status: "completed" },
+        { id: 3, customerId: 3, customer: "Ana Oliveira", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, items: "7 itens", status: "completed" },
+        { id: 4, customerId: 4, customer: "Carlos Souza", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, items: "4 itens", status: "completed" },
+        { id: 5, customerId: 5, customer: "Juliana Lima", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, items: "12 itens", status: "completed" }
+      ]
+    }
+  });
+
+  // Mutation para registrar uma venda
+  const registerSaleMutation = useMutation({
+    mutationFn: async (saleData: any) => {
+      const res = await apiRequest("POST", "/api/merchant/sales", saleData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Venda registrada com sucesso",
+        description: `Venda para ${selectedCustomer?.name} foi processada e os valores de cashback foram distribuídos automaticamente.`,
+      });
+
+      // Resetar o formulário
+      resetForm();
+      
+      // Invalidar queries para atualizar os dados
+      queryClient.invalidateQueries({ queryKey: ['/api/merchant/sales'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/merchant/dashboard'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao registrar venda",
+        description: error.message || "Ocorreu um erro ao processar a venda. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Cálculos para o resumo da venda
+  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discountValue = discount ? parseFloat(discount.toString()) : 0;
-  const finalAmount = Math.max(0, totalAmount - discountValue);
+  const total = Math.max(0, subtotal - discountValue);
+  const cashbackAmount = total * SYSTEM_SETTINGS.cashbackRate;
+  const referralBonus = selectedCustomer?.referredBy 
+    ? total * SYSTEM_SETTINGS.referralRate 
+    : 0;
+  const merchantCommission = total * SYSTEM_SETTINGS.merchantCommission;
 
-  const handleAddProduct = () => {
-    // In a real implementation, this would open a product selection modal
-    toast({
-      title: "Adicionar produto",
-      description: "Funcionalidade de adicionar produto será implementada em breve.",
-    });
+  // Pesquisar cliente com debounce
+  useEffect(() => {
+    if (searchTerm.length < 2) {
+      setCustomerResults([]);
+      return;
+    }
+
+    // Limpar timeout anterior
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    setIsSearching(true);
+
+    // Debounce de 500ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        // Em um cenário real, isso seria uma chamada de API
+        // const response = await apiRequest("GET", `/api/customers/search?term=${searchTerm}&by=${searchBy}`);
+        // const data = await response.json();
+        // setCustomerResults(data);
+        
+        // Temporariamente, usamos dados mockados
+        const mockCustomers: Customer[] = [
+          { id: 1, name: "Maria Silva", email: "maria@example.com", phone: "11999887766", cpfCnpj: "123.456.789-00", referredBy: null, referral_code: "MARIA123" },
+          { id: 2, name: "José Santos", email: "jose@example.com", phone: "11988776655", cpfCnpj: "987.654.321-00", referredBy: 1, referral_code: "JOSE456" },
+          { id: 3, name: "Ana Oliveira", email: "ana@example.com", phone: "11977665544", cpfCnpj: "456.789.123-00", referredBy: null, referral_code: "ANA789" },
+          { id: 4, name: "Carlos Souza", email: "carlos@example.com", phone: "11966554433", cpfCnpj: "789.123.456-00", referredBy: 2, referral_code: "CARLOS012" },
+          { id: 5, name: "Juliana Lima", email: "juliana@example.com", phone: "11955443322", cpfCnpj: "321.654.987-00", referredBy: 1, referral_code: "JULIANA345" }
+        ];
+        
+        // Filtrar clientes de acordo com o termo de busca e tipo de busca
+        const filteredCustomers = mockCustomers.filter(customer => {
+          switch(searchBy) {
+            case 'name':
+              return customer.name.toLowerCase().includes(searchTerm.toLowerCase());
+            case 'email':
+              return customer.email.toLowerCase().includes(searchTerm.toLowerCase());
+            case 'phone':
+              return customer.phone?.includes(searchTerm);
+            case 'code':
+              return customer.referral_code?.toLowerCase().includes(searchTerm.toLowerCase());
+            default:
+              return false;
+          }
+        });
+        
+        setCustomerResults(filteredCustomers);
+      } catch (error) {
+        console.error("Erro ao buscar clientes:", error);
+        toast({
+          title: "Erro na busca",
+          description: "Não foi possível buscar os clientes. Tente novamente.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, searchBy, toast]);
+
+  // Selecionar um cliente da lista de resultados
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setSearchTerm("");
+    setCustomerResults([]);
+    setShowCustomerDialog(false);
   };
 
-  const handleRemoveProduct = (id: number) => {
-    setItems(items.filter(item => item.id !== id));
+  // Adicionar produto ao carrinho
+  const handleAddToCart = () => {
+    if (!selectedProduct) return;
+    
+    // Verificar se o produto já está no carrinho
+    const existingItemIndex = cartItems.findIndex(item => item.id === selectedProduct.id);
+    
+    if (existingItemIndex >= 0) {
+      // Atualizar quantidade se o produto já estiver no carrinho
+      const updatedItems = [...cartItems];
+      updatedItems[existingItemIndex].quantity += quantity;
+      setCartItems(updatedItems);
+    } else {
+      // Adicionar novo item ao carrinho
+      setCartItems([...cartItems, { ...selectedProduct, quantity }]);
+    }
+    
+    // Resetar seleção de produto
+    setSelectedProduct(null);
+    setQuantity(1);
+    setShowProductDialog(false);
   };
 
+  // Remover produto do carrinho
+  const handleRemoveFromCart = (id: number) => {
+    setCartItems(cartItems.filter(item => item.id !== id));
+  };
+
+  // Abrir dialog de seleção de produto
+  const handleOpenProductDialog = () => {
+    setSelectedProduct(null);
+    setQuantity(1);
+    setShowProductDialog(true);
+  };
+
+  // Abrir dialog de busca de cliente
+  const handleOpenCustomerDialog = () => {
+    setSearchTerm("");
+    setCustomerResults([]);
+    setShowCustomerDialog(true);
+  };
+
+  // Resetar formulário após o registro da venda
+  const resetForm = () => {
+    setSelectedCustomer(null);
+    setCartItems([]);
+    setSelectedPaymentMethod("cash");
+    setDiscount("");
+    setNotes("");
+    setSendReceipt(true);
+  };
+
+  // Processar o registro da venda
   const handleRegisterSale = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!customerName || items.length === 0) {
+    if (!selectedCustomer) {
       toast({
-        title: "Campos obrigatórios",
-        description: "Preencha o nome do cliente e adicione pelo menos um produto.",
+        title: "Cliente não selecionado",
+        description: "Selecione um cliente para registrar a venda.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (cartItems.length === 0) {
+      toast({
+        title: "Carrinho vazio",
+        description: "Adicione pelo menos um produto ao carrinho.",
         variant: "destructive",
       });
       return;
@@ -69,69 +317,64 @@ export default function MerchantSales() {
     
     setIsProcessing(true);
     
-    try {
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      toast({
-        title: "Venda registrada",
-        description: `Venda no valor de R$ ${finalAmount.toFixed(2)} registrada com sucesso.`,
-      });
-      
-      // Reset form
-      setCustomerName("");
-      setItems([]);
-      setSelectedPaymentMethod("cash");
-      setDiscount("");
-      setSendReceipt(false);
-      
-      // Refresh sales data
-      queryClient.invalidateQueries({ queryKey: ['/api/merchant/sales'] });
-    } catch (error) {
-      toast({
-        title: "Erro ao registrar venda",
-        description: "Ocorreu um erro ao registrar a venda. Tente novamente.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
+    // Preparar dados da venda
+    const saleData = {
+      customerId: selectedCustomer.id,
+      items: cartItems.map(item => ({
+        productId: item.id,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      subtotal,
+      discount: discountValue,
+      total,
+      cashback: cashbackAmount,
+      referralBonus: selectedCustomer.referredBy ? referralBonus : 0,
+      referrerId: selectedCustomer.referredBy,
+      paymentMethod: selectedPaymentMethod,
+      notes,
+      sendReceipt
+    };
+    
+    // Registrar venda (usar mutation em vez de implementação direta)
+    registerSaleMutation.mutate(saleData);
   };
 
-  // Column configuration for sales table
+  // Configuração de colunas para a tabela de vendas recentes
   const columns = [
     {
       header: "ID",
-      accessorKey: "id",
+      accessorKey: "id" as keyof SaleTransaction,
     },
     {
       header: "Cliente",
-      accessorKey: "customer",
+      accessorKey: "customer" as keyof SaleTransaction,
     },
     {
       header: "Data/Hora",
-      accessorKey: "date",
+      accessorKey: "date" as keyof SaleTransaction,
     },
     {
       header: "Valor",
-      accessorKey: "amount",
-      cell: (row: any) => `R$ ${row.amount.toFixed(2)}`,
+      accessorKey: "amount" as keyof SaleTransaction,
+      cell: (item: SaleTransaction) => `R$ ${item.amount.toFixed(2)}`,
     },
     {
-      header: "Itens",
-      accessorKey: "items",
+      header: "Cashback",
+      accessorKey: "cashback" as keyof SaleTransaction,
+      cell: (item: SaleTransaction) => `R$ ${item.cashback.toFixed(2)}`,
     }
   ];
 
-  // Actions for sales table
+  // Ações para a tabela de vendas recentes
   const actions = [
     {
       label: "Ver detalhes",
       icon: <Eye className="h-4 w-4" />,
-      onClick: (sale: any) => {
+      onClick: (sale: SaleTransaction) => {
         toast({
           title: `Venda #${sale.id}`,
-          description: `Cliente: ${sale.customer}, Valor: R$ ${sale.amount.toFixed(2)}`,
+          description: `Cliente: ${sale.customer}, Valor: R$ ${sale.amount.toFixed(2)}, Cashback: R$ ${sale.cashback.toFixed(2)}`,
         });
       },
     },
@@ -140,52 +383,89 @@ export default function MerchantSales() {
   return (
     <DashboardLayout title="Registro de Vendas" type="merchant">
       <div className="grid md:grid-cols-2 gap-6">
-        {/* New Sale Form */}
+        {/* Formulário de Nova Venda */}
         <Card>
           <CardHeader>
             <CardTitle>Nova Venda</CardTitle>
+            <CardDescription>
+              Registre uma venda para processar cashback e benefícios automaticamente
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleRegisterSale} className="space-y-4">
-              <div>
-                <Label htmlFor="customer">Cliente</Label>
-                <Input
-                  id="customer"
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder="Nome do cliente ou e-mail"
-                  disabled={isProcessing}
-                />
+              {/* Seleção de Cliente */}
+              <div className="space-y-2">
+                <Label>Cliente</Label>
+                {selectedCustomer ? (
+                  <div className="p-3 border rounded-lg bg-muted">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="font-medium">{selectedCustomer.name}</div>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setSelectedCustomer(null)}
+                      >
+                        Trocar
+                      </Button>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {selectedCustomer.email} • {selectedCustomer.phone || "Sem telefone"}
+                    </div>
+                    {selectedCustomer.referredBy && (
+                      <div className="mt-1 text-xs text-blue-600">
+                        Cliente indicado • Bônus de {(SYSTEM_SETTINGS.referralRate * 100).toFixed(0)}% será aplicado
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleOpenCustomerDialog}
+                  >
+                    <User className="mr-2 h-4 w-4" /> Buscar Cliente
+                  </Button>
+                )}
               </div>
               
-              <div>
-                <Label>Produtos</Label>
-                <div className="border rounded-md p-2 mb-2">
+              {/* Lista de Produtos no Carrinho */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Produtos no Carrinho</Label>
+                  <span className="text-sm text-muted-foreground">
+                    {cartItems.length} {cartItems.length === 1 ? 'item' : 'itens'}
+                  </span>
+                </div>
+                <div className="border rounded-md p-2 mb-2 max-h-64 overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Produto</TableHead>
+                        <TableHead className="text-center">Qtd</TableHead>
                         <TableHead className="text-right">Valor</TableHead>
                         <TableHead className="text-center w-16">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {items.length === 0 ? (
+                      {cartItems.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={3} className="text-center py-4 text-muted-foreground">
-                            Nenhum produto adicionado.
+                          <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                            Nenhum produto adicionado ao carrinho.
                           </TableCell>
                         </TableRow>
                       ) : (
-                        items.map((item) => (
+                        cartItems.map((item) => (
                           <TableRow key={item.id}>
                             <TableCell>{item.name}</TableCell>
-                            <TableCell className="text-right">R$ {item.price.toFixed(2)}</TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                onClick={() => handleRemoveProduct(item.id)}
+                                onClick={() => handleRemoveFromCart(item.id)}
                                 disabled={isProcessing}
                               >
                                 <Trash2 className="h-4 w-4 text-destructive" />
@@ -201,35 +481,24 @@ export default function MerchantSales() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={handleAddProduct}
+                  onClick={handleOpenProductDialog}
                   disabled={isProcessing}
                 >
                   <Plus className="mr-2 h-4 w-4" /> Adicionar Produto
                 </Button>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              {/* Resumo dos Valores */}
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="total">Valor Total (R$)</Label>
+                  <Label htmlFor="subtotal">Subtotal (R$)</Label>
                   <Input
-                    id="total"
-                    value={totalAmount.toFixed(2)}
+                    id="subtotal"
+                    value={subtotal.toFixed(2)}
                     readOnly
                     className="bg-muted"
                   />
                 </div>
-                <div>
-                  <Label htmlFor="cashback">Cashback (2%)</Label>
-                  <Input
-                    id="cashback"
-                    value={cashbackAmount.toFixed(2)}
-                    readOnly
-                    className="bg-muted"
-                  />
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="discount">Desconto (R$)</Label>
                   <Input
@@ -243,27 +512,51 @@ export default function MerchantSales() {
                     disabled={isProcessing}
                   />
                 </div>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="payment-method">Método de Pagamento</Label>
-                  <Select
-                    defaultValue={selectedPaymentMethod}
-                    onValueChange={setSelectedPaymentMethod}
-                    disabled={isProcessing}
-                  >
-                    <SelectTrigger id="payment-method">
-                      <SelectValue placeholder="Selecione um método" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Dinheiro</SelectItem>
-                      <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
-                      <SelectItem value="debit_card">Cartão de Débito</SelectItem>
-                      <SelectItem value="pix">Pix</SelectItem>
-                      <SelectItem value="cashback">Cashback</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="total">Total (R$)</Label>
+                  <Input
+                    id="total"
+                    value={total.toFixed(2)}
+                    readOnly
+                    className="bg-muted font-medium"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cashback">Cashback ({SYSTEM_SETTINGS.cashbackRate * 100}%)</Label>
+                  <Input
+                    id="cashback"
+                    value={cashbackAmount.toFixed(2)}
+                    readOnly
+                    className="bg-muted text-green-600"
+                  />
                 </div>
               </div>
               
+              {/* Método de Pagamento */}
+              <div>
+                <Label htmlFor="payment-method">Método de Pagamento</Label>
+                <Select
+                  defaultValue={selectedPaymentMethod}
+                  onValueChange={setSelectedPaymentMethod}
+                  disabled={isProcessing}
+                >
+                  <SelectTrigger id="payment-method">
+                    <SelectValue placeholder="Selecione um método" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">Dinheiro</SelectItem>
+                    <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
+                    <SelectItem value="debit_card">Cartão de Débito</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="cashback">Saldo de Cashback</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Opções adicionais */}
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="send-receipt"
@@ -274,12 +567,13 @@ export default function MerchantSales() {
                 <Label htmlFor="send-receipt">Enviar comprovante por e-mail</Label>
               </div>
               
+              {/* Botão de Registro */}
               <Button
                 type="submit"
-                className="w-full bg-accent"
-                disabled={isProcessing || items.length === 0}
+                className="w-full bg-accent hover:bg-accent/90"
+                disabled={isProcessing || !selectedCustomer || cartItems.length === 0}
               >
-                {isProcessing ? (
+                {isProcessing || registerSaleMutation.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processando...
@@ -295,26 +589,259 @@ export default function MerchantSales() {
           </CardContent>
         </Card>
         
-        {/* Recent Sales */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Vendas Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <DataTable
-              data={recentSales}
-              columns={columns}
-              actions={actions}
-              pagination={{
-                pageIndex: 0,
-                pageSize: 5,
-                pageCount: Math.ceil(recentSales.length / 5),
-                onPageChange: (page) => console.log("Page changed:", page),
-              }}
-            />
-          </CardContent>
-        </Card>
+        {/* Vendas Recentes e Resumo */}
+        <div className="space-y-6">
+          {/* Resumo da Comissão */}
+          <Card className="bg-orange-50 border-orange-200">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center text-orange-700">
+                <BadgePercent className="mr-2 h-4 w-4" /> 
+                Resumo da Distribuição de Valores
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Valor da Venda:</span>
+                  <span className="font-medium">R$ {total.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
+                  <span className="text-green-600">R$ {cashbackAmount.toFixed(2)}</span>
+                </div>
+                {selectedCustomer?.referredBy && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Bônus de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
+                    <span className="text-blue-600">R$ {referralBonus.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Taxa do Lojista ({SYSTEM_SETTINGS.merchantCommission * 100}%):</span>
+                  <span className="text-orange-600">R$ {merchantCommission.toFixed(2)}</span>
+                </div>
+                <div className="pt-2 border-t">
+                  <div className="flex justify-between font-medium">
+                    <span>Valor Líquido:</span>
+                    <span>R$ {(total - merchantCommission).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Vendas Recentes */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Vendas Recentes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DataTable
+                data={salesData.transactions}
+                columns={columns}
+                actions={actions}
+                pagination={{
+                  pageIndex: 0,
+                  pageSize: 5,
+                  pageCount: Math.ceil(salesData.transactions.length / 5),
+                  onPageChange: (page) => console.log("Page changed:", page),
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Dialog para Busca de Cliente */}
+      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Buscar Cliente</DialogTitle>
+            <DialogDescription>
+              Encontre o cliente pelo nome, e-mail, telefone ou código
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="flex gap-2">
+              <Select 
+                defaultValue={searchBy} 
+                onValueChange={(value) => setSearchBy(value as any)}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Buscar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="name">Nome</SelectItem>
+                  <SelectItem value="email">E-mail</SelectItem>
+                  <SelectItem value="phone">Telefone</SelectItem>
+                  <SelectItem value="code">Código</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <div className="relative flex-1">
+                <Input
+                  placeholder={`Buscar por ${
+                    searchBy === 'name' ? 'nome' : 
+                    searchBy === 'email' ? 'e-mail' : 
+                    searchBy === 'phone' ? 'telefone' : 'código'
+                  }`}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              </div>
+            </div>
+            
+            <div className="max-h-[300px] overflow-y-auto border rounded-md">
+              {isSearching ? (
+                <div className="p-4 text-center">
+                  <Loader2 className="h-5 w-5 animate-spin mx-auto mb-2" />
+                  <span className="text-sm text-muted-foreground">Buscando clientes...</span>
+                </div>
+              ) : customerResults.length > 0 ? (
+                <div className="divide-y">
+                  {customerResults.map((customer) => (
+                    <div 
+                      key={customer.id} 
+                      className="p-3 hover:bg-muted cursor-pointer transition-colors"
+                      onClick={() => handleSelectCustomer(customer)}
+                    >
+                      <div className="font-medium">{customer.name}</div>
+                      <div className="text-sm text-muted-foreground flex flex-wrap gap-x-3">
+                        <span className="flex items-center">
+                          <Mail className="h-3 w-3 mr-1" /> {customer.email}
+                        </span>
+                        {customer.phone && (
+                          <span className="flex items-center">
+                            <Phone className="h-3 w-3 mr-1" /> {customer.phone}
+                          </span>
+                        )}
+                      </div>
+                      {customer.referredBy && (
+                        <div className="mt-1 text-xs text-blue-600">
+                          Cliente indicado • Bônus de indicação aplicável
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : searchTerm.length > 0 ? (
+                <div className="p-4 text-center">
+                  <span className="text-sm text-muted-foreground">Nenhum cliente encontrado</span>
+                </div>
+              ) : (
+                <div className="p-4 text-center">
+                  <span className="text-sm text-muted-foreground">Digite para buscar clientes</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter className="sm:justify-start">
+            <Button type="button" variant="secondary" onClick={() => setShowCustomerDialog(false)}>
+              Cancelar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Adicionar Produto */}
+      <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Adicionar Produto</DialogTitle>
+            <DialogDescription>
+              Selecione um produto para adicionar ao carrinho
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <Select onValueChange={(value) => {
+              const product = products.find(p => p.id.toString() === value);
+              if (product) setSelectedProduct(product);
+            }}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um produto" />
+              </SelectTrigger>
+              <SelectContent>
+                {products.map((product) => (
+                  <SelectItem key={product.id} value={product.id.toString()}>
+                    {product.name} - R$ {product.price.toFixed(2)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {selectedProduct && (
+              <div className="space-y-2">
+                <div className="p-3 border rounded-md bg-muted">
+                  <div className="font-medium">{selectedProduct.name}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Preço unitário: R$ {selectedProduct.price.toFixed(2)}
+                  </div>
+                  {selectedProduct.category && (
+                    <div className="text-xs text-muted-foreground">
+                      Categoria: {selectedProduct.category}
+                    </div>
+                  )}
+                </div>
+                
+                <div>
+                  <Label htmlFor="quantity">Quantidade</Label>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    >
+                      -
+                    </Button>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                      className="text-center"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="icon"
+                      onClick={() => setQuantity(quantity + 1)}
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="pt-2">
+                  <div className="flex justify-between font-medium">
+                    <span>Total:</span>
+                    <span>R$ {(selectedProduct.price * quantity).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="secondary" onClick={() => setShowProductDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleAddToCart}
+              disabled={!selectedProduct}
+              className="bg-accent hover:bg-accent/90"
+            >
+              Adicionar ao Carrinho
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </DashboardLayout>
   );
 }
