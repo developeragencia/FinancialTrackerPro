@@ -46,11 +46,17 @@ export default function MerchantProfile() {
         name: formData.get('name') as string,
         description: formData.get('description') as string,
         address: formData.get('address') as string,
+        city: formData.get('city') as string,
+        state: formData.get('state') as string,
         phone: formData.get('phone') as string,
         email: formData.get('email') as string,
         website: formData.get('website') as string,
-        category: formData.get('category') as string
+        category: formData.get('category') as string,
+        owner: formData.get('owner') as string,
+        businessHours: formData.get('businessHours') as string
       };
+      
+      console.log("Sending profile update:", data);
       
       // Make API call
       const response = await apiRequest("PATCH", "/api/merchant/profile", data);
@@ -68,6 +74,7 @@ export default function MerchantProfile() {
         throw new Error(errorData.message || "Falha ao atualizar perfil");
       }
     } catch (error) {
+      console.error("Error updating profile:", error);
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar o perfil. Tente novamente.",
@@ -307,11 +314,17 @@ export default function MerchantProfile() {
                           Ofereça bônus de cashback em determinadas situações
                         </p>
                       </div>
-                      <Switch 
-                        id="enable-promotions"
-                        name="enable-promotions"
-                        checked={cashbackPromotions.enabled}
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id="enable-promotions"
+                          name="enable-promotions"
+                          checked={cashbackPromotions.enabled}
+                          defaultChecked={cashbackPromotions.enabled}
+                        />
+                        <Label htmlFor="enable-promotions" className="sr-only">
+                          Habilitar promoções de cashback
+                        </Label>
+                      </div>
                     </div>
                     
                     <div className="flex items-center justify-between border-t pt-4">
@@ -321,11 +334,17 @@ export default function MerchantProfile() {
                           O cashback será dobrado em compras realizadas aos sábados e domingos
                         </p>
                       </div>
-                      <Switch 
-                        id="weekend-double"
-                        name="double-weekends"
-                        checked={cashbackPromotions.doubleOnWeekends}
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id="weekend-double"
+                          name="double-weekends"
+                          checked={cashbackPromotions.doubleOnWeekends}
+                          defaultChecked={cashbackPromotions.doubleOnWeekends}
+                        />
+                        <Label htmlFor="weekend-double" className="sr-only">
+                          Cashback em dobro nos finais de semana
+                        </Label>
+                      </div>
                     </div>
                     
                     <div className="flex items-center justify-between border-t pt-4">
@@ -335,11 +354,17 @@ export default function MerchantProfile() {
                           Defina categorias de produtos com cashback diferenciado
                         </p>
                       </div>
-                      <Switch 
-                        id="special-categories"
-                        name="special-categories"
-                        checked={cashbackPromotions.specialCategories}
-                      />
+                      <div className="flex items-center space-x-2">
+                        <Switch 
+                          id="special-categories"
+                          name="special-categories"
+                          checked={cashbackPromotions.specialCategories}
+                          defaultChecked={cashbackPromotions.specialCategories}
+                        />
+                        <Label htmlFor="special-categories" className="sr-only">
+                          Cashback especial por categorias
+                        </Label>
+                      </div>
                     </div>
                     
                     <div className="border-t pt-4">
