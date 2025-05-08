@@ -352,6 +352,39 @@ export default function Register() {
                   </FormItem>
                 )}
               />
+              
+              <FormField
+                control={merchantForm.control}
+                name="companyLogo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-lg font-bold text-accent">Logo da Empresa</FormLabel>
+                    <div className="border-2 border-dashed border-accent rounded-md p-4 bg-accent/5">
+                      <FormControl>
+                        <Input 
+                          type="file" 
+                          accept="image/*"
+                          className="bg-white cursor-pointer" 
+                          onChange={(e) => {
+                            // Em uma implementação real, aqui faríamos upload da imagem
+                            // e atualizaríamos o campo com a URL da imagem
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              // Simular valor para o campo (normalmente seria URL da imagem)
+                              field.onChange(file.name);
+                            }
+                          }} 
+                          disabled={loading} 
+                        />
+                      </FormControl>
+                      <FormDescription className="mt-2 text-center">
+                        Selecione o arquivo de imagem do logotipo da sua empresa
+                      </FormDescription>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -397,35 +430,7 @@ export default function Register() {
                 )}
               />
 
-              <FormField
-                control={merchantForm.control}
-                name="companyLogo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Logo da Empresa</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={(e) => {
-                          // Em uma implementação real, aqui faríamos upload da imagem
-                          // e atualizaríamos o campo com a URL da imagem
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Simular valor para o campo (normalmente seria URL da imagem)
-                            field.onChange(file.name);
-                          }
-                        }} 
-                        disabled={loading} 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Selecione um arquivo de imagem para ser o logotipo da sua empresa
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
