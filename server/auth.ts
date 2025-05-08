@@ -20,14 +20,15 @@ declare global {
       password: string;
       phone: string | null;
       country: string | null;
-      countryCode: string | null;
+      country_code: string | null;
       type: string;
       status: string;
       photo: string | null;
-      securityQuestion: string | null;
-      securityAnswer: string | null;
-      createdAt: Date;
-      lastLogin: Date | null;
+      security_question: string | null;
+      security_answer: string | null;
+      created_at: Date;
+      last_login: Date | null;
+      invitation_code: string | null;
     }
   }
 }
@@ -215,14 +216,14 @@ export function setupAuth(app: Express) {
         
         // Registrar a alteração no log de auditoria
         await db.insert(auditLogs).values({
-          userId: user[0].id,
+          user_id: user[0].id,
           action: "PASSWORD_RESET",
           details: JSON.stringify({
             method: "security-question",
             success: true
           }),
-          ipAddress: req.ip || "unknown",
-          createdAt: new Date()
+          ip_address: req.ip || "unknown",
+          created_at: new Date()
         });
         
         // Em produção, enviaríamos a senha temporária por email
@@ -245,14 +246,14 @@ export function setupAuth(app: Express) {
         
         // Registrar a tentativa no log de auditoria
         await db.insert(auditLogs).values({
-          userId: user[0].id,
+          user_id: user[0].id,
           action: "PASSWORD_RESET_REQUEST",
           details: JSON.stringify({
             method: "email",
             success: true
           }),
-          ipAddress: req.ip || "unknown",
-          createdAt: new Date()
+          ip_address: req.ip || "unknown",
+          created_at: new Date()
         });
         
         return res.status(200).json({ 
