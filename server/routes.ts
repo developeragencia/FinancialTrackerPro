@@ -740,7 +740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantList = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
       
       if (!merchantList.length) {
         return res.json([]);
@@ -771,7 +771,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantList = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
         
       if (!merchantList.length) {
         return res.json({ transactions: [] });
@@ -790,13 +790,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cashback: transactions.cashback_amount,
           status: transactions.status,
           payment_method: transactions.payment_method,
-          items: sql`CONCAT(COUNT(${transactionItems.id}), ' itens')`.as("items")
+          items: sql`COUNT(${transactionItems.id})::text || ' itens'`.as("items")
         })
         .from(transactions)
         .innerJoin(users, eq(transactions.user_id, users.id))
         .leftJoin(transactionItems, eq(transactions.id, transactionItems.transaction_id))
         .where(eq(transactions.merchant_id, merchant.id))
-        .groupBy(transactions.id, users.id, users.name)
+        .groupBy(transactions.id, users.name)
         .orderBy(desc(transactions.created_at));
         
       res.json({ transactions: transactions_list });
@@ -815,7 +815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantResults = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantUserId));
+        .where(eq(merchants.user_id, merchantUserId));
         
       if (merchantResults.length === 0) {
         console.error(`Lojista não encontrado para o usuário ID ${merchantUserId}`);
