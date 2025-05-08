@@ -19,7 +19,7 @@ import {
   PaymentMethod,
   TransactionStatus,
 } from "@shared/schema";
-import { addAdminRoutes, addMerchantRoutes } from "./routes.admin";
+import { addAdminRoutes, addMerchantRoutes, addClientRoutes } from "./routes.admin";
 
 // Middleware para verificar autenticação
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -54,9 +54,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticação e rotas relacionadas
   setupAuth(app);
   
-  // Adicionar rotas administrativas e de lojista
+  // Adicionar rotas administrativas, de lojista e de cliente
   addAdminRoutes(app);
   addMerchantRoutes(app);
+  addClientRoutes(app);
   
   // Inicializa as configurações de comissão
   await initializeCommissionSettings();
