@@ -1210,20 +1210,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Top produtos vendidos
         const topProducts = await db
           .select({
-            name: sql`${transactionItems.productName}`.as("name"),
+            name: sql`${transactionItems.product_name}`.as("name"),
             value: sql`SUM(${transactionItems.quantity})`.as("value"),
             revenue: sql`SUM(${transactionItems.price} * ${transactionItems.quantity})`.as("revenue")
           })
           .from(transactionItems)
-          .innerJoin(transactions, eq(transactionItems.transactionId, transactions.id))
+          .innerJoin(transactions, eq(transactionItems.transaction_id, transactions.id))
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           )
-          .groupBy(sql`${transactionItems.productName}`)
+          .groupBy(sql`${transactionItems.product_name}`)
           .orderBy(sql`SUM(${transactionItems.quantity})`, "desc")
           .limit(5);
         
@@ -1255,22 +1255,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Total de clientes únicos
         const totalCustomers = await db
           .select({
-            count: sql`COUNT(DISTINCT ${transactions.customerId})`.as("count")
+            count: sql`COUNT(DISTINCT ${transactions.user_id})`.as("count")
           })
           .from(transactions)
-          .where(eq(transactions.merchantId, merchant.id));
+          .where(eq(transactions.merchant_id, merchant.id));
         
         // Clientes que compraram no período atual (novos)
         const newCustomers = await db
           .select({
-            count: sql`COUNT(DISTINCT ${transactions.customerId})`.as("count")
+            count: sql`COUNT(DISTINCT ${transactions.user_id})`.as("count")
           })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
@@ -1280,23 +1280,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Evolução mensal da base de clientes
         const timeline = await db
           .select({
-            date: sql`DATE_TRUNC('month', ${transactions.createdAt})`.as("date"),
-            value: sql`COUNT(DISTINCT ${transactions.customerId})`.as("value")
+            date: sql`DATE_TRUNC('month', ${transactions.created_at})`.as("date"),
+            value: sql`COUNT(DISTINCT ${transactions.user_id})`.as("value")
           })
           .from(transactions)
-          .where(eq(transactions.merchantId, merchant.id))
-          .groupBy(sql`DATE_TRUNC('month', ${transactions.createdAt})`)
-          .orderBy(sql`DATE_TRUNC('month', ${transactions.createdAt})`);
+          .where(eq(transactions.merchant_id, merchant.id))
+          .groupBy(sql`DATE_TRUNC('month', ${transactions.created_at})`)
+          .orderBy(sql`DATE_TRUNC('month', ${transactions.created_at})`);
         
         // Clientes por frequência de compras
         const byFrequency = await db
           .select({
-            customerId: transactions.customerId,
+            customerId: transactions.user_id,
             visits: sql`COUNT(*)`.as("visits")
           })
           .from(transactions)
-          .where(eq(transactions.merchantId, merchant.id))
-          .groupBy(transactions.customerId);
+          .where(eq(transactions.merchant_id, merchant.id))
+          .groupBy(transactions.user_id);
         
         const frequencyDistribution = {
           "1 compra": 0,
@@ -1316,15 +1316,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Top 5 clientes
         const topCustomers = await db
           .select({
-            customerId: transactions.customerId,
+            customerId: transactions.user_id,
             name: users.name,
             visits: sql`COUNT(*)`.as("visits"),
             spent: sql`SUM(${transactions.amount})`.as("spent")
           })
           .from(transactions)
-          .innerJoin(users, eq(transactions.customerId, users.id))
-          .where(eq(transactions.merchantId, merchant.id))
-          .groupBy(transactions.customerId, users.name)
+          .innerJoin(users, eq(transactions.user_id, users.id))
+          .where(eq(transactions.merchant_id, merchant.id))
+          .groupBy(transactions.user_id, users.name)
           .orderBy(sql`SUM(${transactions.amount})`, "desc")
           .limit(5);
         
@@ -1351,13 +1351,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       else if (type === "cashback") {
         // Total de cashback no período
         const totalCashback = await db
-          .select({ sum: sql`SUM(${transactions.cashbackAmount})` })
+          .select({ sum: sql`SUM(${transactions.cashback_amount})` })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
@@ -1367,29 +1367,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.cashbackAmount} > 0`,
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.cashback_amount} > 0`,
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
         // Cashback diário para timeline
         const timeline = await db
           .select({
-            date: sql`DATE_TRUNC('day', ${transactions.createdAt})`.as("date"),
-            value: sql`SUM(${transactions.cashbackAmount})`.as("value")
+            date: sql`DATE_TRUNC('day', ${transactions.created_at})`.as("date"),
+            value: sql`SUM(${transactions.cashback_amount})`.as("value")
           })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           )
-          .groupBy(sql`DATE_TRUNC('day', ${transactions.createdAt})`)
-          .orderBy(sql`DATE_TRUNC('day', ${transactions.createdAt})`);
+          .groupBy(sql`DATE_TRUNC('day', ${transactions.created_at})`)
+          .orderBy(sql`DATE_TRUNC('day', ${transactions.created_at})`);
         
         // Dados fictícios para a distribuição de cashback por tipo
         const distribution = [
