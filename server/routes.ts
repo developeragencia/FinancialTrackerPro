@@ -1710,6 +1710,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao buscar transferências" });
     }
   });
+  
+  // Obter dados do código de convite
+  app.get("/api/invite/:code", async (req, res) => {
+    try {
+      const referralCode = req.params.code;
+      
+      // Verificar formato do código
+      if (!referralCode || referralCode.length < 4) {
+        return res.status(404).json({ message: "Código de convite inválido" });
+      }
+      
+      // Determinar tipo baseado no prefixo
+      const isClient = referralCode.startsWith("CL");
+      const isMerchant = referralCode.startsWith("LJ");
+      
+      if (!isClient && !isMerchant) {
+        return res.status(404).json({ message: "Código de convite inválido" });
+      }
+      
+      // Dados mockados para teste
+      const referrerId = isClient ? 2 : 3; // Cliente = 2, Lojista = 3
+      const referrerName = isClient ? "Cliente Teste" : "Lojista Teste";
+      const userType = isClient ? "client" : "merchant";
+      
+      // Dados do lojista, se for o caso
+      let merchantData = null;
+      if (isMerchant) {
+        merchantData = {
+          storeName: "Loja Teste",
+          logo: "https://via.placeholder.com/100",
+          category: "Varejo",
+          description: "Loja especializada em produtos diversos para toda família."
+        };
+      }
+      
+      // Retornar informações sobre o convite
+      res.json({
+        referrerId: referrerId,
+        referrerName: referrerName,
+        referrerType: userType,
+        referralCode: referralCode,
+        merchantData
+      });
+    } catch (error) {
+      console.error("Erro ao buscar dados do convite:", error);
+      res.status(500).json({ message: "Erro ao buscar dados do convite" });
+    }
+  });
 
   const httpServer = createServer(app);
 

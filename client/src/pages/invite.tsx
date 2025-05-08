@@ -191,13 +191,44 @@ export default function InvitePage() {
     { value: "other", label: "Outro" }
   ];
   
+  // Consulta para obter informações do convite
+  const { data: inviteData, isLoading: isLoadingInvite } = useQuery({
+    queryKey: ['/api/invite', referralCode],
+    queryFn: async () => {
+      if (!referralCode) return null;
+      const res = await fetch(`/api/invite/${referralCode}`);
+      if (!res.ok) throw new Error('Código de convite inválido');
+      return res.json();
+    },
+    enabled: !!referralCode
+  });
+
   // Funções para submissão dos formulários
   const onClientSubmit = (data: z.infer<typeof clientSchema>) => {
-    clientRegisterMutation.mutate(data);
+    const formData = {
+      ...data,
+      // Adicionamos os dados do referenciador como propriedades extras
+      // que serão processadas no backend
+      referralInfo: inviteData ? {
+        referrerId: inviteData.referrerId,
+        referralCode: inviteData.referralCode
+      } : undefined
+    };
+
+    clientRegisterMutation.mutate(formData as any);
   };
   
   const onMerchantSubmit = (data: z.infer<typeof merchantSchema>) => {
-    merchantRegisterMutation.mutate(data);
+    const formData = {
+      ...data,
+      // Adicionamos os dados do referenciador como propriedades extras
+      referralInfo: inviteData ? {
+        referrerId: inviteData.referrerId,
+        referralCode: inviteData.referralCode
+      } : undefined
+    };
+
+    merchantRegisterMutation.mutate(formData as any);
   };
   
   if (loading) {
