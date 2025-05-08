@@ -69,7 +69,7 @@ const SYSTEM_SETTINGS = {
   cashbackRate: 0.02, // 2%
   referralRate: 0.01, // 1%
   merchantCommission: 0.02, // 2%
-  minWithdrawal: 50, // $ 50.00
+  minWithdrawal: 50, // R$ 50,00
 };
 
 export default function MerchantSales() {
@@ -340,12 +340,12 @@ export default function MerchantSales() {
     {
       header: "Valor",
       accessorKey: "amount" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.amount)).toFixed(2)}`,
+      cell: (item: SaleTransaction) => `R$ ${parseFloat(String(item.amount)).toFixed(2)}`,
     },
     {
       header: "Cashback",
       accessorKey: "cashback" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.cashback)).toFixed(2)}`,
+      cell: (item: SaleTransaction) => `R$ ${parseFloat(String(item.cashback)).toFixed(2)}`,
     }
   ];
 
@@ -357,7 +357,7 @@ export default function MerchantSales() {
       onClick: (sale: SaleTransaction) => {
         toast({
           title: `Venda #${sale.id}`,
-          description: `Cliente: ${sale.customer}, Valor: $ ${parseFloat(String(sale.amount)).toFixed(2)}, Cashback: $ ${parseFloat(String(sale.cashback)).toFixed(2)}`,
+          description: `Cliente: ${sale.customer}, Valor: R$ ${parseFloat(String(sale.amount)).toFixed(2)}, Cashback: R$ ${parseFloat(String(sale.cashback)).toFixed(2)}`,
         });
       },
     },
@@ -861,7 +861,7 @@ export default function MerchantSales() {
                 <div className="pt-2">
                   <div className="flex justify-between font-medium">
                     <span>Total:</span>
-                    <span>$ {(selectedProduct.price * quantity).toFixed(2)}</span>
+                    <span>R$ {(selectedProduct.price * quantity).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
