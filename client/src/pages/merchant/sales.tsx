@@ -69,7 +69,7 @@ const SYSTEM_SETTINGS = {
   cashbackRate: 0.02, // 2%
   referralRate: 0.01, // 1%
   merchantCommission: 0.02, // 2%
-  minWithdrawal: 50, // R$ 50,00
+  minWithdrawal: 50, // $ 50.00
 };
 
 export default function MerchantSales() {
