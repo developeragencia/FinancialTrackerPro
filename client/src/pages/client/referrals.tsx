@@ -41,13 +41,45 @@ export default function ClientReferrals() {
   });
   
   // Função para copiar o link de indicação
-  const copyReferralLink = () => {
-    navigator.clipboard.writeText(referralsData?.referralUrl || "");
-    toast({
-      title: "Link copiado!",
-      description: "O link de indicação foi copiado para a área de transferência.",
-      variant: "default",
-    });
+  const copyReferralLink = async () => {
+    try {
+      // Use a API de clipboard mais recente que funciona melhor em navegadores modernos
+      if (referralsData?.referralUrl) {
+        // Adiciona texto temporário à página para contornar problemas de permissão
+        const textArea = document.createElement('textarea');
+        textArea.value = referralsData.referralUrl;
+        textArea.style.position = 'fixed';  // Fora da tela
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        // Tenta o método moderno e depois o método de fallback
+        try {
+          await navigator.clipboard.writeText(referralsData.referralUrl);
+        } catch (err) {
+          // Fallback para o método de execCommand que funciona em mais navegadores
+          document.execCommand('copy');
+        }
+        
+        // Remove o elemento temporário
+        document.body.removeChild(textArea);
+        
+        toast({
+          title: "Link copiado!",
+          description: "O link de indicação foi copiado para a área de transferência.",
+          variant: "default",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao copiar link:", error);
+      toast({
+        title: "Erro ao copiar",
+        description: "Não foi possível copiar o link. Tente novamente ou copie manualmente.",
+        variant: "destructive",
+      });
+    }
   };
   
   // Função para compartilhar no WhatsApp
