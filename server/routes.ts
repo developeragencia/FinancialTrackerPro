@@ -648,10 +648,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantId = req.user.id;
       
       // Obter dados do merchant
-      const [merchant] = await db
+      const merchantList = await db
         .select()
         .from(merchants)
         .where(eq(merchants.userId, merchantId));
+      
+      if (!merchantList.length) {
+        return res.json([]);
+      }
+      
+      const merchant = merchantList[0];
         
       // Listar produtos do lojista
       const productsList = await db
@@ -673,10 +679,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantId = req.user.id;
       
       // Obter dados do merchant
-      const [merchant] = await db
+      const merchantList = await db
         .select()
         .from(merchants)
         .where(eq(merchants.userId, merchantId));
+        
+      if (!merchantList.length) {
+        return res.json({ transactions: [] });
+      }
+      
+      const merchant = merchantList[0];
         
       // Listar transações
       const transactions_list = await db
@@ -802,48 +814,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!term || term.toString().length < 2) {
         return res.json([]);
       }
-      
-      let query = db.select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        phone: users.phone,
-        cpfCnpj: users.cpfCnpj,
-        referralCode: sql`CONCAT('USER', ${users.id})`.as("referralCode")
-      }).from(users).where(eq(users.type, "client"));
-      
-      // Filtrar por termo de busca
-      if (searchBy === "name") {
-        query = query.where(sql`${users.name} ILIKE ${`%${term}%`}`);
-      } else if (searchBy === "email") {
-        query = query.where(sql`${users.email} ILIKE ${`%${term}%`}`);
-      } else if (searchBy === "phone") {
-        query = query.where(sql`${users.phone} ILIKE ${`%${term}%`}`);
-      } else if (searchBy === "code") {
-        query = query.where(sql`CONCAT('USER', ${users.id}) ILIKE ${`%${term}%`}`);
-      }
-      
-      const customers = await query.limit(10);
-      
-      // Adicionar informação sobre quem foi o referenciador
-      const customersWithReferrals = await Promise.all(
-        customers.map(async (customer) => {
-          const referral = await db
-            .select({
-              referrerId: referrals.referrerId
-            })
-            .from(referrals)
-            .where(eq(referrals.referredId, customer.id))
-            .limit(1);
-            
-          return {
-            ...customer,
-            referredBy: referral.length > 0 ? referral[0].referrerId : null
-          };
+
+      // Lista de clientes simplificada para resolver o problema
+      const clientsList = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          phone: users.phone
         })
-      );
+        .from(users)
+        .where(
+          and(
+            eq(users.type, "client"),
+            searchBy === "name" 
+              ? sql`${users.name} ILIKE ${`%${term}%`}` 
+              : searchBy === "email" 
+                ? sql`${users.email} ILIKE ${`%${term}%`}`
+                : searchBy === "phone"
+                  ? sql`${users.phone} ILIKE ${`%${term}%`}`
+                  : undefined
+          )
+        )
+        .limit(10);
+        
+      // Adicionar código de referência
+      const clientsWithReferralCode = clientsList.map(client => ({
+        ...client,
+        referralCode: `CL${client.id}`
+      }));
       
-      res.json(customersWithReferrals);
+      res.json(clientsWithReferralCode);
     } catch (error) {
       console.error("Erro ao buscar clientes:", error);
       res.status(500).json({ message: "Erro ao buscar clientes" });
