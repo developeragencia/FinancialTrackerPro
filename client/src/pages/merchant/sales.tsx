@@ -66,9 +66,9 @@ interface SaleTransaction {
 
 // Configurações globais do sistema
 const SYSTEM_SETTINGS = {
-  cashbackRate: 0.02, // 2%
-  referralRate: 0.01, // 1%
-  merchantCommission: 0.02, // 2%
+  cashbackRate: 0.02, // 2% - Cashback para o cliente
+  referralRate: 0.01, // 1% - Bônus para quem indicou
+  merchantCommission: 0.02, // 2% - Comissão do lojista
   minWithdrawal: 50, // R$ 50,00
 };
 
@@ -614,14 +614,14 @@ export default function MerchantSales() {
                   <span className="text-green-600">R$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Taxa de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
+                  <span className="text-muted-foreground">Taxa da Plataforma (2%):</span>
                   <span className="text-blue-600">R$ {cartItems.length > 0 
-                    ? (total * SYSTEM_SETTINGS.referralRate).toFixed(2) 
-                    : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
+                    ? (total * 0.02).toFixed(2) 
+                    : (manualAmount * 0.02).toFixed(2)}</span>
                 </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bônus de Indicação para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
+                    <span className="text-muted-foreground">Bônus para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
                     <span className="text-blue-600">R$ {cartItems.length > 0 
                       ? referralBonus.toFixed(2) 
                       : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
