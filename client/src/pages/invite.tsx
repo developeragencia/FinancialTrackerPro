@@ -47,8 +47,7 @@ const merchantSchema = z.object({
 });
 
 export default function InvitePage() {
-  const [location] = useLocation();
-  const navigate = useNavigate();
+  const [location, setLocation] = useLocation();
   const { isAuthenticated, userType } = useAuth();
   const { toast } = useToast();
   const [referralType, setReferralType] = useState<"client" | "merchant">("client");
@@ -59,14 +58,14 @@ export default function InvitePage() {
   useEffect(() => {
     if (isAuthenticated) {
       if (userType === "client") {
-        navigate("/client/dashboard");
+        setLocation("/client/dashboard");
       } else if (userType === "merchant") {
-        navigate("/merchant/dashboard");
+        setLocation("/merchant/dashboard");
       } else if (userType === "admin") {
-        navigate("/admin/dashboard");
+        setLocation("/admin/dashboard");
       }
     }
-  }, [isAuthenticated, userType, navigate]);
+  }, [isAuthenticated, userType, setLocation]);
   
   // Extrai o código de referência da URL
   useEffect(() => {
@@ -140,7 +139,7 @@ export default function InvitePage() {
         variant: "default",
       });
       setTimeout(() => {
-        navigate("/auth");
+        setLocation("/auth");
       }, 2000);
     },
     onError: (error: any) => {
@@ -168,7 +167,7 @@ export default function InvitePage() {
         variant: "default",
       });
       setTimeout(() => {
-        navigate("/auth");
+        setLocation("/auth");
       }, 2000);
     },
     onError: (error: any) => {
@@ -218,7 +217,7 @@ export default function InvitePage() {
             <span className="ml-2 text-xl font-bold">Vale Cashback</span>
           </a>
           <nav className="ml-auto flex gap-4">
-            <Button variant="outline" onClick={() => navigate("/auth")}>Entrar</Button>
+            <Button variant="outline" onClick={() => setLocation("/auth")}>Entrar</Button>
           </nav>
         </div>
       </header>
