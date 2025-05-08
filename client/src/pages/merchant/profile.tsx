@@ -247,12 +247,45 @@ export default function MerchantProfile() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                   e.preventDefault();
-                  toast({
-                    title: "Configurações atualizadas",
-                    description: "As configurações de cashback foram atualizadas com sucesso."
-                  });
+                  const form = e.target as HTMLFormElement;
+                  const formData = new FormData(form);
+                  
+                  try {
+                    setIsUpdating(true);
+                    const data = {
+                      cashbackPromotions: {
+                        enabled: formData.get('enable-promotions') === 'on',
+                        doubleOnWeekends: formData.get('double-weekends') === 'on',
+                        specialCategories: formData.get('special-categories') === 'on',
+                        minimumPurchase: parseFloat(formData.get('minimum-purchase') as string) || 0
+                      }
+                    };
+                    
+                    const response = await apiRequest("PATCH", "/api/merchant/settings/cashback", data);
+                    
+                    if (response.ok) {
+                      toast({
+                        title: "Configurações atualizadas",
+                        description: "As configurações de cashback foram atualizadas com sucesso."
+                      });
+                      
+                      // Refresh profile data
+                      queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+                    } else {
+                      const errorData = await response.json();
+                      throw new Error(errorData.message || "Falha ao atualizar configurações");
+                    }
+                  } catch (error) {
+                    toast({
+                      title: "Erro",
+                      description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar as configurações. Tente novamente.",
+                      variant: "destructive"
+                    });
+                  } finally {
+                    setIsUpdating(false);
+                  }
                 }}>
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">

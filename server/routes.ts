@@ -921,11 +921,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select()
         .from(merchants)
         .where(eq(merchants.userId, merchantId));
-        
-      // Excluir dados sensíveis
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      // Obter dados do usuário
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, merchantId));
+      
+      // Combinar dados do merchant com dados do usuário
       const { userId, ...merchantData } = merchant;
       
-      res.json(merchantData);
+      // Criar objeto enriquecido para o frontend
+      const enrichedData = {
+        ...merchantData,
+        email: user.email,
+        phone: user.phone,
+        owner: user.name,
+        name: merchantData.storeName, // Para compatibilidade com o frontend
+        // Dados fictícios para o campo businessHours se não existir
+        businessHours: merchantData.businessHours || "09:00 - 18:00",
+        // Status fictício de ativação da loja
+        active: true,
+        // Cashback promocional
+        cashbackPromotions: {
+          enabled: false,
+          doubleOnWeekends: false,
+          specialCategories: false,
+          minimumPurchase: 0
+        }
+      };
+      
+      res.json(enrichedData);
     } catch (error) {
       console.error("Erro ao buscar perfil do lojista:", error);
       res.status(500).json({ message: "Erro ao buscar perfil" });
@@ -936,7 +966,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
     try {
       const merchantId = req.user.id;
-      const { name, description, address, phone, email, website, category } = req.body;
+      const { 
+        name, 
+        description, 
+        address, 
+        phone, 
+        email, 
+        website, 
+        category,
+        city,
+        state,
+        businessHours,
+        owner
+      } = req.body;
       
       // Obter dados do merchant
       const [merchant] = await db
@@ -944,29 +986,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(merchants)
         .where(eq(merchants.userId, merchantId));
       
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      console.log("Atualizando perfil do lojista:", { 
+        merchantId, 
+        name: name || merchant.storeName,
+        category: category || merchant.category
+      });
+      
       // Atualizar dados do merchant
       const [updatedMerchant] = await db
         .update(merchants)
         .set({
-          name,
-          description,
-          address,
-          phone,
-          email,
-          website: website || null,
-          category,
-          updatedAt: new Date()
+          storeName: name || merchant.storeName,
+          description: description,
+          address: address,
+          city: city,
+          state: state,
+          category: category || merchant.category,
+          businessHours: businessHours
         })
         .where(eq(merchants.userId, merchantId))
         .returning();
       
+      // Atualizar dados do usuário se necessário
+      if (phone || email || owner) {
+        await db
+          .update(users)
+          .set({
+            name: owner,
+            email: email,
+            phone: phone
+          })
+          .where(eq(users.id, merchantId));
+      }
+      
       // Excluir dados sensíveis
       const { userId, ...merchantData } = updatedMerchant;
       
-      res.json(merchantData);
+      // Adicionar atributos extras para o frontend
+      const enrichedData = {
+        ...merchantData,
+        email,
+        phone,
+        website,
+        owner,
+        name: merchantData.storeName // Mandar nome como storeName para compatibilidade
+      };
+      
+      res.json(enrichedData);
     } catch (error) {
       console.error("Erro ao atualizar perfil do lojista:", error);
       res.status(500).json({ message: "Erro ao atualizar perfil" });
+    }
+  });
+  
+  // Atualizar configurações de cashback do lojista
+  app.patch("/api/merchant/settings/cashback", isUserType("merchant"), async (req, res) => {
+    try {
+      const merchantId = req.user.id;
+      const { cashbackPromotions } = req.body;
+      
+      // Validar dados recebidos
+      if (!cashbackPromotions) {
+        return res.status(400).json({ message: "Dados inválidos" });
+      }
+      
+      // Obter dados do lojista
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.userId, merchantId));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      console.log("Atualizando configurações de cashback:", { 
+        merchantId, 
+        cashbackPromotions
+      });
+      
+      // Armazenar configurações na tabela settings como JSON
+      // Verificar se já existe uma configuração para este lojista
+      const existingSettings = await db
+        .select()
+        .from(settings)
+        .where(
+          and(
+            eq(settings.merchant_id, merchant.id),
+            eq(settings.key, "cashback_promotions")
+          )
+        );
+      
+      if (existingSettings && existingSettings.length > 0) {
+        // Atualizar configurações existentes
+        await db
+          .update(settings)
+          .set({
+            value: JSON.stringify(cashbackPromotions),
+            updated_at: new Date()
+          })
+          .where(
+            and(
+              eq(settings.merchant_id, merchant.id),
+              eq(settings.key, "cashback_promotions")
+            )
+          );
+      } else {
+        // Criar novas configurações
+        await db
+          .insert(settings)
+          .values({
+            merchant_id: merchant.id,
+            key: "cashback_promotions",
+            value: JSON.stringify(cashbackPromotions),
+            created_at: new Date(),
+            updated_at: new Date()
+          });
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "Configurações de cashback atualizadas com sucesso",
+        cashbackPromotions
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar configurações de cashback:", error);
+      res.status(500).json({ message: "Erro ao atualizar configurações de cashback" });
     }
   });
   
