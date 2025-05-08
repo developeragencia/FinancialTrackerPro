@@ -163,7 +163,7 @@ export default function MerchantTransactions() {
   const handleViewTransaction = (transaction: Transaction) => {
     toast({
       title: `Venda #${transaction.id}`,
-      description: `Cliente: ${transaction.customer}, Valor: R$ ${transaction.amount.toFixed(2)}, Cashback: R$ ${transaction.cashback.toFixed(2)}`,
+      description: `Cliente: ${transaction.customer}, Valor: $ ${transaction.amount.toFixed(2)}, Cashback: $ ${transaction.cashback.toFixed(2)}`,
     });
   };
   
@@ -200,7 +200,7 @@ export default function MerchantTransactions() {
       accessorKey: "amount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="font-medium">
-          R$ {transaction.amount.toFixed(2)}
+          $ {transaction.amount.toFixed(2)}
         </span>
       ),
     },

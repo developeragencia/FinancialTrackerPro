@@ -720,13 +720,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar uma nova venda
   app.post("/api/merchant/sales", isUserType("merchant"), async (req, res) => {
     try {
-      const merchantId = req.user.id;
+      const merchantUserId = req.user.id;
       
       // Obter dados do merchant
-      const [merchant] = await db
+      const merchantResults = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.userId, merchantUserId));
+        
+      if (merchantResults.length === 0) {
+        console.error(`Lojista não encontrado para o usuário ID ${merchantUserId}`);
+        return res.status(404).json({ message: "Dados do lojista não encontrados" });
+      }
+      
+      const merchant = merchantResults[0];
+      console.log("Merchant encontrado:", merchant);
       
       // Extrair dados da venda
       const { 
@@ -743,6 +751,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         manualAmount
       } = req.body;
       
+      console.log("Dados da venda:", { customerId, total, cashback, paymentMethod });
+      
       // Verificar se o cliente existe
       const customer = await db
         .select()
@@ -756,15 +766,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Iniciar transação
       // Registrar a transação
       const [transaction] = await db.insert(transactions).values({
+        userId: customerId,        // Aqui modificamos para usar userId em vez de customerId
         merchantId: merchant.id,
-        customerId,
-        amount: total,
-        cashbackAmount: cashback,
-        referralAmount: referralBonus || 0,
+        amount: total.toString(),  // Convertemos para string já que é numeric no schema
+        cashbackAmount: cashback.toString(),
+        referralAmount: referralBonus ? referralBonus.toString() : "0",
         status: TransactionStatus.COMPLETED,
-        paymentMethod: paymentMethod as any,
-        notes: notes || null,
-        manualAmount: manualAmount || null
+        paymentMethod: paymentMethod,
+        description: notes || null
       }).returning();
       
       // Registrar os itens da transação
@@ -772,9 +781,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         for (const item of items) {
           await db.insert(transactionItems).values({
             transactionId: transaction.id,
-            productId: item.productId,
+            productId: item.productId || null,
+            productName: item.productName || `Produto ${item.id}`,
             quantity: item.quantity,
-            price: item.price
+            price: item.price.toString()
           });
         }
       }
@@ -783,7 +793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db.insert(cashbacks).values({
         userId: customerId,
         transactionId: transaction.id,
-        amount: cashback,
+        amount: cashback.toString(),
         status: "active"
       });
       
@@ -792,9 +802,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await db.insert(referrals).values({
           referrerId,
           referredId: customerId,
-          transactionId: transaction.id,
-          amount: referralBonus,
-          status: "active"
+          bonus: referralBonus.toString(),
+          status: "active",
+          createdAt: new Date()
         });
       }
       
