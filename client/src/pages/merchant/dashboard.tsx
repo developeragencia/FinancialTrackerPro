@@ -117,7 +117,7 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {recentSales.map((sale) => (
+              {dashboardData.recentSales.map((sale: any) => (
                 <div key={sale.id} className="p-3 border rounded-lg">
                   <div className="flex justify-between mb-1">
                     <span className="font-medium">{sale.customer}</span>
@@ -141,7 +141,7 @@ export default function MerchantDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {topProducts.map((product, index) => (
+              {dashboardData.topProducts.map((product: any, index: number) => (
                 <div key={index} className="flex items-center">
                   <div className="text-accent font-bold w-6">{index + 1}</div>
                   <div className="flex-1">
@@ -153,7 +153,7 @@ export default function MerchantDashboard() {
                   <div className="w-24 bg-muted rounded-full h-2">
                     <div
                       className="bg-accent h-2 rounded-full"
-                      style={{ width: `${Math.round((product.sales / topProducts[0].sales) * 100)}%` }}
+                      style={{ width: `${Math.round((product.sales / dashboardData.topProducts[0]?.sales || 1) * 100)}%` }}
                     ></div>
                   </div>
                 </div>
