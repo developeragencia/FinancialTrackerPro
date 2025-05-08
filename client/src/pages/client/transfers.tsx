@@ -63,7 +63,7 @@ export default function ClientTransfers() {
 
       toast({
         title: "Transferência realizada",
-        description: `Você transferiu R$ ${parseFloat(amount).toFixed(2)} para ${recipient}`,
+        description: `Você transferiu $ ${parseFloat(amount).toFixed(2)} para ${recipient}`,
       });
     } catch (error) {
       const err = error as Error;
@@ -101,7 +101,7 @@ export default function ClientTransfers() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Valor (R$)</Label>
+                <Label htmlFor="amount">Valor ($)</Label>
                 <Input
                   id="amount"
                   type="number"
@@ -163,7 +163,7 @@ export default function ClientTransfers() {
                         {transfer.user}
                       </span>
                       <span className={transfer.type === "sent" ? "text-red-600" : "text-green-600"}>
-                        {transfer.type === "sent" ? "-" : "+"}R$ {transfer.amount.toFixed(2)}
+                        {transfer.type === "sent" ? "-" : "+"}$ {transfer.amount.toFixed(2)}
                       </span>
                     </div>
                     <div className="flex justify-between text-sm text-muted-foreground">

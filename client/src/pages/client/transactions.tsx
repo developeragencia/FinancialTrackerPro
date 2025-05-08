@@ -193,7 +193,7 @@ export default function ClientTransactions() {
               </div>
               <div className="flex justify-between py-1 border-b">
                 <span className="text-muted-foreground">Cashback:</span>
-                <span className="font-medium">R$ {selectedTransaction.cashback.toFixed(2)}</span>
+                <span className="font-medium">$ {selectedTransaction.cashback.toFixed(2)}</span>
               </div>
               <div className="flex justify-between py-1 border-b">
                 <span className="text-muted-foreground">Status:</span>
