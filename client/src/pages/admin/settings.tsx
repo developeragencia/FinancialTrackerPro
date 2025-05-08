@@ -124,17 +124,15 @@ export default function AdminSettings() {
   
   const { toast } = useToast();
   
-  // Query para buscar configurações do sistema
+  // Query para buscar configurações de taxas
+  const { data: ratesSettings, isLoading: isRatesLoading } = useQuery({
+    queryKey: ['/api/admin/settings/rates'],
+  });
+  
+  // Query para buscar outras configurações do sistema
   const { data: settings, isLoading } = useQuery({
     queryKey: ['/api/admin/settings'],
     placeholderData: {
-      rates: {
-        cashbackRate: 2.0,
-        referralRate: 1.0,
-        merchantCommission: 2.0,
-        minWithdrawal: 50.0,
-        maxCashbackBonus: 10.0,
-      },
       security: {
         requireEmailVerification: true,
         maxLoginAttempts: 5,
@@ -170,11 +168,11 @@ export default function AdminSettings() {
   const ratesForm = useForm<z.infer<typeof ratesFormSchema>>({
     resolver: zodResolver(ratesFormSchema),
     defaultValues: {
-      cashbackRate: settings?.rates.cashbackRate,
-      referralRate: settings?.rates.referralRate,
-      merchantCommission: settings?.rates.merchantCommission,
-      minWithdrawal: settings?.rates.minWithdrawal,
-      maxCashbackBonus: settings?.rates.maxCashbackBonus,
+      cashbackRate: ratesSettings?.clientCashback || 2.0,
+      referralRate: ratesSettings?.referralCommission || 1.0,
+      merchantCommission: ratesSettings?.merchantCommission || 2.0,
+      minWithdrawal: ratesSettings?.minimumWithdrawal || 50.0,
+      maxCashbackBonus: ratesSettings?.maximumCashback || 10.0,
     }
   });
   
@@ -224,7 +222,17 @@ export default function AdminSettings() {
   // Mutation para atualizar configurações de taxas
   const updateRatesMutation = useMutation({
     mutationFn: async (data: z.infer<typeof ratesFormSchema>) => {
-      const res = await apiRequest("PATCH", "/api/admin/settings/rates", data);
+      // Converte os campos do formulário para os campos esperados pela API
+      const commissionData = {
+        platformFee: "2.0", // Taxa fixa da plataforma por enquanto
+        merchantCommission: data.merchantCommission.toString(),
+        clientCashback: data.cashbackRate.toString(),
+        referralCommission: data.referralRate.toString(),
+        minimumWithdrawal: data.minWithdrawal.toString(),
+        maximumCashback: data.maxCashbackBonus.toString()
+      };
+      
+      const res = await apiRequest("PATCH", "/api/admin/settings/rates", commissionData);
       return res.json();
     },
     onSuccess: () => {
@@ -233,7 +241,7 @@ export default function AdminSettings() {
         description: "As configurações de taxas foram atualizadas com sucesso",
         variant: "default",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/settings'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/settings/rates'] });
     },
     onError: (error: any) => {
       toast({
@@ -369,6 +377,25 @@ export default function AdminSettings() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {isRatesLoading ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">Carregando configurações...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6 p-4 bg-muted/30 rounded-lg border border-border">
+                  <h3 className="text-lg font-medium mb-2">Informações sobre Taxas</h3>
+                  <p className="text-sm text-muted-foreground mb-2">O sistema de taxas do Vale Cashback funciona com os seguintes componentes:</p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1 pl-2">
+                    <li><span className="font-medium">Taxa da Plataforma (2%):</span> Taxa fixa cobrada pela plataforma em cada transação</li>
+                    <li><span className="font-medium">Comissão do Lojista:</span> Valor cobrado dos lojistas por venda processada</li>
+                    <li><span className="font-medium">Cashback do Cliente:</span> Percentual retornado aos clientes em cada compra</li>
+                    <li><span className="font-medium">Comissão de Indicação:</span> Percentual pago a quem indicou novos usuários</li>
+                  </ul>
+                </div>
+              )}
               <Form {...ratesForm}>
                 <form id="rates-form" onSubmit={ratesForm.handleSubmit(onRatesSubmit)} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
