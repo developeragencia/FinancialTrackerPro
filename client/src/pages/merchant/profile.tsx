@@ -36,21 +36,41 @@ export default function MerchantProfile() {
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.target as HTMLFormElement;
     setIsUpdating(true);
 
-    // This would be an API call in a real implementation
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Get form data
+      const formData = new FormData(form);
+      const data = {
+        name: formData.get('name') as string,
+        description: formData.get('description') as string,
+        address: formData.get('address') as string,
+        phone: formData.get('phone') as string,
+        email: formData.get('email') as string,
+        website: formData.get('website') as string,
+        category: formData.get('category') as string
+      };
       
-      toast({
-        title: "Perfil atualizado",
-        description: "As informações da loja foram atualizadas com sucesso."
-      });
+      // Make API call
+      const response = await apiRequest("PATCH", "/api/merchant/profile", data);
+      
+      if (response.ok) {
+        toast({
+          title: "Perfil atualizado",
+          description: "As informações da loja foram atualizadas com sucesso."
+        });
+        
+        // Refresh profile data
+        queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao atualizar perfil");
+      }
     } catch (error) {
       toast({
         title: "Erro",
-        description: "Ocorreu um erro ao atualizar o perfil. Tente novamente.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar o perfil. Tente novamente.",
         variant: "destructive"
       });
     } finally {
@@ -113,13 +133,14 @@ export default function MerchantProfile() {
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Nome da Loja</Label>
-                        <Input id="name" defaultValue={merchantData.name} />
+                        <Input id="name" name="name" defaultValue={merchantData.name} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="category">Categoria</Label>
                         <select 
                           id="category" 
+                          name="category"
                           defaultValue={merchantData.category}
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         >
@@ -136,6 +157,7 @@ export default function MerchantProfile() {
                         <Label htmlFor="description">Descrição</Label>
                         <Textarea 
                           id="description" 
+                          name="description"
                           defaultValue={merchantData.description}
                           rows={3} 
                         />
@@ -143,27 +165,27 @@ export default function MerchantProfile() {
                       
                       <div className="space-y-2">
                         <Label htmlFor="owner">Responsável</Label>
-                        <Input id="owner" defaultValue={merchantData.owner} />
+                        <Input id="owner" name="owner" defaultValue={merchantData.owner} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="email">E-mail</Label>
-                        <Input id="email" type="email" defaultValue={merchantData.email} />
+                        <Input id="email" name="email" type="email" defaultValue={merchantData.email} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
-                        <Input id="phone" defaultValue={merchantData.phone} />
+                        <Input id="phone" name="phone" defaultValue={merchantData.phone} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="website">Website</Label>
-                        <Input id="website" defaultValue={merchantData.website} />
+                        <Input id="website" name="website" defaultValue={merchantData.website} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="address">Endereço</Label>
-                        <Input id="address" defaultValue={merchantData.address} />
+                        <Input id="address" name="address" defaultValue={merchantData.address} />
                       </div>
                       
                       <div className="space-y-2">
@@ -171,11 +193,13 @@ export default function MerchantProfile() {
                         <div className="flex gap-2">
                           <Input 
                             id="city" 
+                            name="city"
                             defaultValue={merchantData.city}
                             className="flex-1" 
                           />
                           <Input 
                             id="state" 
+                            name="state"
                             defaultValue={merchantData.state}
                             className="w-20" 
                           />
@@ -184,7 +208,7 @@ export default function MerchantProfile() {
                       
                       <div className="space-y-2">
                         <Label htmlFor="business-hours">Horário de Funcionamento</Label>
-                        <Input id="business-hours" defaultValue={merchantData.businessHours} />
+                        <Input id="business-hours" name="businessHours" defaultValue={merchantData.businessHours} />
                       </div>
                       
                       <div className="space-y-2 flex items-center">
@@ -223,82 +247,94 @@ export default function MerchantProfile() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Taxa de comissão padrão</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Esta é a taxa padrão definida pelo sistema
-                      </p>
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  toast({
+                    title: "Configurações atualizadas",
+                    description: "As configurações de cashback foram atualizadas com sucesso."
+                  });
+                }}>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="space-y-0.5">
+                        <Label>Taxa de comissão padrão</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Esta é a taxa padrão definida pelo sistema
+                        </p>
+                      </div>
+                      <div className="bg-muted p-2 px-3 rounded-lg font-medium">
+                        {merchantData.commissionRate || 2}%
+                      </div>
                     </div>
-                    <div className="bg-muted p-2 px-3 rounded-lg font-medium">
-                      {merchantData.commissionRate}%
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between border-t pt-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="enable-promotions">Habilitar promoções de cashback</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Ofereça bônus de cashback em determinadas situações
-                      </p>
-                    </div>
-                    <Switch 
-                      id="enable-promotions"
-                      checked={cashbackPromotions.enabled}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between border-t pt-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="weekend-double">Cashback em dobro nos finais de semana</Label>
-                      <p className="text-sm text-muted-foreground">
-                        O cashback será dobrado em compras realizadas aos sábados e domingos
-                      </p>
-                    </div>
-                    <Switch 
-                      id="weekend-double"
-                      checked={cashbackPromotions.doubleOnWeekends}
-                    />
-                  </div>
-                  
-                  <div className="flex items-center justify-between border-t pt-4">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="special-categories">Cashback especial por categorias</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Defina categorias de produtos com cashback diferenciado
-                      </p>
-                    </div>
-                    <Switch 
-                      id="special-categories"
-                      checked={cashbackPromotions.specialCategories}
-                    />
-                  </div>
-                  
-                  <div className="border-t pt-4">
-                    <Label htmlFor="minimum-purchase">Valor mínimo para cashback (R$)</Label>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Valor mínimo de compra para que o cliente receba cashback
-                    </p>
-                    <div className="flex gap-4 items-center">
-                      <Input 
-                        id="minimum-purchase"
-                        type="number"
-                        defaultValue={merchantData.cashbackPromotions.minimumPurchase}
-                        className="w-32"
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="enable-promotions">Habilitar promoções de cashback</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Ofereça bônus de cashback em determinadas situações
+                        </p>
+                      </div>
+                      <Switch 
+                        id="enable-promotions"
+                        name="enable-promotions"
+                        checked={cashbackPromotions.enabled}
                       />
-                      <p className="text-sm text-muted-foreground">
-                        0 = sem valor mínimo
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="weekend-double">Cashback em dobro nos finais de semana</Label>
+                        <p className="text-sm text-muted-foreground">
+                          O cashback será dobrado em compras realizadas aos sábados e domingos
+                        </p>
+                      </div>
+                      <Switch 
+                        id="weekend-double"
+                        name="double-weekends"
+                        checked={cashbackPromotions.doubleOnWeekends}
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="special-categories">Cashback especial por categorias</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Defina categorias de produtos com cashback diferenciado
+                        </p>
+                      </div>
+                      <Switch 
+                        id="special-categories"
+                        name="special-categories"
+                        checked={cashbackPromotions.specialCategories}
+                      />
+                    </div>
+                    
+                    <div className="border-t pt-4">
+                      <Label htmlFor="minimum-purchase">Valor mínimo para cashback (R$)</Label>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Valor mínimo de compra para que o cliente receba cashback
                       </p>
+                      <div className="flex gap-4 items-center">
+                        <Input 
+                          id="minimum-purchase"
+                          name="minimum-purchase"
+                          type="number"
+                          defaultValue={cashbackPromotions.minimumPurchase}
+                          className="w-32"
+                        />
+                        <p className="text-sm text-muted-foreground">
+                          0 = sem valor mínimo
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-end">
+                      <Button type="submit" className="bg-accent">
+                        Salvar configurações
+                      </Button>
                     </div>
                   </div>
-                  
-                  <div className="flex justify-end">
-                    <Button className="bg-accent">
-                      Salvar configurações
-                    </Button>
-                  </div>
-                </div>
+                </form>
               </CardContent>
             </Card>
             
@@ -359,10 +395,10 @@ export default function MerchantProfile() {
                       
                       <div className="mt-4 flex items-center">
                         <div className="px-3 py-1 rounded-full bg-accent text-white text-sm">
-                          {merchantData.commissionRate}% de cashback
+                          {merchantData.commissionRate || 2}% de cashback
                         </div>
                         
-                        {merchantData.cashbackPromotions.doubleOnWeekends && (
+                        {cashbackPromotions.doubleOnWeekends && (
                           <div className="ml-2 px-3 py-1 rounded-full bg-blue-500 text-white text-sm">
                             2x aos finais de semana
                           </div>
