@@ -2169,7 +2169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userResult = await db.execute(
         sql`SELECT id, name, email, type, photo 
             FROM users 
-            WHERE referral_code = ${referralCode}`
+            WHERE invitation_code = ${referralCode}`
       );
       
       if (userResult.rows.length === 0) {
