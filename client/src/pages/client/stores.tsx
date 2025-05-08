@@ -26,15 +26,38 @@ import {
   Loader2
 } from "lucide-react";
 
+// Interface para as lojas
+interface StoreItem {
+  id: number;
+  userId?: number;
+  user_id?: number;
+  store_name?: string;
+  name?: string;
+  logo?: string | null;
+  category?: string;
+  description?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  commissionRate?: string | number;
+  rating?: number;
+  createdAt: string;
+  email?: string;
+  phone?: string;
+  transactions?: number;
+  volume?: number;
+}
+
 export default function ClientStores() {
-  const [selectedStore, setSelectedStore] = useState<any | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreItem | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   
   // Buscar todas as lojas
-  const { data: storesData, isLoading } = useQuery({
+  const { data: storesData, isLoading, error } = useQuery<StoreItem[]>({
     queryKey: ['/api/client/stores'],
+    retry: 1
   });
   
   // Conteúdo simulado para "Novas Promoções"
@@ -45,7 +68,7 @@ export default function ClientStores() {
   ];
   
   // Filtrar lojas com base na busca e categoria
-  const filteredStores = storesData ? storesData.filter((store: any) => {
+  const filteredStores = storesData ? storesData.filter((store: StoreItem) => {
     const storeName = store.store_name || store.name || "";
     const storeCategory = store.category || "";
     
@@ -59,7 +82,7 @@ export default function ClientStores() {
   }) : [];
   
   // Abrir o modal de detalhes da loja
-  const handleOpenStoreDetails = (store: any) => {
+  const handleOpenStoreDetails = (store: StoreItem) => {
     setSelectedStore(store);
     setIsDialogOpen(true);
   };
@@ -224,6 +247,21 @@ export default function ClientStores() {
                 <div className="flex justify-center items-center h-64">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
+              ) : error ? (
+                <div className="text-center py-10">
+                  <Store className="h-12 w-12 mx-auto text-muted-foreground opacity-30" />
+                  <h3 className="mt-4 text-lg font-medium">Erro ao carregar lojas</h3>
+                  <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
+                    Não foi possível carregar a lista de lojas. Por favor, tente novamente mais tarde.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => window.location.reload()}
+                  >
+                    Tentar novamente
+                  </Button>
+                </div>
               ) : filteredStores.length === 0 ? (
                 <div className="text-center py-10">
                   <Store className="h-12 w-12 mx-auto text-muted-foreground opacity-30" />
@@ -234,7 +272,7 @@ export default function ClientStores() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredStores.map((store: any) => (
+                  {filteredStores.map((store: StoreItem) => (
                     <div
                       key={store.id}
                       className={`border rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer ${getCategoryClass(store.category)}`}
