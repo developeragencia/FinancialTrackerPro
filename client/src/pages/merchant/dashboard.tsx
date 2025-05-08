@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BarChartComponent } from "@/components/ui/charts";
 import { ShoppingCart, DollarSign, Users, Percent, Eye } from "lucide-react";
 import { Link } from "wouter";
+import { formatCurrency } from "@/lib/utils";
 
 // Interfaces para tipagem
 interface DashboardData {
@@ -74,7 +75,7 @@ export default function MerchantDashboard() {
       <StatCardGrid className="mb-6">
         <StatCard
           title="Total de Vendas Hoje"
-          value={`R$ ${dashboardData.salesSummary.today.total.toFixed(2)}`}
+          value={formatCurrency(dashboardData.salesSummary.today.total)}
           icon={<DollarSign className="h-5 w-5 text-accent" />}
         />
         <StatCard

@@ -133,7 +133,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Ganho</span>
               </div>
-              <div className="font-medium">R$ {data.monthStats?.earned.toFixed(2) || '0.00'}</div>
+              <div className="font-medium">{formatCurrency(data.monthStats?.earned || 0)}</div>
             </div>
             <div className="flex justify-between items-center pb-2 border-b">
               <div className="flex items-center text-muted-foreground">
@@ -144,7 +144,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Transferido</span>
               </div>
-              <div className="font-medium">R$ {data.monthStats?.transferred.toFixed(2) || '0.00'}</div>
+              <div className="font-medium">{formatCurrency(data.monthStats?.transferred || 0)}</div>
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center text-muted-foreground">
@@ -155,7 +155,7 @@ export default function ClientDashboard() {
                 </div>
                 <span>Total Recebido</span>
               </div>
-              <div className="font-medium">R$ {data.monthStats?.received.toFixed(2) || '0.00'}</div>
+              <div className="font-medium">{formatCurrency(data.monthStats?.received || 0)}</div>
             </div>
           </CardContent>
         </Card>
@@ -191,8 +191,8 @@ export default function ClientDashboard() {
                     <tr key={transaction.id} className="border-b">
                       <td className="py-3">{transaction.merchant}</td>
                       <td className="py-3">{transaction.date}</td>
-                      <td className="py-3 text-right">R$ {transaction.amount.toFixed(2)}</td>
-                      <td className="py-3 text-right">R$ {transaction.cashback.toFixed(2)}</td>
+                      <td className="py-3 text-right">{formatCurrency(transaction.amount)}</td>
+                      <td className="py-3 text-right">{formatCurrency(transaction.cashback)}</td>
                       <td className="py-3">
                         <span className={`status-${transaction.status}`}>
                           {transaction.status === 'completed' ? 'Concluída' : 
