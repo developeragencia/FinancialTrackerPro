@@ -2847,6 +2847,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Busca de usuários por email ou telefone
+  app.get("/api/users/search", isAuthenticated, async (req, res) => {
+    try {
+      const { term, by = "email" } = req.query;
+      
+      if (!term || typeof term !== "string" || term.length < 3) {
+        return res.status(400).json({ message: "Termo de busca inválido. Mínimo de 3 caracteres." });
+      }
+      
+      // O usuário atual não deve aparecer nos resultados
+      const currentUserId = req.user?.id;
+      
+      let whereClause;
+      if (by === "email") {
+        whereClause = sql`email ILIKE ${`%${term}%`}`;
+      } else if (by === "phone") {
+        whereClause = sql`phone ILIKE ${`%${term}%`}`;
+      } else {
+        return res.status(400).json({ message: "Método de busca inválido" });
+      }
+      
+      // Obter usuários que correspondem ao termo de busca
+      const result = await db.execute(
+        sql`SELECT id, name, email, phone, photo 
+            FROM users 
+            WHERE ${whereClause} AND id != ${currentUserId}
+            AND type = 'client'
+            ORDER BY name
+            LIMIT 5`
+      );
+      
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Erro na busca de usuários:", error);
+      res.status(500).json({ message: "Erro ao buscar usuários" });
+    }
+  });
+
   // Histórico de transferências do cliente
   app.get("/api/client/transfers", isUserType("client"), async (req, res) => {
     try {
