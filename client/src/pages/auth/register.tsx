@@ -71,9 +71,14 @@ export default function Register() {
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       phone: "",
-      cpf: "",
+      country: "",
+      countryCode: "",
+      invitationCode: "",
+      securityQuestion: "",
+      securityAnswer: "",
       password: "",
       confirmPassword: "",
     },
@@ -83,14 +88,16 @@ export default function Register() {
     resolver: zodResolver(merchantFormSchema),
     defaultValues: {
       name: "",
+      username: "",
       email: "",
       phone: "",
       storeName: "",
-      cnpj: "",
       category: "",
-      address: "",
-      city: "",
-      state: "",
+      country: "",
+      countryCode: "",
+      invitationCode: "",
+      securityQuestion: "",
+      securityAnswer: "",
       password: "",
       confirmPassword: "",
     },
@@ -157,6 +164,20 @@ export default function Register() {
                 )}
               />
 
+              <FormField
+                control={clientForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome de usuário</FormLabel>
+                    <FormControl>
+                      <Input placeholder="joaosilva" {...field} disabled={loading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={clientForm.control}
@@ -174,18 +195,88 @@ export default function Register() {
 
                 <FormField
                   control={clientForm.control}
-                  name="cpf"
+                  name="country"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF</FormLabel>
+                      <FormLabel>País</FormLabel>
                       <FormControl>
-                        <Input placeholder="123.456.789-00" {...field} disabled={loading} />
+                        <Input placeholder="Brasil" {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <FormField
+                  control={clientForm.control}
+                  name="countryCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código do País</FormLabel>
+                      <FormControl>
+                        <Input placeholder="BR" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={clientForm.control}
+                  name="invitationCode"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Código de Convite</FormLabel>
+                      <FormControl>
+                        <Input placeholder="CL123456" {...field} disabled={loading} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={clientForm.control}
+                name="securityQuestion"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pergunta de Segurança</FormLabel>
+                    <FormControl>
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        {...field}
+                        disabled={loading}
+                      >
+                        <option value="">Selecione uma pergunta</option>
+                        <option value="Qual o nome do seu primeiro animal de estimação?">Qual o nome do seu primeiro animal de estimação?</option>
+                        <option value="Qual o nome da cidade onde você nasceu?">Qual o nome da cidade onde você nasceu?</option>
+                        <option value="Qual o nome do seu melhor amigo de infância?">Qual o nome do seu melhor amigo de infância?</option>
+                        <option value="Qual era o nome da sua primeira escola?">Qual era o nome da sua primeira escola?</option>
+                        <option value="Qual o modelo do seu primeiro carro?">Qual o modelo do seu primeiro carro?</option>
+                        <option value="Qual o nome de solteira da sua mãe?">Qual o nome de solteira da sua mãe?</option>
+                      </select>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={clientForm.control}
+                name="securityAnswer"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Resposta de Segurança</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua resposta" {...field} disabled={loading} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={clientForm.control}
