@@ -1389,7 +1389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Buscar dados do usuário com SQL direto
         const userResult = await db.execute(
-          sql`SELECT id, name, email, referral_code FROM users WHERE id = ${merchantId}`
+          sql`SELECT id, name, email, invitation_code FROM users WHERE id = ${merchantId}`
         );
         
         if (userResult.rows.length === 0) {
@@ -1399,13 +1399,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userData = userResult.rows[0];
         
         // Se não houver código de referência, gerar um e salvar
-        userReferralCode = userData.referral_code;
+        userReferralCode = userData.invitation_code;
         if (!userReferralCode) {
           userReferralCode = "LJ" + merchantId.toString().padStart(4, '0');
           
           // Atualizar código de referência do usuário com SQL direto
           await db.execute(
-            sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${merchantId}`
+            sql`UPDATE users SET invitation_code = ${userReferralCode} WHERE id = ${merchantId}`
           );
         }
       } catch (error) {
@@ -1949,7 +1949,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Buscar dados do usuário com SQL direto
         const userResult = await db.execute(
-          sql`SELECT id, name, email, referral_code FROM users WHERE id = ${clientId}`
+          sql`SELECT id, name, email, invitation_code FROM users WHERE id = ${clientId}`
         );
         
         if (userResult.rows.length === 0) {
@@ -1959,13 +1959,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userData = userResult.rows[0];
         
         // Se não houver código de referência, gerar um e salvar
-        userReferralCode = userData.referral_code;
+        userReferralCode = userData.invitation_code;
         if (!userReferralCode) {
           userReferralCode = "CL" + clientId.toString().padStart(4, '0');
           
           // Atualizar código de referência do usuário com SQL direto
           await db.execute(
-            sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${clientId}`
+            sql`UPDATE users SET invitation_code = ${userReferralCode} WHERE id = ${clientId}`
           );
         }
       } catch (error) {
