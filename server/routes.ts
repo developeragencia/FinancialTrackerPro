@@ -1981,6 +1981,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // QR Code para lojista
+  // Rota para processar QR code (usado pelo scanner do lojista)
+  app.post("/api/merchant/process-qrcode", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantId = req.user.id;
+      const { qrData } = req.body;
+      
+      if (!qrData) {
+        return res.status(400).json({ message: "Dados do QR Code ausentes" });
+      }
+      
+      // Obter o ID da loja do comerciante
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantId));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      let parsedData;
+      
+      try {
+        // Tentar interpretar os dados do QR code como JSON
+        parsedData = JSON.parse(qrData);
+      } catch (e) {
+        // Se não for JSON, verificar se é um código QR específico
+        // Verificar se o qrData é um código de QR direto da tabela qr_codes
+        const [qrCode] = await db
+          .select()
+          .from(qrCodes)
+          .where(eq(qrCodes.code, qrData))
+          .limit(1);
+          
+        if (qrCode) {
+          // Se encontrou o QR code no banco de dados
+          if (qrCode.used) {
+            return res.status(400).json({ message: "Este QR Code já foi utilizado" });
+          }
+          
+          if (new Date(qrCode.expires_at) < new Date()) {
+            return res.status(400).json({ message: "Este QR Code está expirado" });
+          }
+          
+          // Buscar o cliente associado ao QR Code
+          const [user] = await db
+            .select()
+            .from(users)
+            .where(eq(users.id, qrCode.user_id));
+            
+          if (!user) {
+            return res.status(404).json({ message: "Cliente não encontrado" });
+          }
+          
+          return res.json({
+            type: "payment",
+            code: qrCode.code,
+            customer_id: user.id,
+            customer_name: user.name,
+            customer_email: user.email,
+            amount: parseFloat(qrCode.amount.toString()),
+            date: new Date().toLocaleDateString('pt-BR'),
+            cashback: parseFloat(qrCode.amount.toString()) * 0.02, // 2% de cashback (uma simplificação)
+          });
+        }
+        
+        // Se não for JSON nem um código reconhecido, retornar erro
+        return res.status(400).json({ message: "Formato de QR Code inválido" });
+      }
+      
+      // Se for um JSON válido, verificar o tipo
+      if (parsedData.type === "customer") {
+        // Validar se o cliente existe
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, parsedData.id))
+          .where(eq(users.type, "client"));
+          
+        if (!user) {
+          return res.status(404).json({ message: "Cliente não encontrado" });
+        }
+        
+        // Obter saldo cashback do cliente
+        const [cashback] = await db
+          .select()
+          .from(cashbacks)
+          .where(eq(cashbacks.user_id, user.id));
+          
+        const walletBalance = cashback ? parseFloat(cashback.balance.toString()) : 0;
+        
+        return res.json({
+          type: "customer",
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone || "-",
+          wallet_id: `WALLET${user.id}`,
+          wallet_balance: walletBalance
+        });
+      }
+      
+      // Se chegou aqui, o tipo não é reconhecido
+      return res.status(400).json({ message: "Tipo de QR Code não suportado" });
+      
+    } catch (error) {
+      console.error("Erro ao processar QR Code:", error);
+      res.status(500).json({ message: "Erro ao processar QR Code" });
+    }
+  });
+
   app.post("/api/merchant/qrcode", isUserType("merchant"), async (req, res) => {
     try {
       if (!req.user) {
