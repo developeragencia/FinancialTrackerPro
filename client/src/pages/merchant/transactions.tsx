@@ -80,14 +80,22 @@ export default function MerchantTransactions() {
   const { toast } = useToast();
   
   // Query para buscar as vendas - direto da API
-  const { data, isLoading } = useQuery<{ 
+  const { data, isLoading, error } = useQuery<{ 
     transactions: Transaction[],
     totalAmount: number,
     totalCashback: number,
     statusCounts: { status: string, count: number }[],
     paymentMethodSummary: { method: string, sum: number }[]
   }>({
-    queryKey: ['/api/merchant/transactions']
+    queryKey: ['/api/merchant/transactions'],
+    // Adicionando fallback para evitar tela branca
+    initialData: {
+      transactions: [],
+      totalAmount: 0,
+      totalCashback: 0,
+      statusCounts: [],
+      paymentMethodSummary: []
+    }
   });
   
   // Função para filtrar as transações
@@ -273,6 +281,28 @@ export default function MerchantTransactions() {
     },
   ];
   
+  // Adicionar feedback de erros
+  if (error) {
+    console.error('Erro ao carregar transações:', error);
+    toast({
+      title: "Erro ao carregar transações",
+      description: "Não foi possível carregar suas transações. Tente novamente mais tarde.",
+      variant: "destructive",
+    });
+  }
+  
+  // Renderizar indicador de carregamento
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Histórico de Transações" type="merchant">
+        <div className="flex flex-col items-center justify-center p-12 min-h-[50vh]">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-t-transparent border-primary"></div>
+          <p className="mt-4 text-muted-foreground">Carregando transações...</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Histórico de Transações" type="merchant">
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
