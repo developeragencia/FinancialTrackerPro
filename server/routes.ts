@@ -586,58 +586,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/merchant/dashboard", isUserType("merchant"), async (req, res) => {
     try {
       // Implementar dashboard do lojista com métricas das vendas
-      const merchantId = req.user.id;
+      const merchantId = req.user?.id;
       
-      // Obter dados do merchant
-      const [merchant] = await db
-        .select()
-        .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+      if (!merchantId) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
       
-      // Obter estatísticas de vendas
-      const salesCountResult = await db
-        .select({ count: sql`COUNT(*)` })
-        .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id));
+      // Buscar merchant_id usando SQL direto para evitar problemas de nomenclatura das colunas
+      const merchantResult = await db.execute(
+        sql`SELECT id FROM merchants WHERE user_id = ${merchantId}`
+      );
       
-      const totalSalesResult = await db
-        .select({ sum: sql`SUM(amount)` })
-        .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id));
+      if (merchantResult.rows.length === 0) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
       
-      const todaySalesResult = await db
-        .select({ sum: sql`SUM(amount)` })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.merchantId, merchant.id),
-            sql`DATE(${transactions.createdAt}) = CURRENT_DATE`
-          )
-        );
-        
-      // Obter vendas recentes
-      const recentSales = await db
-        .select({
-          id: transactions.id,
-          amount: transactions.amount,
-          cashback: transactions.cashbackAmount,
-          date: transactions.createdAt,
-          customerName: users.name,
-          status: transactions.status
-        })
-        .from(transactions)
-        .innerJoin(users, eq(transactions.customerId, users.id))
-        .where(eq(transactions.merchantId, merchant.id))
-        .orderBy(desc(transactions.createdAt))
-        .limit(5);
-        
-      res.json({
-        merchant,
-        salesCount: salesCountResult[0].count || 0,
-        totalSales: totalSalesResult[0].sum || 0,
-        todaySales: todaySalesResult[0].sum || 0,
-        recentSales
-      });
+      const merchant_id = merchantResult.rows[0].id;
+      
+      // Obter estatísticas de vendas usando SQL direto
+      const salesData = await db.execute(
+        sql`SELECT 
+          COUNT(*) as transactions_count,
+          COALESCE(SUM(amount), 0) as total_sales,
+          COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN amount ELSE 0 END), 0) as today_sales,
+          COALESCE(SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END), 0) as today_transactions
+        FROM transactions 
+        WHERE merchant_id = ${merchant_id}`
+      );
+      
+      // Calcular valor médio de vendas do dia
+      const todayTransactions = parseInt(salesData.rows[0].today_transactions) || 0;
+      const todaySales = parseFloat(salesData.rows[0].today_sales) || 0;
+      const averageSale = todayTransactions > 0 ? todaySales / todayTransactions : 0;
+      
+      // Calcular comissão do dia (2%)
+      const todayCommission = todaySales * 0.02;
+      
+      // Obter vendas dos últimos 7 dias
+      const weekSalesResult = await db.execute(
+        sql`SELECT 
+          TO_CHAR(DATE(created_at), 'Dy') as day, 
+          COALESCE(SUM(amount), 0) as value
+        FROM transactions 
+        WHERE 
+          merchant_id = ${merchant_id} AND 
+          created_at >= CURRENT_DATE - INTERVAL '6 days'
+        GROUP BY DATE(created_at), TO_CHAR(DATE(created_at), 'Dy')
+        ORDER BY DATE(created_at)`
+      );
+      
+      // Obter vendas recentes com informações do cliente
+      const recentSalesResult = await db.execute(
+        sql`SELECT 
+          t.id, 
+          t.amount, 
+          t.cashback_amount as cashback, 
+          t.created_at as date, 
+          u.name as customer, 
+          t.status,
+          (SELECT COUNT(*) FROM transaction_items WHERE transaction_id = t.id) as items_count
+        FROM transactions t
+        JOIN users u ON t.customer_id = u.id
+        WHERE t.merchant_id = ${merchant_id}
+        ORDER BY t.created_at DESC
+        LIMIT 5`
+      );
+      
+      // Obter produtos mais vendidos
+      const topProductsResult = await db.execute(
+        sql`SELECT 
+          p.name, 
+          COUNT(*) as sales,
+          COALESCE(SUM(ti.price * ti.quantity), 0) as total
+        FROM transaction_items ti
+        JOIN products p ON ti.product_id = p.id
+        JOIN transactions t ON ti.transaction_id = t.id
+        WHERE t.merchant_id = ${merchant_id}
+        GROUP BY p.name
+        ORDER BY sales DESC
+        LIMIT 5`
+      );
+      
+      // Formatar dados para o frontend
+      const recentSales = recentSalesResult.rows.map(sale => ({
+        id: sale.id,
+        customer: sale.customer,
+        date: new Date(sale.date).toLocaleDateString('pt-BR'),
+        amount: parseFloat(sale.amount),
+        cashback: parseFloat(sale.cashback || 0),
+        items: `${sale.items_count} ${parseInt(sale.items_count) === 1 ? 'item' : 'itens'}`
+      }));
+      
+      const weekSalesData = weekSalesResult.rows.map(day => ({
+        day: day.day,
+        value: parseFloat(day.value)
+      }));
+      
+      const topProducts = topProductsResult.rows.map(product => ({
+        name: product.name,
+        sales: parseInt(product.sales),
+        total: parseFloat(product.total)
+      }));
+      
+      // Preparar resposta completa para o dashboard
+      const dashboardData = {
+        salesSummary: {
+          today: {
+            total: todaySales,
+            transactions: todayTransactions,
+            average: averageSale,
+            commission: todayCommission
+          }
+        },
+        weekSalesData,
+        recentSales,
+        topProducts
+      };
+      
+      res.json(dashboardData);
     } catch (error) {
       console.error("Erro ao buscar dados do dashboard lojista:", error);
       res.status(500).json({ message: "Erro ao buscar dados do dashboard" });

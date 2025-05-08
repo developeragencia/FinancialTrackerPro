@@ -40,8 +40,11 @@ interface DashboardData {
 
 export default function MerchantDashboard() {
   // Query to get merchant dashboard data
-  const { data, isLoading } = useQuery<DashboardData>({
+  const { data, isLoading, error } = useQuery<DashboardData>({
     queryKey: ['/api/merchant/dashboard'],
+    refetchOnWindowFocus: false, // Evitar requisições em excesso
+    staleTime: 30000, // Dados são considerados atualizados por 30 segundos
+    retry: 1, // Limitar o número de tentativas para evitar loop infinito
   });
   
   // Dados vazios para uso enquanto API não retorna
