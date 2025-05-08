@@ -68,10 +68,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: merchants.address,
           city: merchants.city,
           state: merchants.state,
-          commission_rate: merchants.commissionRate,
+          commission_rate: merchants.commission_rate,
           approved: merchants.approved,
-          created_at: merchants.createdAt,
-          user_id: merchants.userId,
+          created_at: merchants.created_at,
+          user_id: merchants.user_id,
         })
         .from(merchants)
         .where(eq(merchants.approved, true))
@@ -98,7 +98,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               count: sql`COUNT(*)`,
             })
             .from(transactions)
-            .where(eq(transactions.merchantId, store.id));
+            .where(eq(transactions.merchant_id, store.id));
           
           // Calcular o volume de vendas
           const [salesVolume] = await db
@@ -106,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               total: sql`COALESCE(SUM(amount), 0)`,
             })
             .from(transactions)
-            .where(eq(transactions.merchantId, store.id));
+            .where(eq(transactions.merchant_id, store.id));
           
           return {
             id: store.id,
@@ -174,12 +174,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: transactions.id,
           amount: transactions.amount,
-          date: transactions.createdAt,
+          date: transactions.created_at,
           status: transactions.status,
         })
         .from(transactions)
-        .where(eq(transactions.merchantId, storeId))
-        .orderBy(desc(transactions.createdAt))
+        .where(eq(transactions.merchant_id, storeId))
+        .orderBy(desc(transactions.created_at))
         .limit(5);
         
       // Contar o número de transações
@@ -188,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           count: sql`COUNT(*)`,
         })
         .from(transactions)
-        .where(eq(transactions.merchantId, storeId));
+        .where(eq(transactions.merchant_id, storeId));
       
       // Calcular o volume de vendas
       const [salesVolume] = await db
@@ -196,7 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           total: sql`COALESCE(SUM(amount), 0)`,
         })
         .from(transactions)
-        .where(eq(transactions.merchantId, storeId));
+        .where(eq(transactions.merchant_id, storeId));
       
       const storeDetails = {
         ...store,
@@ -230,13 +230,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           address: merchants.address,
           city: merchants.city,
           state: merchants.state,
-          commission_rate: merchants.commissionRate,
+          commission_rate: merchants.commission_rate,
           approved: merchants.approved,
-          created_at: merchants.createdAt,
-          user_id: merchants.userId,
+          created_at: merchants.created_at,
+          user_id: merchants.user_id,
         })
         .from(merchants)
-        .orderBy(desc(merchants.createdAt));
+        .orderBy(desc(merchants.created_at));
       
       // Adicionar informações adicionais como avaliações e número de clientes
       const storesWithDetails = await Promise.all(
@@ -277,9 +277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             address: store.address,
             city: store.city,
             state: store.state,
-            commissionRate: store.commission_rate,
+            commission_rate: store.commission_rate,
             approved: store.approved,
-            createdAt: store.created_at,
+            created_at: store.created_at,
             owner: merchantUser?.name || "Usuário Desconhecido",
             email: merchantUser?.email || "",
             phone: merchantUser?.phone || "",
@@ -410,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [updatedStore] = await db
         .update(merchants)
         .set({
-          commissionRate: Number(commissionRate),
+          commission_rate: Number(commissionRate),
         })
         .where(eq(merchants.id, storeId))
         .returning();
@@ -558,7 +558,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: transactions.amount,
           date: transactions.created_at,
           customerName: users.name,
-          merchantName: merchants.storeName,
+          merchantName: merchants.store_name,
           status: transactions.status
         })
         .from(transactions)
@@ -1030,7 +1030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         owner: user.name,
         name: merchantData.storeName, // Para compatibilidade com o frontend
         // Dados fictícios para o campo businessHours se não existir
-        businessHours: merchantData.businessHours || "09:00 - 18:00",
+        business_hours: merchantData.businessHours || "09:00 - 18:00",
         // Status fictício de ativação da loja
         active: true,
         // Cashback promocional
@@ -1087,15 +1087,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [updatedMerchant] = await db
         .update(merchants)
         .set({
-          storeName: name || merchant.storeName,
+          store_name: name || merchant.storeName,
           description: description,
           address: address,
           city: city,
           state: state,
           category: category || merchant.category,
-          businessHours: businessHours
+          business_hours: businessHours
         })
-        .where(eq(merchants.userId, merchantId))
+        .where(eq(merchants.user_id, merchantId))
         .returning();
       
       // Atualizar dados do usuário se necessário
@@ -1145,7 +1145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
       
       if (!merchant) {
         return res.status(404).json({ message: "Lojista não encontrado" });
@@ -1220,7 +1220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchantResults = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, userId));
+        .where(eq(merchants.user_id, userId));
       
       if (!merchantResults || merchantResults.length === 0) {
         return res.status(404).json({ message: "Merchant não encontrado" });
@@ -1322,7 +1322,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
       
       // Determinar datas de início e fim com base no período
       let start_date, end_date;
@@ -1734,7 +1734,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referrals_list = referralsResult.rows.map(ref => ({
           id: ref.id,
           name: ref.referred_name || 'Usuário desconhecido',
-          storeName: ref.store_name || 'Loja sem nome',
+          store_name: ref.store_name || 'Loja sem nome',
           date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
           status: ref.status,
           commission: parseFloat(ref.bonus || '0').toFixed(2)
@@ -1878,7 +1878,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
       
       // Atualizar configurações
       const paymentSettings = {
@@ -1903,7 +1903,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           paymentSettings: JSON.stringify(paymentSettings),
           updatedAt: new Date()
         })
-        .where(eq(merchants.userId, merchantId))
+        .where(eq(merchants.user_id, merchantId))
         .returning();
       
       res.json({ message: "Configurações de pagamento atualizadas", paymentSettings });
@@ -1922,7 +1922,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.user_id, merchantId));
       
       // Atualizar o merchant
       const [updatedMerchant] = await db
@@ -1931,7 +1931,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notificationSettings: JSON.stringify(notificationSettings),
           updatedAt: new Date()
         })
-        .where(eq(merchants.userId, merchantId))
+        .where(eq(merchants.user_id, merchantId))
         .returning();
       
       res.json({ message: "Configurações de notificações atualizadas", notificationSettings });
@@ -2564,7 +2564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (merchantResult.rows.length > 0) {
           const merchantInfo = merchantResult.rows[0];
           merchantData = {
-            storeName: merchantInfo.storeName,
+            store_name: merchantInfo.storeName,
             logo: merchantInfo.logo || "https://via.placeholder.com/100",
             category: merchantInfo.category,
             description: merchantInfo.description
@@ -2623,7 +2623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone,
           type: "client",
           status: "active",
-          createdAt: new Date()
+          created_at: new Date()
         })
         .returning();
       
@@ -2653,7 +2653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           referredId: newUser.id,
           bonus: "10.00", // Valor fixo de bônus para indicação de cliente
           status: "active",
-          createdAt: new Date()
+          created_at: new Date()
         });
       }
       
@@ -2705,7 +2705,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone,
           type: "merchant",
           status: "pending", // Lojistas começam como pendentes até aprovação
-          createdAt: new Date()
+          created_at: new Date()
         })
         .returning();
       
@@ -2713,11 +2713,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await db
         .insert(merchants)
         .values({
-          userId: newUser.id,
+          user_id: newUser.id,
           name: storeName,
           category: storeType,
           status: "pending",
-          createdAt: new Date()
+          created_at: new Date()
         });
       
       // Processar código de referência, se fornecido
@@ -2743,7 +2743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           referredId: newUser.id,
           bonus: "25.00", // Valor fixo maior para indicação de lojista
           status: "active", 
-          createdAt: new Date()
+          created_at: new Date()
         });
       }
       
