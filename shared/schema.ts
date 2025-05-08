@@ -148,6 +148,19 @@ export const settings = pgTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+// Commission settings
+export const commissionSettings = pgTable("commission_settings", {
+  id: serial("id").primaryKey(),
+  platformFee: numeric("platform_fee").notNull().default("2.0"),
+  merchantCommission: numeric("merchant_commission").notNull().default("2.0"),
+  clientCashback: numeric("client_cashback").notNull().default("2.0"),
+  referralBonus: numeric("referral_bonus").notNull().default("1.0"),
+  minWithdrawal: numeric("min_withdrawal").notNull().default("50.0"),
+  maxCashbackBonus: numeric("max_cashback_bonus").notNull().default("10.0"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: integer("updated_by").references(() => users.id),
+});
+
 // Audit logs
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -177,6 +190,9 @@ export const insertProductSchema = createInsertSchema(products)
 export const insertQRCodeSchema = createInsertSchema(qrCodes)
   .omit({ id: true, createdAt: true, used: true });
 
+export const insertCommissionSettingsSchema = createInsertSchema(commissionSettings)
+  .omit({ id: true, updatedAt: true });
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -202,3 +218,5 @@ export type InsertQRCode = z.infer<typeof insertQRCodeSchema>;
 
 export type Setting = typeof settings.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
+export type CommissionSetting = typeof commissionSettings.$inferSelect;
+export type InsertCommissionSetting = z.infer<typeof insertCommissionSettingsSchema>;

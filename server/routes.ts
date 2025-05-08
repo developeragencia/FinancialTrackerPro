@@ -13,6 +13,7 @@ import {
   cashbacks,
   referrals,
   transfers,
+  commissionSettings,
   PaymentMethod,
   TransactionStatus,
 } from "@shared/schema";
@@ -36,12 +37,14 @@ const isUserType = (type: string) => (req: Request, res: Response, next: Functio
   next();
 };
 
-// Configurações globais do sistema
-const SYSTEM_SETTINGS = {
-  cashbackRate: 0.02, // 2%
-  referralRate: 0.01, // 1%
+// Configurações globais do sistema (defaults)
+const DEFAULT_SETTINGS = {
+  platformFee: 0.02, // 2%
   merchantCommission: 0.02, // 2%
+  clientCashback: 0.02, // 2%
+  referralBonus: 0.01, // 1%
   minWithdrawal: 50, // R$ 50,00
+  maxCashbackBonus: 10.0, // 10%
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -58,7 +61,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.status(401).json({ message: "Usuário não autenticado" });
   });
   
+  // Inicializar configurações de comissão se não existirem
+  async function initializeCommissionSettings() {
+    try {
+      // Verificar se já existem configurações
+      const existingSettings = await db.select().from(commissionSettings).limit(1);
+      
+      if (existingSettings.length === 0) {
+        // Criar configurações padrão
+        await db.insert(commissionSettings).values({
+          platformFee: DEFAULT_SETTINGS.platformFee.toString(),
+          merchantCommission: DEFAULT_SETTINGS.merchantCommission.toString(),
+          clientCashback: DEFAULT_SETTINGS.clientCashback.toString(),
+          referralBonus: DEFAULT_SETTINGS.referralBonus.toString(),
+          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal.toString(),
+          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+        });
+        
+        console.log("Configurações de comissão padrão criadas com sucesso");
+      }
+    } catch (error) {
+      console.error("Erro ao inicializar configurações de comissão:", error);
+    }
+  }
+  
+  // Inicializar as configurações na inicialização do servidor
+  initializeCommissionSettings();
+  
   // ROTAS DO ADMIN
+  
+  // Obter configurações de taxas
+  app.get("/api/admin/settings/rates", isUserType("admin"), async (req, res) => {
+    try {
+      const settings = await db.select().from(commissionSettings).limit(1);
+      
+      if (settings.length === 0) {
+        // Se não houver configurações, criar as padrões e retornar
+        const [newSettings] = await db.insert(commissionSettings).values({
+          platformFee: DEFAULT_SETTINGS.platformFee.toString(),
+          merchantCommission: DEFAULT_SETTINGS.merchantCommission.toString(),
+          clientCashback: DEFAULT_SETTINGS.clientCashback.toString(),
+          referralBonus: DEFAULT_SETTINGS.referralBonus.toString(),
+          minWithdrawal: DEFAULT_SETTINGS.minWithdrawal.toString(),
+          maxCashbackBonus: DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+        }).returning();
+        
+        return res.json(newSettings);
+      }
+      
+      res.json(settings[0]);
+    } catch (error) {
+      console.error("Erro ao buscar configurações de taxas:", error);
+      res.status(500).json({ message: "Erro ao buscar configurações de taxas" });
+    }
+  });
+  
+  // Atualizar configurações de taxas
+  app.patch("/api/admin/settings/rates", isUserType("admin"), async (req, res) => {
+    try {
+      const {
+        platformFee,
+        merchantCommission,
+        clientCashback,
+        referralBonus,
+        minWithdrawal,
+        maxCashbackBonus
+      } = req.body;
+      
+      // Buscar configurações existentes
+      const settings = await db.select().from(commissionSettings).limit(1);
+      
+      if (settings.length === 0) {
+        // Se não houver configurações, criar as novas
+        const [newSettings] = await db.insert(commissionSettings).values({
+          platformFee: platformFee?.toString() || DEFAULT_SETTINGS.platformFee.toString(),
+          merchantCommission: merchantCommission?.toString() || DEFAULT_SETTINGS.merchantCommission.toString(),
+          clientCashback: clientCashback?.toString() || DEFAULT_SETTINGS.clientCashback.toString(),
+          referralBonus: referralBonus?.toString() || DEFAULT_SETTINGS.referralBonus.toString(),
+          minWithdrawal: minWithdrawal?.toString() || DEFAULT_SETTINGS.minWithdrawal.toString(),
+          maxCashbackBonus: maxCashbackBonus?.toString() || DEFAULT_SETTINGS.maxCashbackBonus.toString(),
+          updatedBy: req.user?.id,
+        }).returning();
+        
+        return res.json(newSettings);
+      }
+      
+      // Atualizar configurações existentes
+      const [updatedSettings] = await db.update(commissionSettings)
+        .set({
+          ...(platformFee !== undefined && { platformFee: platformFee.toString() }),
+          ...(merchantCommission !== undefined && { merchantCommission: merchantCommission.toString() }),
+          ...(clientCashback !== undefined && { clientCashback: clientCashback.toString() }),
+          ...(referralBonus !== undefined && { referralBonus: referralBonus.toString() }),
+          ...(minWithdrawal !== undefined && { minWithdrawal: minWithdrawal.toString() }),
+          ...(maxCashbackBonus !== undefined && { maxCashbackBonus: maxCashbackBonus.toString() }),
+          updatedAt: new Date(),
+          updatedBy: req.user?.id,
+        })
+        .where(eq(commissionSettings.id, settings[0].id))
+        .returning();
+      
+      res.json(updatedSettings);
+    } catch (error) {
+      console.error("Erro ao atualizar configurações de taxas:", error);
+      res.status(500).json({ message: "Erro ao atualizar configurações de taxas" });
+    }
+  });
   
   // Dashboard do Admin
   app.get("/api/admin/dashboard", isUserType("admin"), async (req, res) => {
