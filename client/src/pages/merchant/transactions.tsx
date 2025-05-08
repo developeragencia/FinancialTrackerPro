@@ -366,7 +366,7 @@ export default function MerchantTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                $ {totalAmount.toFixed(2)}
+                {formatCurrency(totalAmount)}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransactions.length} transações
@@ -380,7 +380,7 @@ export default function MerchantTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                $ {totalCashback.toFixed(2)}
+                {formatCurrency(totalCashback)}
               </div>
               <p className="text-sm text-muted-foreground">
                 {((totalCashback / totalAmount) * 100).toFixed(1)}% do total
@@ -440,7 +440,7 @@ export default function MerchantTransactions() {
                         {PaymentMethodIcons[method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
                         <span className="ml-1">{paymentLabels[method] || method}</span>
                       </div>
-                      <span className="text-sm font-medium">$ {amount.toFixed(2)}</span>
+                      <span className="text-sm font-medium">{formatCurrency(amount)}</span>
                     </div>
                   );
                 })}
