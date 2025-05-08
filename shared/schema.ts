@@ -39,7 +39,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   phone: text("phone"),
-  cpfCnpj: text("cpf_cnpj").unique(),
+
   country: text("country"),
   countryCode: text("country_code"),
   type: text("type").notNull(),
