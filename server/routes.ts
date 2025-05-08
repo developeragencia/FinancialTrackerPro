@@ -1007,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.user_id, merchant_id));
+        .where(eq(merchants.user_id, merchantId));
       
       if (!merchant) {
         return res.status(404).json({ message: "Lojista não encontrado" });
@@ -2572,9 +2572,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               r.bonus, 
               r.status, 
               r.created_at,
-              u.name as referred_name
+              u.name as referred_name,
+              u.type as user_type,
+              u.email as email,
+              u.phone as phone,
+              m.store_name
             FROM referrals r
             JOIN users u ON r.referred_id = u.id
+            LEFT JOIN merchants m ON m.user_id = u.id
             WHERE r.referrer_id = ${clientId}
             ORDER BY r.created_at DESC`
         );
