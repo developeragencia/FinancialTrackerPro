@@ -764,17 +764,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Iniciar transação
-      // Registrar a transação
-      const [transaction] = await db.insert(transactions).values({
-        user_id: customerId,        // Usando nome exato da coluna no banco
+      // Preparar valores para inserção (garantindo que são strings)
+      const saleAmount = total ? total.toString() : '0';
+      const saleCashbackAmount = cashback ? cashback.toString() : '0';
+      
+      // Criar objeto de inserção base
+      const insertValues = {
+        user_id: customerId,
         merchant_id: merchant.id,
-        amount: total.toString(),   // Convertemos para string já que é numeric no schema
-        cashback_amount: cashback.toString(),
+        amount: saleAmount,
+        cashback_amount: saleCashbackAmount,
         status: TransactionStatus.COMPLETED,
         payment_method: paymentMethod,
         description: notes || null,
         created_at: new Date()
-      }).returning();
+      };
+      
+      // Adicionar manual_amount se existir
+      if (manualAmount) {
+        insertValues.manual_amount = manualAmount.toString();
+      }
+      
+      console.log("Inserindo transação com valores:", insertValues);
+      
+      // Registrar a transação
+      const [transaction] = await db.insert(transactions).values(insertValues).returning();
       
       // Registrar os itens da transação
       if (items && items.length > 0) {
@@ -822,11 +836,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se houver bônus de indicação, adicionar para o referrerId
       if (referrerId && referralBonus > 0) {
         await db.insert(referrals).values({
-          referrerId,
-          referredId: customerId,
+          referrer_id: referrerId,
+          referred_id: customerId,
           bonus: referralBonus.toString(),
           status: "active",
-          createdAt: new Date()
+          created_at: new Date()
         });
       }
       
