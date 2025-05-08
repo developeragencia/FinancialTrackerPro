@@ -1763,90 +1763,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const clientId = req.user.id;
+      let userReferralCode = "";
+      let referrals_list = [];
+      let totalEarned = 0;
+      let pendingReferrals = 0;
+      let referralsCount = 0;
       
-      // Buscar dados do usuário com SQL direto
-      const userResult = await db.execute(
-        sql`SELECT id, name, email, referral_code FROM users WHERE id = ${clientId}`
-      );
-      
-      if (userResult.rows.length === 0) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
-      }
-      
-      const userData = userResult.rows[0];
-      
-      // Se não houver código de referência, gerar um e salvar
-      let userReferralCode = userData.referral_code;
-      if (!userReferralCode) {
-        userReferralCode = "CL" + clientId.toString().padStart(4, '0');
-        
-        // Atualizar código de referência do usuário com SQL direto
-        await db.execute(
-          sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${clientId}`
+      try {
+        // Buscar dados do usuário com SQL direto
+        const userResult = await db.execute(
+          sql`SELECT id, name, email, referral_code FROM users WHERE id = ${clientId}`
         );
+        
+        if (userResult.rows.length === 0) {
+          return res.status(404).json({ message: "Usuário não encontrado" });
+        }
+        
+        const userData = userResult.rows[0];
+        
+        // Se não houver código de referência, gerar um e salvar
+        userReferralCode = userData.referral_code;
+        if (!userReferralCode) {
+          userReferralCode = "CL" + clientId.toString().padStart(4, '0');
+          
+          // Atualizar código de referência do usuário com SQL direto
+          await db.execute(
+            sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${clientId}`
+          );
+        }
+      } catch (error) {
+        console.error("Erro ao buscar/gerar código de referência:", error);
+        // Se ocorrer erro, gerar um código baseado apenas no ID
+        userReferralCode = "CL" + clientId.toString().padStart(4, '0');
       }
       
-      // Buscar todas as indicações do usuário com SQL direto
-      const referralsResult = await db.execute(
-        sql`SELECT 
-            r.id, 
-            r.referred_id, 
-            r.bonus, 
-            r.status, 
-            r.created_at,
-            u.name as referred_name
-          FROM referrals r
-          JOIN users u ON r.referred_id = u.id
-          WHERE r.referrer_id = ${clientId}
-          ORDER BY r.created_at DESC`
-      );
+      try {
+        // Buscar todas as indicações do usuário com SQL direto
+        const referralsResult = await db.execute(
+          sql`SELECT 
+              r.id, 
+              r.referred_id, 
+              r.bonus, 
+              r.status, 
+              r.created_at,
+              u.name as referred_name
+            FROM referrals r
+            JOIN users u ON r.referred_id = u.id
+            WHERE r.referrer_id = ${clientId}
+            ORDER BY r.created_at DESC`
+        );
+        
+        // Formatar lista de referências para o frontend
+        referrals_list = referralsResult.rows.map(ref => ({
+          id: ref.id,
+          name: ref.referred_name || 'Usuário desconhecido',
+          date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
+          status: ref.status,
+          commission: parseFloat(ref.bonus).toFixed(2)
+        }));
+        
+        // Calcular estatísticas
+        const totalEarnedResult = await db.execute(
+          sql`SELECT COALESCE(SUM(bonus), 0) as total
+              FROM referrals
+              WHERE referrer_id = ${clientId} AND status = 'active'`
+        );
+        totalEarned = parseFloat(totalEarnedResult.rows[0]?.total || '0');
+        
+        const pendingResult = await db.execute(
+          sql`SELECT COUNT(*) as count
+              FROM referrals
+              WHERE referrer_id = ${clientId} AND status = 'pending'`
+        );
+        pendingReferrals = parseInt(pendingResult.rows[0]?.count || '0');
+        
+        // Contar total de referências
+        const refCountResult = await db.execute(
+          sql`SELECT COUNT(*) as count
+              FROM referrals
+              WHERE referrer_id = ${clientId}`
+        );
+        referralsCount = parseInt(refCountResult.rows[0]?.count || '0');
+      } catch (error) {
+        console.error("Erro ao buscar dados de referência:", error);
+        // Em caso de erro, manter valores padrão (já inicializados acima)
+      }
       
-      // Formatar lista de referências para o frontend
-      const referrals_list = referralsResult.rows.map(ref => ({
-        id: ref.id,
-        name: ref.referred_name || 'Usuário desconhecido',
-        date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
-        status: ref.status,
-        commission: parseFloat(ref.bonus).toFixed(2)
-      }));
-      
-      // Calcular estatísticas
-      const totalEarnedResult = await db.execute(
-        sql`SELECT COALESCE(SUM(bonus), 0) as total
-            FROM referrals
-            WHERE referrer_id = ${clientId} AND status = 'active'`
-      );
-      const totalEarned = parseFloat(totalEarnedResult.rows[0]?.total || '0');
-      
-      const pendingResult = await db.execute(
-        sql`SELECT COUNT(*) as count
-            FROM referrals
-            WHERE referrer_id = ${clientId} AND status = 'pending'`
-      );
-      const pendingReferrals = parseInt(pendingResult.rows[0]?.count || '0');
-      
-      // Buscar configuração de comissão para referências com SQL direto
-      const commissionResult = await db.execute(
-        sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
-      );
-      
-      // Usar o valor padrão do sistema se não houver configuração
-      const commissionRate = commissionResult.rows.length > 0
-        ? parseFloat(commissionResult.rows[0].value) 
-        : DEFAULT_SETTINGS.referralBonus;
+      // Buscar configuração de comissão para referências (com tratamento de erro)
+      let commissionRate = DEFAULT_SETTINGS.referralBonus;
+      try {
+        const commissionResult = await db.execute(
+          sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
+        );
+        
+        // Usar o valor padrão do sistema se não houver configuração
+        if (commissionResult.rows.length > 0) {
+          commissionRate = parseFloat(commissionResult.rows[0].value);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar configuração de comissão:", error);
+      }
       
       // Construir URL completa com base no host da requisição
       const host = req.get('host') || 'valecashback.com';
       const protocol = req.protocol || 'https';
       const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
-      
-      // Contar total de referências
-      const refCountResult = await db.execute(
-        sql`SELECT COUNT(*) as count
-            FROM referrals
-            WHERE referrer_id = ${clientId}`
-      );
-      const referralsCount = parseInt(refCountResult.rows[0]?.count || '0');
       
       res.json({
         referralCode: userReferralCode,
@@ -1859,7 +1880,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Erro ao buscar indicações:", error);
-      res.status(500).json({ message: "Erro ao buscar indicações" });
+      
+      // Em caso de erro, retornar pelo menos o código de referência básico
+      const clientId = req.user?.id || 0;
+      const userReferralCode = "CL" + clientId.toString().padStart(4, '0');
+      const host = req.get('host') || 'valecashback.com';
+      const protocol = req.protocol || 'https';
+      const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
+      
+      res.json({
+        referralCode: userReferralCode,
+        referralUrl,
+        referralsCount: 0,
+        pendingReferrals: 0,
+        totalEarned: "0.00",
+        commission: (DEFAULT_SETTINGS.referralBonus * 100).toFixed(1),
+        referrals: []
+      });
     }
   });
   
