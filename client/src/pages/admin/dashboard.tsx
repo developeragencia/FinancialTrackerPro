@@ -87,8 +87,8 @@ export default function AdminDashboard() {
         />
         <StatCard
           title="Volume Financeiro"
-          value={`R$ ${stats.totalVolume.toFixed(2)}`}
-          description={`Cashback: R$ ${stats.totalCashback.toFixed(2)}`}
+          value={`$ ${stats.totalVolume.toFixed(2)}`}
+          description={`Cashback: $ ${stats.totalCashback.toFixed(2)}`}
           icon={<BarChart className="h-5 w-5 text-primary" />}
         />
       </StatCardGrid>
@@ -108,7 +108,7 @@ export default function AdminDashboard() {
           title="Volume de Transações"
           data={transactionVolumeData}
           bars={[
-            { dataKey: "value", name: "Volume de Transações (R$)" }
+            { dataKey: "value", name: "Volume de Transações ($)" }
           ]}
           xAxisDataKey="month"
         />

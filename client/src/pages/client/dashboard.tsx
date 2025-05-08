@@ -113,7 +113,7 @@ export default function ClientDashboard() {
           title="Evolução do Saldo"
           data={data.balanceHistory || []}
           lines={[
-            { dataKey: "value", name: "Saldo (R$)" }
+            { dataKey: "value", name: "Saldo ($)" }
           ]}
           xAxisDataKey="month"
         />
