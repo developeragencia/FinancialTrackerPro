@@ -1530,60 +1530,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const clientId = req.user.id;
       
-      // Calcular saldo de cashback
-      const cashbackBalance = await db
-        .select({ sum: sql`COALESCE(SUM(${cashbacks.balance}), 0)` })
-        .from(cashbacks)
-        .where(eq(cashbacks.userId, clientId));
-        
-      // Calcular saldo de indicações
-      const referralBalance = await db
-        .select({ sum: sql`COALESCE(SUM(${referrals.bonus}), 0)` })
-        .from(referrals)
-        .where(
-          and(
-            eq(referrals.referrerId, clientId),
-            eq(referrals.status, "active")
-          )
-        );
-        
-      // Quantidade de transações
-      const transactionsCount = await db
-        .select({ count: sql`COUNT(*)` })
-        .from(transactions)
-        .where(eq(transactions.userId, clientId));
-        
-      // Transações recentes - formatadas para o frontend
-      const recentTransactionsRaw = await db
-        .select({
-          id: transactions.id,
-          amount: transactions.amount,
-          cashbackAmount: transactions.cashbackAmount,
-          createdAt: transactions.createdAt,
-          merchantId: transactions.merchantId,
-          status: transactions.status
-        })
-        .from(transactions)
-        .where(eq(transactions.userId, clientId))
-        .orderBy(desc(transactions.createdAt))
-        .limit(5);
-        
-      // Buscar nomes dos lojistas para as transações
-      const merchantIds = [...new Set(recentTransactionsRaw.map(t => t.merchantId))];
-      const merchantsData = await db
-        .select({
-          id: merchants.id,
-          name: merchants.name
-        })
-        .from(merchants)
-        .where(inArray(merchants.id, merchantIds));
-        
-      const merchantsMap = new Map(merchantsData.map(m => [m.id, m.name]));
+      // Obter saldo de cashback usando SQL direto
+      const cashbackResult = await db.execute(
+        sql`SELECT COALESCE(SUM(balance), 0) as sum FROM cashbacks WHERE user_id = ${clientId}`
+      );
+      const cashbackBalance = parseFloat(cashbackResult.rows[0]?.sum || '0');
       
-      // Formatar transações para o formato esperado pelo frontend
-      const recentTransactions = recentTransactionsRaw.map(t => ({
+      // Obter saldo de indicações usando SQL direto
+      const referralResult = await db.execute(
+        sql`SELECT COALESCE(SUM(bonus), 0) as sum 
+            FROM referrals 
+            WHERE referrer_id = ${clientId} AND status = 'active'`
+      );
+      const referralBalance = parseFloat(referralResult.rows[0]?.sum || '0');
+      
+      // Contar transações
+      const transactionsCountResult = await db.execute(
+        sql`SELECT COUNT(*) as count FROM transactions WHERE user_id = ${clientId}`
+      );
+      const transactionsCount = parseInt(transactionsCountResult.rows[0]?.count || '0');
+      
+      // Obter transações recentes
+      const recentTransactionsResult = await db.execute(
+        sql`SELECT 
+            t.id, 
+            t.amount, 
+            t.cashback_amount as "cashbackAmount", 
+            t.created_at as "createdAt", 
+            t.status,
+            m.store_name as "merchant"
+          FROM transactions t
+          JOIN merchants m ON t.merchant_id = m.id
+          WHERE t.user_id = ${clientId}
+          ORDER BY t.created_at DESC
+          LIMIT 5`
+      );
+      
+      // Formatar transações recentes para o frontend
+      const recentTransactions = recentTransactionsResult.rows.map(t => ({
         id: t.id,
-        merchant: merchantsMap.get(t.merchantId) || 'Lojista desconhecido',
+        merchant: t.merchant || 'Lojista desconhecido',
         date: format(new Date(t.createdAt), 'dd/MM/yyyy'),
         amount: parseFloat(t.amount),
         cashback: parseFloat(t.cashbackAmount),
@@ -1596,75 +1582,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       currentMonth.setHours(0, 0, 0, 0);
       
       // Total de cashback ganho este mês
-      const monthlyEarned = await db
-        .select({ sum: sql`COALESCE(SUM(${transactions.cashbackAmount}), 0)` })
-        .from(transactions)
-        .where(
-          and(
-            eq(transactions.userId, clientId),
-            gte(transactions.createdAt, currentMonth),
-            eq(transactions.status, "completed")
-          )
-        );
-        
-      // Total transferido este mês
-      const monthlyTransferred = await db
-        .select({ sum: sql`COALESCE(SUM(${transfers.amount}), 0)` })
-        .from(transfers)
-        .where(
-          and(
-            eq(transfers.fromUserId, clientId),
-            gte(transfers.createdAt, currentMonth)
-          )
-        );
-        
-      // Total recebido este mês
-      const monthlyReceived = await db
-        .select({ sum: sql`COALESCE(SUM(${transfers.amount}), 0)` })
-        .from(transfers)
-        .where(
-          and(
-            eq(transfers.toUserId, clientId),
-            gte(transfers.createdAt, currentMonth)
-          )
-        );
-        
-      // Histórico de saldos nos últimos 6 meses
-      const balanceHistory = [];
-      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const monthlyEarnedResult = await db.execute(
+        sql`SELECT COALESCE(SUM(cashback_amount), 0) as sum
+            FROM transactions
+            WHERE user_id = ${clientId}
+              AND created_at >= ${currentMonth}
+              AND status = 'completed'`
+      );
+      const monthlyEarned = parseFloat(monthlyEarnedResult.rows[0]?.sum || '0');
       
-      const now = new Date();
-      for (let i = 5; i >= 0; i--) {
-        const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
-        
-        // Transações até o final desse mês
-        const monthlyBalance = await db
-          .select({ sum: sql`COALESCE(SUM(${transactions.cashbackAmount}), 0)` })
-          .from(transactions)
-          .where(
-            and(
-              eq(transactions.userId, clientId),
-              lte(transactions.createdAt, monthEnd),
-              eq(transactions.status, "completed")
-            )
-          );
-          
-        balanceHistory.push({
-          month: months[month.getMonth()],
-          value: parseFloat(monthlyBalance[0].sum)
-        });
-      }
-        
+      // Total transferido este mês
+      const monthlyTransferredResult = await db.execute(
+        sql`SELECT COALESCE(SUM(amount), 0) as sum
+            FROM transfers
+            WHERE from_user_id = ${clientId}
+              AND created_at >= ${currentMonth}`
+      );
+      const monthlyTransferred = parseFloat(monthlyTransferredResult.rows[0]?.sum || '0');
+      
+      // Total recebido este mês
+      const monthlyReceivedResult = await db.execute(
+        sql`SELECT COALESCE(SUM(amount), 0) as sum
+            FROM transfers
+            WHERE to_user_id = ${clientId}
+              AND created_at >= ${currentMonth}`
+      );
+      const monthlyReceived = parseFloat(monthlyReceivedResult.rows[0]?.sum || '0');
+      
+      // Histórico de saldos nos últimos 6 meses
+      const balanceHistoryResult = await db.execute(
+        sql`WITH months AS (
+            SELECT generate_series(
+              date_trunc('month', current_date - interval '5 months'),
+              date_trunc('month', current_date),
+              interval '1 month'
+            ) as month_start
+          )
+          SELECT 
+            to_char(m.month_start, 'Mon') as month,
+            COALESCE(SUM(t.cashback_amount), 0) as monthly_sum
+          FROM months m
+          LEFT JOIN transactions t ON 
+            t.user_id = ${clientId} AND 
+            t.created_at >= m.month_start AND 
+            t.created_at < m.month_start + interval '1 month' AND
+            t.status = 'completed'
+          GROUP BY m.month_start
+          ORDER BY m.month_start`
+      );
+      
+      // Mapear o histórico de saldos
+      const balanceHistory = balanceHistoryResult.rows.map(row => ({
+        month: row.month,
+        value: parseFloat(row.monthly_sum)
+      }));
+      
       res.json({
-        cashbackBalance: parseFloat(cashbackBalance[0].sum) || 0,
-        referralBalance: parseFloat(referralBalance[0].sum) || 0,
-        transactionsCount: parseInt(transactionsCount[0].count) || 0,
+        cashbackBalance,
+        referralBalance,
+        transactionsCount,
         recentTransactions,
         monthStats: {
-          earned: parseFloat(monthlyEarned[0].sum) || 0,
-          transferred: parseFloat(monthlyTransferred[0].sum) || 0,
-          received: parseFloat(monthlyReceived[0].sum) || 0
+          earned: monthlyEarned,
+          transferred: monthlyTransferred,
+          received: monthlyReceived
         },
         balanceHistory
       });
@@ -1920,10 +1901,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...allTransfers.map(t => t.toUserId)
       ]);
       
-      // Buscar dados dos usuários
-      const usersResult = await db.execute(
-        sql`SELECT id, name FROM users WHERE id = ANY(${Array.from(userIds)})`
-      );
+      // Buscar dados dos usuários (convertendo o Set para array e depois para lista de valores separados por vírgula)
+      const userIdsList = Array.from(userIds);
+      let usersSql = 'SELECT id, name FROM users WHERE id IN (';
+      
+      // Se não houver IDs, evitamos erro de sintaxe
+      if (userIdsList.length === 0) {
+        usersSql += '-1)'; // um ID que não existe para retornar conjunto vazio
+      } else {
+        usersSql += userIdsList.join(',') + ')';
+      }
+      
+      const usersResult = await db.execute(sql`${sql.raw(usersSql)}`);
       
       // Criar mapa para fácil acesso
       const usersMap = new Map(usersResult.rows.map(u => [u.id, u.name]));
