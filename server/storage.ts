@@ -9,11 +9,11 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     const PostgresSessionStore = connectPg(session);

@@ -9,7 +9,20 @@ import { User } from "@shared/schema";
 
 declare global {
   namespace Express {
-    interface User extends User {}
+    // Define User interface para o passport
+    interface User {
+      id: number;
+      name: string;
+      email: string;
+      password: string;
+      phone: string | null;
+      cpfCnpj: string | null;
+      type: string;
+      status: string;
+      photo: string | null;
+      createdAt: Date;
+      lastLogin: Date | null;
+    }
   }
 }
 
