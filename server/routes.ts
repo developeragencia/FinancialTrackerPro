@@ -3,8 +3,9 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, desc, sql } from "drizzle-orm";
+import { eq, and, desc, sql, gt, gte, lt, lte, inArray } from "drizzle-orm";
 import crypto from "crypto";
+import { format } from "date-fns";
 import {
   users,
   merchants,
@@ -1523,22 +1524,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Dashboard do Cliente
   app.get("/api/client/dashboard", isUserType("client"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const clientId = req.user.id;
       
       // Calcular saldo de cashback
       const cashbackBalance = await db
-        .select({ sum: sql`SUM(amount)` })
+        .select({ sum: sql`COALESCE(SUM(${cashbacks.balance}), 0)` })
         .from(cashbacks)
-        .where(
-          and(
-            eq(cashbacks.userId, clientId),
-            eq(cashbacks.status, "active")
-          )
-        );
+        .where(eq(cashbacks.userId, clientId));
         
       // Calcular saldo de indicações
       const referralBalance = await db
-        .select({ sum: sql`SUM(amount)` })
+        .select({ sum: sql`COALESCE(SUM(${referrals.bonus}), 0)` })
         .from(referrals)
         .where(
           and(
@@ -1551,29 +1551,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactionsCount = await db
         .select({ count: sql`COUNT(*)` })
         .from(transactions)
-        .where(eq(transactions.customerId, clientId));
+        .where(eq(transactions.userId, clientId));
         
-      // Transações recentes
-      const recentTransactions = await db
+      // Transações recentes - formatadas para o frontend
+      const recentTransactionsRaw = await db
         .select({
           id: transactions.id,
           amount: transactions.amount,
-          cashback: transactions.cashbackAmount,
-          date: transactions.createdAt,
-          merchantName: merchants.name,
+          cashbackAmount: transactions.cashbackAmount,
+          createdAt: transactions.createdAt,
+          merchantId: transactions.merchantId,
           status: transactions.status
         })
         .from(transactions)
-        .innerJoin(merchants, eq(transactions.merchantId, merchants.id))
-        .where(eq(transactions.customerId, clientId))
+        .where(eq(transactions.userId, clientId))
         .orderBy(desc(transactions.createdAt))
         .limit(5);
         
+      // Buscar nomes dos lojistas para as transações
+      const merchantIds = [...new Set(recentTransactionsRaw.map(t => t.merchantId))];
+      const merchantsData = await db
+        .select({
+          id: merchants.id,
+          name: merchants.name
+        })
+        .from(merchants)
+        .where(inArray(merchants.id, merchantIds));
+        
+      const merchantsMap = new Map(merchantsData.map(m => [m.id, m.name]));
+      
+      // Formatar transações para o formato esperado pelo frontend
+      const recentTransactions = recentTransactionsRaw.map(t => ({
+        id: t.id,
+        merchant: merchantsMap.get(t.merchantId) || 'Lojista desconhecido',
+        date: format(new Date(t.createdAt), 'dd/MM/yyyy'),
+        amount: parseFloat(t.amount),
+        cashback: parseFloat(t.cashbackAmount),
+        status: t.status
+      }));
+      
+      // Estatísticas do mês
+      const currentMonth = new Date();
+      currentMonth.setDate(1);
+      currentMonth.setHours(0, 0, 0, 0);
+      
+      // Total de cashback ganho este mês
+      const monthlyEarned = await db
+        .select({ sum: sql`COALESCE(SUM(${transactions.cashbackAmount}), 0)` })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.userId, clientId),
+            gte(transactions.createdAt, currentMonth),
+            eq(transactions.status, "completed")
+          )
+        );
+        
+      // Total transferido este mês
+      const monthlyTransferred = await db
+        .select({ sum: sql`COALESCE(SUM(${transfers.amount}), 0)` })
+        .from(transfers)
+        .where(
+          and(
+            eq(transfers.fromUserId, clientId),
+            gte(transfers.createdAt, currentMonth)
+          )
+        );
+        
+      // Total recebido este mês
+      const monthlyReceived = await db
+        .select({ sum: sql`COALESCE(SUM(${transfers.amount}), 0)` })
+        .from(transfers)
+        .where(
+          and(
+            eq(transfers.toUserId, clientId),
+            gte(transfers.createdAt, currentMonth)
+          )
+        );
+        
+      // Histórico de saldos nos últimos 6 meses
+      const balanceHistory = [];
+      const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const month = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        
+        // Transações até o final desse mês
+        const monthlyBalance = await db
+          .select({ sum: sql`COALESCE(SUM(${transactions.cashbackAmount}), 0)` })
+          .from(transactions)
+          .where(
+            and(
+              eq(transactions.userId, clientId),
+              lte(transactions.createdAt, monthEnd),
+              eq(transactions.status, "completed")
+            )
+          );
+          
+        balanceHistory.push({
+          month: months[month.getMonth()],
+          value: parseFloat(monthlyBalance[0].sum)
+        });
+      }
+        
       res.json({
-        cashbackBalance: cashbackBalance[0].sum || 0,
-        referralBalance: referralBalance[0].sum || 0,
-        transactionsCount: transactionsCount[0].count || 0,
-        recentTransactions
+        cashbackBalance: parseFloat(cashbackBalance[0].sum) || 0,
+        referralBalance: parseFloat(referralBalance[0].sum) || 0,
+        transactionsCount: parseInt(transactionsCount[0].count) || 0,
+        recentTransactions,
+        monthStats: {
+          earned: parseFloat(monthlyEarned[0].sum) || 0,
+          transferred: parseFloat(monthlyTransferred[0].sum) || 0,
+          received: parseFloat(monthlyReceived[0].sum) || 0
+        },
+        balanceHistory
       });
     } catch (error) {
       console.error("Erro ao buscar dados do dashboard cliente:", error);
@@ -1584,25 +1677,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Histórico de transações do cliente
   app.get("/api/client/transactions", isUserType("client"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const clientId = req.user.id;
       
-      // Listar transações
-      const transactions_list = await db
-        .select({
-          id: transactions.id,
-          merchant: merchants.name,
-          date: transactions.createdAt,
-          amount: transactions.amount,
-          cashback: transactions.cashbackAmount,
-          status: transactions.status,
-          paymentMethod: transactions.paymentMethod
-        })
-        .from(transactions)
-        .innerJoin(merchants, eq(transactions.merchantId, merchants.id))
-        .where(eq(transactions.customerId, clientId))
-        .orderBy(desc(transactions.createdAt));
+      // Buscar as colunas relevantes diretamente, sem erro de colunas inexistentes
+      const result = await db.execute(
+        sql`SELECT 
+            t.id, 
+            t.merchant_id as "merchantId", 
+            t.created_at as "date", 
+            t.amount, 
+            t.cashback_amount as "cashback", 
+            t.status, 
+            t.payment_method as "paymentMethod",
+            m.store_name as "merchantName"
+          FROM transactions t
+          JOIN merchants m ON t.merchant_id = m.id
+          WHERE t.user_id = ${clientId}
+          ORDER BY t.created_at DESC`
+      );
+      
+      // Formatar transações para o formato esperado pelo frontend
+      const formattedTransactions = result.rows.map(t => ({
+        id: t.id,
+        merchant: t.merchantName || 'Lojista desconhecido',
+        date: format(new Date(t.date), 'dd/MM/yyyy HH:mm'),
+        amount: parseFloat(t.amount),
+        cashback: parseFloat(t.cashback),
+        status: t.status,
+        paymentMethod: t.paymentMethod
+      }));
         
-      res.json(transactions_list);
+      res.json(formattedTransactions);
     } catch (error) {
       console.error("Erro ao buscar transações:", error);
       res.status(500).json({ message: "Erro ao buscar transações" });
@@ -1612,38 +1721,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Histórico de cashbacks e saldos do cliente
   app.get("/api/client/cashbacks", isUserType("client"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const clientId = req.user.id;
       
-      // Listar cashbacks
-      const cashbacks_list = await db
-        .select({
-          id: cashbacks.id,
-          transactionId: cashbacks.transactionId,
-          amount: cashbacks.amount,
-          date: cashbacks.createdAt,
-          status: cashbacks.status,
-          merchant: merchants.name
-        })
-        .from(cashbacks)
-        .leftJoin(transactions, eq(cashbacks.transactionId, transactions.id))
-        .leftJoin(merchants, eq(transactions.merchantId, merchants.id))
-        .where(eq(cashbacks.userId, clientId))
-        .orderBy(desc(cashbacks.createdAt));
-        
-      // Calcular saldo total
-      const totalBalance = await db
-        .select({ sum: sql`SUM(amount)` })
-        .from(cashbacks)
-        .where(
-          and(
-            eq(cashbacks.userId, clientId),
-            eq(cashbacks.status, "active")
-          )
-        );
-        
+      // Consulta SQL direta para obter cashbacks
+      const result = await db.execute(
+        sql`SELECT 
+            c.id, 
+            c.transaction_id as "transactionId", 
+            c.amount, 
+            c.created_at as "date", 
+            c.status,
+            m.store_name as "merchant"
+          FROM cashbacks c
+          LEFT JOIN transactions t ON c.transaction_id = t.id
+          LEFT JOIN merchants m ON t.merchant_id = m.id
+          WHERE c.user_id = ${clientId}
+          ORDER BY c.created_at DESC`
+      );
+      
+      // Formatar cashbacks para o formato esperado pelo frontend
+      const cashbacks_list = result.rows.map(c => ({
+        id: c.id,
+        transactionId: c.transactionId,
+        amount: parseFloat(c.amount),
+        date: format(new Date(c.date), 'dd/MM/yyyy HH:mm'),
+        status: c.status,
+        merchant: c.merchant || 'Lojista desconhecido'
+      }));
+      
+      // Consulta SQL direta para calcular saldo total
+      const balanceResult = await db.execute(
+        sql`SELECT SUM(amount) as total 
+          FROM cashbacks 
+          WHERE user_id = ${clientId} AND status = 'active'`
+      );
+      
+      const balance = balanceResult.rows[0]?.total 
+        ? parseFloat(balanceResult.rows[0].total) 
+        : 0;
+      
       res.json({
         cashbacks: cashbacks_list,
-        balance: totalBalance[0].sum || 0
+        balance: balance
       });
     } catch (error) {
       console.error("Erro ao buscar cashbacks:", error);
@@ -1654,36 +1777,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Histórico de indicações do cliente
   app.get("/api/client/referrals", isUserType("client"), async (req, res) => {
     try {
-      const clientId = req.user!.id;
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
       
-      // Gerar um código simples para teste
-      const userReferralCode = "CL" + clientId.toString().padStart(4, '0');
+      const clientId = req.user.id;
       
-      // Mock de dados para testes
-      const referrals_list = [
-        {
-          id: 1,
-          name: "João Silva",
-          date: new Date(),
-          status: "completed",
-          commission: "15.00"
-        },
-        {
-          id: 2,
-          name: "Maria Souza",
-          date: new Date(),
-          status: "pending",
-          commission: "0.00"
-        }
-      ];
+      // Buscar dados do usuário para verificar código de referência
+      const [userData] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          referralCode: users.referralCode,
+        })
+        .from(users)
+        .where(eq(users.id, clientId));
+        
+      // Se não houver código de referência, gerar um e salvar
+      let userReferralCode = userData.referralCode;
+      if (!userReferralCode) {
+        userReferralCode = "CL" + clientId.toString().padStart(4, '0');
+        
+        // Atualizar código de referência do usuário
+        await db
+          .update(users)
+          .set({ referralCode: userReferralCode })
+          .where(eq(users.id, clientId));
+      }
+      
+      // Buscar todas as indicações do usuário
+      const referralsData = await db
+        .select({
+          id: referrals.id,
+          referredId: referrals.referredId,
+          bonus: referrals.bonus,
+          status: referrals.status,
+          createdAt: referrals.createdAt,
+        })
+        .from(referrals)
+        .where(eq(referrals.referrerId, clientId))
+        .orderBy(desc(referrals.createdAt));
+        
+      // Obter dados dos usuários indicados
+      const referredUserIds = referralsData.map(ref => ref.referredId);
+      const referredUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          photo: users.photo,
+          createdAt: users.createdAt,
+        })
+        .from(users)
+        .where(inArray(users.id, referredUserIds));
+      
+      // Criar mapa de usuários para facilitar acesso
+      const referredUsersMap = new Map(referredUsers.map(user => [user.id, user]));
+      
+      // Formatar lista de referências para o frontend
+      const referrals_list = referralsData.map(ref => {
+        const user = referredUsersMap.get(ref.referredId);
+        return {
+          id: ref.id,
+          name: user ? user.name : 'Usuário desconhecido',
+          date: format(new Date(ref.createdAt), 'dd/MM/yyyy'),
+          status: ref.status,
+          commission: parseFloat(ref.bonus).toFixed(2)
+        };
+      });
+      
+      // Calcular estatísticas
+      const totalEarned = referralsData
+        .filter(ref => ref.status === 'active')
+        .reduce((sum, ref) => sum + parseFloat(ref.bonus), 0);
+        
+      const pendingReferrals = referralsData.filter(ref => ref.status === 'pending').length;
+      
+      // Buscar configuração de comissão para referências
+      const [commissionSetting] = await db
+        .select()
+        .from(commissionSettings)
+        .where(eq(commissionSettings.key, 'referralBonus'));
+        
+      // Usar o valor padrão do sistema se não houver configuração
+      const commissionRate = commissionSetting 
+        ? parseFloat(commissionSetting.value) 
+        : DEFAULT_SETTINGS.referralBonus;
+      
+      // Construir URL completa com base no host da requisição
+      const host = req.get('host') || 'valecashback.com';
+      const protocol = req.protocol || 'https';
+      const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
       
       res.json({
         referralCode: userReferralCode,
-        referralUrl: `https://valecashback.com/convite/${userReferralCode}`,
-        referralsCount: referrals_list.length,
-        pendingReferrals: 1,
-        totalEarned: "15.00",
-        commission: "1.0",
+        referralUrl,
+        referralsCount: referralsData.length,
+        pendingReferrals,
+        totalEarned: totalEarned.toFixed(2),
+        commission: (commissionRate * 100).toFixed(1),
         referrals: referrals_list
       });
     } catch (error) {
@@ -1695,16 +1888,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Histórico de transferências do cliente
   app.get("/api/client/transfers", isUserType("client"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const clientId = req.user.id;
       
-      // Listar transferências
-      const transfers_list = await db
-        .select()
-        .from(transfers)
-        .where(eq(transfers.userId, clientId))
-        .orderBy(desc(transfers.createdAt));
-        
-      res.json(transfers_list);
+      // Usar SQL direto para evitar problemas com nomes de colunas
+      const result = await db.execute(
+        sql`SELECT 
+            t.id, 
+            t.amount, 
+            t.from_user_id as "fromUserId", 
+            t.to_user_id as "toUserId", 
+            t.status, 
+            t.created_at as "createdAt", 
+            t.description,
+            CASE 
+              WHEN t.from_user_id = ${clientId} THEN 'outgoing'
+              ELSE 'incoming'
+            END as "type"
+          FROM transfers t
+          WHERE t.from_user_id = ${clientId} OR t.to_user_id = ${clientId}
+          ORDER BY t.created_at DESC`
+      );
+      
+      // Extrair IDs únicos de usuários
+      const allTransfers = result.rows;
+      const userIds = new Set([
+        ...allTransfers.map(t => t.fromUserId),
+        ...allTransfers.map(t => t.toUserId)
+      ]);
+      
+      // Buscar dados dos usuários
+      const usersResult = await db.execute(
+        sql`SELECT id, name FROM users WHERE id = ANY(${Array.from(userIds)})`
+      );
+      
+      // Criar mapa para fácil acesso
+      const usersMap = new Map(usersResult.rows.map(u => [u.id, u.name]));
+      
+      // Formatar transferências para o frontend
+      const formattedTransfers = allTransfers.map(t => ({
+        id: t.id,
+        amount: parseFloat(t.amount),
+        from: usersMap.get(t.fromUserId) || 'Usuário desconhecido',
+        to: usersMap.get(t.toUserId) || 'Usuário desconhecido',
+        date: format(new Date(t.createdAt), 'dd/MM/yyyy HH:mm'),
+        description: t.description || (t.type === 'outgoing' ? 'Transferência enviada' : 'Transferência recebida'),
+        status: t.status,
+        type: t.type
+      }));
+      
+      res.json(formattedTransfers);
     } catch (error) {
       console.error("Erro ao buscar transferências:", error);
       res.status(500).json({ message: "Erro ao buscar transferências" });
@@ -1729,27 +1965,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Código de convite inválido" });
       }
       
-      // Dados mockados para teste
-      const referrerId = isClient ? 2 : 3; // Cliente = 2, Lojista = 3
-      const referrerName = isClient ? "Cliente Teste" : "Lojista Teste";
-      const userType = isClient ? "client" : "merchant";
+      // Buscar usuário pelo código de referência
+      const [referrerUser] = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          type: users.type,
+          photo: users.photo
+        })
+        .from(users)
+        .where(eq(users.referralCode, referralCode));
+        
+      if (!referrerUser) {
+        return res.status(404).json({ message: "Código de convite não encontrado" });
+      }
+      
+      // Verificar se o tipo do usuário corresponde ao prefixo do código
+      const expectedType = isClient ? "client" : "merchant";
+      if (referrerUser.type !== expectedType) {
+        return res.status(400).json({ message: "Código de convite inválido" });
+      }
       
       // Dados do lojista, se for o caso
       let merchantData = null;
       if (isMerchant) {
-        merchantData = {
-          storeName: "Loja Teste",
-          logo: "https://via.placeholder.com/100",
-          category: "Varejo",
-          description: "Loja especializada em produtos diversos para toda família."
-        };
+        const [merchantInfo] = await db
+          .select({
+            id: merchants.id,
+            userId: merchants.userId,
+            storeName: merchants.storeName,
+            logo: merchants.logo,
+            category: merchants.category,
+            description: merchants.description
+          })
+          .from(merchants)
+          .where(eq(merchants.userId, referrerUser.id));
+          
+        if (merchantInfo) {
+          merchantData = {
+            storeName: merchantInfo.storeName,
+            logo: merchantInfo.logo || "https://via.placeholder.com/100",
+            category: merchantInfo.category,
+            description: merchantInfo.description
+          };
+        }
       }
       
       // Retornar informações sobre o convite
       res.json({
-        referrerId: referrerId,
-        referrerName: referrerName,
-        referrerType: userType,
+        referrerId: referrerUser.id,
+        referrerName: referrerUser.name,
+        referrerType: referrerUser.type,
         referralCode: referralCode,
         merchantData
       });
