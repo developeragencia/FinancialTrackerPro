@@ -2041,9 +2041,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           m.logo, 
           m.category, 
           m.description,
+          m.commission_rate,
+          m.created_at,
           u.id as user_id,
           u.email,
           u.phone,
+          u.name as owner_name,
           u.type
         FROM merchants m
         JOIN users u ON m.user_id = u.id
@@ -2057,13 +2060,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: store.id,
         storeId: store.id,
         userId: store.user_id,
+        store_name: store.store_name,
         name: store.store_name,
         logo: store.logo || null,
         category: store.category || 'Geral',
         description: store.description || '',
         ownerName: store.owner_name,
         email: store.email,
-        phone: store.phone
+        phone: store.phone,
+        commissionRate: store.commission_rate,
+        rating: 5.0, // Valor padrão para todas as lojas no momento
+        createdAt: store.created_at
       }));
       
       res.json(stores);
