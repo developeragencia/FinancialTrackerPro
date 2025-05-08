@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Store, 
   Eye,
@@ -33,8 +35,8 @@ import {
   PieChart,
   Loader2
 } from "lucide-react";
-import { LineChartComponent, BarChartComponent } from "@/components/ui/charts";
-import { apiRequest } from "@/lib/queryClient";
+import { LineChartComponent, BarChartComponent, PieChartComponent } from "@/components/ui/charts";
+import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 
@@ -163,6 +165,7 @@ export default function AdminStores() {
   // Query to get stores data
   const { data, isLoading } = useQuery({
     queryKey: ['/api/admin/stores'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   const handleViewStore = (store: any) => {
@@ -505,7 +508,10 @@ export default function AdminStores() {
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="md:w-1/3 flex flex-col items-center">
                     <Avatar className="h-24 w-24 mb-4">
-                      <AvatarImage src={selectedStore.logo} alt={selectedStore.name} />
+                      <AvatarImage 
+                        src={selectedStore.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedStore.name)}&background=random&color=fff&size=128`}
+                        alt={selectedStore.name} 
+                      />
                       <AvatarFallback className="text-lg bg-accent text-white">
                         {getInitials(selectedStore.name)}
                       </AvatarFallback>

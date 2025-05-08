@@ -62,20 +62,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allStores = await db
         .select({
           id: merchants.id,
-          storeName: merchants.storeName,
+          name: merchants.store_name,  // Usando o nome exato da coluna no banco
           logo: merchants.logo,
           category: merchants.category,
           address: merchants.address,
           city: merchants.city,
           state: merchants.state,
-          commissionRate: merchants.commissionRate,
+          commission_rate: merchants.commissionRate,
           approved: merchants.approved,
-          createdAt: merchants.createdAt,
-          userId: merchants.userId,
+          created_at: merchants.createdAt,
+          user_id: merchants.userId,
         })
         .from(merchants)
         .where(eq(merchants.approved, true))
-        .orderBy(merchants.storeName);
+        .orderBy(merchants.store_name);
       
       // Adicionar informações adicionais como avaliações e número de clientes
       const storesWithDetails = await Promise.all(
@@ -87,9 +87,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               email: users.email,
               phone: users.phone,
               photo: users.photo,
+              status: users.status
             })
             .from(users)
-            .where(eq(users.id, store.userId));
+            .where(eq(users.id, store.user_id));
             
           // Contar o número de transações
           const [transactionCount] = await db
@@ -109,18 +110,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           return {
             id: store.id,
-            name: store.storeName,
-            logo: store.logo,
+            name: store.name,
+            logo: store.logo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(store.name) + "&background=random&color=fff&size=128",
             category: store.category,
             address: store.address,
             city: store.city,
             state: store.state,
-            commissionRate: store.commissionRate,
-            createdAt: store.createdAt,
+            commission_rate: store.commission_rate,
+            created_at: store.created_at,
             owner: merchantUser.name,
             email: merchantUser.email,
             phone: merchantUser.phone,
             photo: merchantUser.photo,
+            status: merchantUser.status,
             transactions: Number(transactionCount.count) || 0,
             volume: Number(salesVolume.total) || 0,
             rating: 4.5, // Valor padrão, seria substituído por real no futuro
@@ -222,19 +224,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allStores = await db
         .select({
           id: merchants.id,
-          storeName: merchants.storeName,
+          name: merchants.store_name,
           logo: merchants.logo,
           category: merchants.category,
           address: merchants.address,
           city: merchants.city,
           state: merchants.state,
-          commissionRate: merchants.commissionRate,
+          commission_rate: merchants.commissionRate,
           approved: merchants.approved,
-          createdAt: merchants.createdAt,
-          userId: merchants.userId,
+          created_at: merchants.createdAt,
+          user_id: merchants.userId,
         })
         .from(merchants)
-        .orderBy(merchants.createdAt, "desc");
+        .orderBy(desc(merchants.createdAt));
       
       // Adicionar informações adicionais como avaliações e número de clientes
       const storesWithDetails = await Promise.all(
@@ -245,11 +247,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
               name: users.name,
               email: users.email,
               phone: users.phone,
-              cpfCnpj: users.cpfCnpj,
+              document: users.document,
               status: users.status,
             })
             .from(users)
-            .where(eq(users.id, store.userId));
+            .where(eq(users.id, store.user_id));
             
           // Contar o número de transações
           const [transactionCount] = await db
@@ -257,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               count: sql`COUNT(*)`,
             })
             .from(transactions)
-            .where(eq(transactions.merchantId, store.id));
+            .where(eq(transactions.merchant_id, store.id));
           
           // Calcular o volume de vendas
           const [salesVolume] = await db
@@ -265,26 +267,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
               total: sql`COALESCE(SUM(amount), 0)`,
             })
             .from(transactions)
-            .where(eq(transactions.merchantId, store.id));
+            .where(eq(transactions.merchant_id, store.id));
           
           return {
             id: store.id,
-            name: store.storeName,
-            logo: store.logo,
+            name: store.name,
+            logo: store.logo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(store.name) + "&background=random&color=fff&size=128",
             category: store.category,
             address: store.address,
             city: store.city,
             state: store.state,
-            commissionRate: store.commissionRate,
+            commissionRate: store.commission_rate,
             approved: store.approved,
-            createdAt: store.createdAt,
-            owner: merchantUser.name,
-            email: merchantUser.email,
-            phone: merchantUser.phone,
-            cnpj: merchantUser.cpfCnpj,
-            status: merchantUser.status,
-            transactions: Number(transactionCount.count) || 0,
-            volume: Number(salesVolume.total) || 0,
+            createdAt: store.created_at,
+            owner: merchantUser?.name || "Usuário Desconhecido",
+            email: merchantUser?.email || "",
+            phone: merchantUser?.phone || "",
+            cnpj: merchantUser?.document || "",
+            status: merchantUser?.status || "pending",
+            transactions: Number(transactionCount?.count) || 0,
+            volume: Number(salesVolume?.total) || 0,
           };
         })
       );
@@ -694,21 +696,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactions_list = await db
         .select({
           id: transactions.id,
-          userId: transactions.userId,
+          user_id: transactions.user_id,
           customer: users.name,
-          date: transactions.createdAt,
+          date: transactions.created_at,
           amount: transactions.amount,
-          cashback: transactions.cashbackAmount,
+          cashback: transactions.cashback_amount,
           status: transactions.status,
-          paymentMethod: transactions.paymentMethod,
+          payment_method: transactions.payment_method,
           items: sql`CONCAT(COUNT(${transactionItems.id}), ' itens')`.as("items")
         })
         .from(transactions)
-        .innerJoin(users, eq(transactions.userId, users.id))
-        .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
-        .where(eq(transactions.merchantId, merchant.id))
-        .groupBy(transactions.id, users.name, users.id)
-        .orderBy(desc(transactions.createdAt));
+        .innerJoin(users, eq(transactions.user_id, users.id))
+        .leftJoin(transactionItems, eq(transactions.id, transactionItems.transaction_id))
+        .where(eq(transactions.merchant_id, merchant.id))
+        .groupBy(transactions.id, users.id, users.name)
+        .orderBy(desc(transactions.created_at));
         
       res.json({ transactions: transactions_list });
     } catch (error) {
