@@ -646,7 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           t.status,
           (SELECT COUNT(*) FROM transaction_items WHERE transaction_id = t.id) as items_count
         FROM transactions t
-        JOIN users u ON t.customer_id = u.id
+        JOIN users u ON t.user_id = u.id
         WHERE t.merchant_id = ${merchant_id}
         ORDER BY t.created_at DESC
         LIMIT 5`
@@ -667,26 +667,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         LIMIT 5`
       );
       
-      // Formatar dados para o frontend
-      const recentSales = recentSalesResult.rows.map(sale => ({
-        id: sale.id,
-        customer: sale.customer,
-        date: new Date(sale.date).toLocaleDateString('pt-BR'),
-        amount: parseFloat(sale.amount),
-        cashback: parseFloat(sale.cashback || 0),
-        items: `${sale.items_count} ${parseInt(sale.items_count) === 1 ? 'item' : 'itens'}`
-      }));
+      // Formatar dados para o frontend com tratamento de tipos
+      const recentSales = recentSalesResult.rows.map(sale => {
+        // Conversão segura dos tipos desconhecidos
+        const saleId = typeof sale.id === 'number' ? sale.id : parseInt(String(sale.id || 0));
+        const customerName = String(sale.customer || '');
+        const saleDate = sale.date ? new Date(String(sale.date)) : new Date();
+        const amount = typeof sale.amount === 'number' ? sale.amount : parseFloat(String(sale.amount || 0));
+        const cashback = typeof sale.cashback === 'number' ? sale.cashback : parseFloat(String(sale.cashback || 0));
+        const itemsCount = typeof sale.items_count === 'number' ? sale.items_count : parseInt(String(sale.items_count || 0));
+        
+        return {
+          id: saleId,
+          customer: customerName,
+          date: saleDate.toLocaleDateString('pt-BR'),
+          amount: amount,
+          cashback: cashback,
+          items: `${itemsCount} ${itemsCount === 1 ? 'item' : 'itens'}`
+        };
+      });
       
-      const weekSalesData = weekSalesResult.rows.map(day => ({
-        day: day.day,
-        value: parseFloat(day.value)
-      }));
+      const weekSalesData = weekSalesResult.rows.map(day => {
+        const dayName = String(day.day || '');
+        const value = typeof day.value === 'number' ? day.value : parseFloat(String(day.value || 0));
+        
+        return {
+          day: dayName,
+          value: value
+        };
+      });
       
-      const topProducts = topProductsResult.rows.map(product => ({
-        name: product.name,
-        sales: parseInt(product.sales),
-        total: parseFloat(product.total)
-      }));
+      const topProducts = topProductsResult.rows.map(product => {
+        const productName = String(product.name || '');
+        const sales = typeof product.sales === 'number' ? product.sales : parseInt(String(product.sales || 0));
+        const total = typeof product.total === 'number' ? product.total : parseFloat(String(product.total || 0));
+        
+        return {
+          name: productName,
+          sales: sales,
+          total: total
+        };
+      });
       
       // Preparar resposta completa para o dashboard
       const dashboardData = {
