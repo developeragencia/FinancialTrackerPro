@@ -9,6 +9,7 @@ import { Wallet, ArrowRightLeft, QrCode, History, Tag, Gift, Loader2 } from "luc
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatCurrency } from "@/lib/utils";
 
 // Interfaces para tipagem
 interface Transaction {
@@ -77,11 +78,11 @@ export default function ClientDashboard() {
             <div>
               <p className="text-muted-foreground mb-1">Seu saldo de cashback</p>
               <h2 className="text-3xl font-bold text-primary">
-                R$ {data.cashbackBalance.toFixed(2)}
+                {formatCurrency(data.cashbackBalance)}
               </h2>
               {data.referralBalance > 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  + R$ {data.referralBalance.toFixed(2)} em bônus de indicação
+                  + {formatCurrency(data.referralBalance)} em bônus de indicação
                 </p>
               )}
             </div>
