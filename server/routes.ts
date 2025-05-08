@@ -694,7 +694,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactions_list = await db
         .select({
           id: transactions.id,
-          customerId: transactions.customerId,
+          userId: transactions.userId,
           customer: users.name,
           date: transactions.createdAt,
           amount: transactions.amount,
@@ -704,7 +704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           items: sql`CONCAT(COUNT(${transactionItems.id}), ' itens')`.as("items")
         })
         .from(transactions)
-        .innerJoin(users, eq(transactions.customerId, users.id))
+        .innerJoin(users, eq(transactions.userId, users.id))
         .leftJoin(transactionItems, eq(transactions.id, transactionItems.transactionId))
         .where(eq(transactions.merchantId, merchant.id))
         .groupBy(transactions.id, users.name, users.id)
@@ -770,7 +770,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         merchantId: merchant.id,
         amount: total.toString(),  // Convertemos para string já que é numeric no schema
         cashbackAmount: cashback.toString(),
-        referralAmount: referralBonus ? referralBonus.toString() : "0",
         status: TransactionStatus.COMPLETED,
         paymentMethod: paymentMethod,
         description: notes || null
@@ -789,13 +788,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Adicionar o cashback para o cliente
-      await db.insert(cashbacks).values({
-        userId: customerId,
-        transactionId: transaction.id,
-        amount: cashback.toString(),
-        status: "active"
-      });
+      // Atualizar o cashback do cliente
+      const existingCashback = await db
+        .select()
+        .from(cashbacks)
+        .where(eq(cashbacks.userId, customerId));
+        
+      if (existingCashback.length > 0) {
+        // Atualizar cashback existente
+        const currentBalance = parseFloat(existingCashback[0].balance.toString());
+        const currentTotalEarned = parseFloat(existingCashback[0].totalEarned.toString());
+        
+        await db
+          .update(cashbacks)
+          .set({
+            balance: (currentBalance + parseFloat(cashback.toString())).toString(),
+            totalEarned: (currentTotalEarned + parseFloat(cashback.toString())).toString(),
+            updatedAt: new Date()
+          })
+          .where(eq(cashbacks.userId, customerId));
+      } else {
+        // Criar novo registro de cashback
+        await db.insert(cashbacks).values({
+          userId: customerId,
+          balance: cashback.toString(),
+          totalEarned: cashback.toString(),
+          updatedAt: new Date()
+        });
+      }
       
       // Se houver bônus de indicação, adicionar para o referrerId
       if (referrerId && referralBonus > 0) {
