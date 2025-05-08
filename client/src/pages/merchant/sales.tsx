@@ -443,7 +443,7 @@ export default function MerchantSales() {
                           <TableRow key={item.id}>
                             <TableCell>{item.name}</TableCell>
                             <TableCell className="text-center">{item.quantity}</TableCell>
-                            <TableCell className="text-right">${(item.price * item.quantity).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               <Button
                                 variant="ghost"
@@ -474,7 +474,7 @@ export default function MerchantSales() {
               {/* Opção para venda manual sem produtos */}
               {cartItems.length === 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="manualAmount">Valor Manual ($)</Label>
+                  <Label htmlFor="manualAmount">Valor Manual (R$)</Label>
                   <Input
                     id="manualAmount"
                     type="number"
@@ -495,7 +495,7 @@ export default function MerchantSales() {
               {/* Resumo dos Valores */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="subtotal">Subtotal ($)</Label>
+                  <Label htmlFor="subtotal">Subtotal (R$)</Label>
                   <Input
                     id="subtotal"
                     value={cartItems.length > 0 ? subtotal.toFixed(2) : manualAmount.toFixed(2)}
@@ -504,7 +504,7 @@ export default function MerchantSales() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="discount">Desconto ($)</Label>
+                  <Label htmlFor="discount">Desconto (R$)</Label>
                   <Input
                     id="discount"
                     type="number"
@@ -520,7 +520,7 @@ export default function MerchantSales() {
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="total">Total ($)</Label>
+                  <Label htmlFor="total">Total (R$)</Label>
                   <Input
                     id="total"
                     value={cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}
@@ -607,36 +607,36 @@ export default function MerchantSales() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Valor da Venda:</span>
-                  <span className="font-medium">$ {cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}</span>
+                  <span className="font-medium">R$ {cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
-                  <span className="text-green-600">$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
+                  <span className="text-green-600">R$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                  <span className="text-blue-600">$ {cartItems.length > 0 
+                  <span className="text-blue-600">R$ {cartItems.length > 0 
                     ? (total * SYSTEM_SETTINGS.referralRate).toFixed(2) 
                     : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                 </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Bônus de Indicação para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                    <span className="text-blue-600">$ {cartItems.length > 0 
+                    <span className="text-blue-600">R$ {cartItems.length > 0 
                       ? referralBonus.toFixed(2) 
                       : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa do Lojista ({SYSTEM_SETTINGS.merchantCommission * 100}%):</span>
-                  <span className="text-orange-600">$ {cartItems.length > 0 
+                  <span className="text-orange-600">R$ {cartItems.length > 0 
                     ? merchantCommission.toFixed(2) 
                     : (manualAmount * SYSTEM_SETTINGS.merchantCommission).toFixed(2)}</span>
                 </div>
                 <div className="pt-2 border-t">
                   <div className="flex justify-between font-medium">
                     <span>Valor Líquido:</span>
-                    <span>$ {cartItems.length > 0 
+                    <span>R$ {cartItems.length > 0 
                       ? (total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)
                       : (manualAmount - (manualAmount * SYSTEM_SETTINGS.merchantCommission) - (manualAmount * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
                   </div>
@@ -808,7 +808,7 @@ export default function MerchantSales() {
               <SelectContent>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id.toString()}>
-                    {product.name} - $ {product.price.toFixed(2)}
+                    {product.name} - R$ {product.price.toFixed(2)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -819,7 +819,7 @@ export default function MerchantSales() {
                 <div className="p-3 border rounded-md bg-muted">
                   <div className="font-medium">{selectedProduct.name}</div>
                   <div className="text-sm text-muted-foreground">
-                    Preço unitário: $ {selectedProduct.price.toFixed(2)}
+                    Preço unitário: R$ {selectedProduct.price.toFixed(2)}
                   </div>
                   {selectedProduct.category && (
                     <div className="text-xs text-muted-foreground">
