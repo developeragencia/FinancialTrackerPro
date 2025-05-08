@@ -55,11 +55,11 @@ interface CartItem extends Product {
 interface SaleTransaction {
   id: number;
   customer: string;
-  customerId: number;
+  user_id: number; // Alterado de customerId para user_id para corresponder ao retorno da API
   date: string;
   amount: number;
-  cashback: number;
-  referralBonus?: number;
+  cashback: number; // Esperando cashback ao invés de cashback_amount
+  payment_method: string;
   items: string;
   status: string;
 }
