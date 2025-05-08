@@ -8,43 +8,65 @@ import { BarChartComponent } from "@/components/ui/charts";
 import { ShoppingCart, DollarSign, Users, Percent, Eye } from "lucide-react";
 import { Link } from "wouter";
 
-// Mock data - would be replaced with real data from API
-const salesSummary = {
-  today: {
-    total: 2150.75,
-    transactions: 23,
-    average: 93.51,
-    commission: 43.01
-  }
-};
-
-const weekSalesData = [
-  { day: "Segunda", value: 1800 },
-  { day: "Terça", value: 2200 },
-  { day: "Quarta", value: 1950 },
-  { day: "Quinta", value: 2100 },
-  { day: "Sexta", value: 2350 },
-  { day: "Sábado", value: 2500 },
-  { day: "Domingo", value: 2150.75 }
-];
-
-const recentSales = [
-  { id: 1, customer: "Maria Silva", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, items: "5 itens" },
-  { id: 2, customer: "José Santos", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, items: "3 itens" },
-  { id: 3, customer: "Ana Oliveira", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, items: "7 itens" }
-];
-
-const topProducts = [
-  { name: "Arroz Integral", sales: 45, total: 675.00 },
-  { name: "Leite Desnatado", sales: 38, total: 190.00 },
-  { name: "Café Gourmet", sales: 30, total: 450.00 }
-];
+// Interfaces para tipagem
+interface DashboardData {
+  salesSummary: {
+    today: {
+      total: number;
+      transactions: number;
+      average: number;
+      commission: number;
+    }
+  };
+  weekSalesData: Array<{
+    day: string;
+    value: number;
+  }>;
+  recentSales: Array<{
+    id: number;
+    customer: string;
+    date: string;
+    amount: number;
+    cashback: number;
+    items: string;
+  }>;
+  topProducts: Array<{
+    name: string;
+    sales: number;
+    total: number;
+  }>;
+}
 
 export default function MerchantDashboard() {
   // Query to get merchant dashboard data
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/merchant/dashboard'],
   });
+  
+  // Dados vazios para uso enquanto API não retorna
+  const dashboardData = data || {
+    salesSummary: {
+      today: {
+        total: 0,
+        transactions: 0,
+        average: 0,
+        commission: 0
+      }
+    },
+    weekSalesData: [],
+    recentSales: [],
+    topProducts: []
+  };
+
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Dashboard" type="merchant">
+        <div className="flex items-center justify-center h-64">
+          <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-accent"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout title="Dashboard" type="merchant">
@@ -52,22 +74,22 @@ export default function MerchantDashboard() {
       <StatCardGrid className="mb-6">
         <StatCard
           title="Total de Vendas Hoje"
-          value={`R$ ${salesSummary.today.total.toFixed(2)}`}
+          value={`R$ ${dashboardData.salesSummary.today.total.toFixed(2)}`}
           icon={<DollarSign className="h-5 w-5 text-accent" />}
         />
         <StatCard
           title="Transações Hoje"
-          value={salesSummary.today.transactions.toString()}
+          value={dashboardData.salesSummary.today.transactions.toString()}
           icon={<ShoppingCart className="h-5 w-5 text-accent" />}
         />
         <StatCard
           title="Valor Médio"
-          value={`R$ ${salesSummary.today.average.toFixed(2)}`}
+          value={`R$ ${dashboardData.salesSummary.today.average.toFixed(2)}`}
           icon={<Users className="h-5 w-5 text-accent" />}
         />
         <StatCard
           title="Comissão (2%)"
-          value={`R$ ${salesSummary.today.commission.toFixed(2)}`}
+          value={`R$ ${dashboardData.salesSummary.today.commission.toFixed(2)}`}
           icon={<Percent className="h-5 w-5 text-accent" />}
         />
       </StatCardGrid>
@@ -75,7 +97,7 @@ export default function MerchantDashboard() {
       {/* Sales Chart */}
       <BarChartComponent
         title="Vendas da Semana"
-        data={weekSalesData}
+        data={dashboardData.weekSalesData}
         bars={[{ dataKey: "value", name: "Vendas Diárias (R$)" }]}
         xAxisDataKey="day"
         className="mb-6"
