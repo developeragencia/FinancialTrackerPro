@@ -739,7 +739,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         referralBonus,
         referrerId,
         paymentMethod, 
-        notes
+        notes,
+        manualAmount
       } = req.body;
       
       // Verificar se o cliente existe
@@ -760,9 +761,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount: total,
         cashbackAmount: cashback,
         referralAmount: referralBonus || 0,
-        status: TransactionStatus.completed,
+        status: TransactionStatus.COMPLETED,
         paymentMethod: paymentMethod as any,
-        notes: notes || null
+        notes: notes || null,
+        manualAmount: manualAmount || null
       }).returning();
       
       // Registrar os itens da transação
