@@ -46,11 +46,14 @@ export default function ClientStores() {
   
   // Filtrar lojas com base na busca e categoria
   const filteredStores = storesData ? storesData.filter((store: any) => {
-    const matchesSearch = searchTerm === "" || 
-      store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (store.category && store.category.toLowerCase().includes(searchTerm.toLowerCase()));
+    const storeName = store.store_name || store.name || "";
+    const storeCategory = store.category || "";
     
-    const matchesCategory = categoryFilter === "all" || store.category === categoryFilter;
+    const matchesSearch = searchTerm === "" || 
+      storeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      storeCategory.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = categoryFilter === "all" || storeCategory === categoryFilter;
     
     return matchesSearch && matchesCategory;
   }) : [];
@@ -240,13 +243,13 @@ export default function ClientStores() {
                       <div className="p-4">
                         <div className="flex items-center space-x-3">
                           <Avatar className="h-12 w-12">
-                            <AvatarImage src={store.logo} alt={store.name} />
+                            <AvatarImage src={store.logo} alt={store.store_name || store.name} />
                             <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(store.name)}
+                              {getInitials(store.store_name || store.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <h3 className="font-semibold truncate">{store.name}</h3>
+                            <h3 className="font-semibold truncate">{store.store_name || store.name}</h3>
                             <p className="text-sm text-muted-foreground">{store.category}</p>
                           </div>
                         </div>
@@ -294,12 +297,12 @@ export default function ClientStores() {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={selectedStore.logo} alt={selectedStore.name} />
+                    <AvatarImage src={selectedStore.logo} alt={selectedStore.store_name || selectedStore.name} />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {getInitials(selectedStore.name)}
+                      {getInitials(selectedStore.store_name || selectedStore.name)}
                     </AvatarFallback>
                   </Avatar>
-                  {selectedStore.name}
+                  {selectedStore.store_name || selectedStore.name}
                 </DialogTitle>
                 <DialogDescription>
                   Detalhes e informações sobre a loja
@@ -333,7 +336,7 @@ export default function ClientStores() {
                           </div>
                           
                           <p className="text-sm text-muted-foreground mb-4">
-                            {selectedStore.description || `${selectedStore.name} é uma loja parceira do Vale Cashback. Faça suas compras aqui e ganhe cashback!`}
+                            {selectedStore.description || `${selectedStore.store_name || selectedStore.name} é uma loja parceira do Vale Cashback. Faça suas compras aqui e ganhe cashback!`}
                           </p>
                           
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
