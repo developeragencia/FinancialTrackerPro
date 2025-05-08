@@ -38,7 +38,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Mock de dados - será substituído por dados reais da API
@@ -208,7 +208,7 @@ export default function MerchantTransactions() {
       accessorKey: "amount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="font-medium">
-          $ {transaction.amount.toFixed(2)}
+          {formatCurrency(transaction.amount)}
         </span>
       ),
     },
@@ -217,7 +217,7 @@ export default function MerchantTransactions() {
       accessorKey: "cashback" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="text-green-600">
-          $ {transaction.cashback.toFixed(2)}
+          {formatCurrency(transaction.cashback)}
         </span>
       ),
     },
