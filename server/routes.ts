@@ -997,16 +997,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .select({
           id: transactions.id,
           customer: users.name,
-          date: transactions.createdAt,
+          date: transactions.created_at,
           amount: transactions.amount,
-          cashback: transactions.cashbackAmount,
-          paymentMethod: transactions.paymentMethod,
+          cashback: transactions.cashback_amount,
+          paymentMethod: transactions.payment_method,
           status: transactions.status,
-          items: sql`(SELECT COUNT(*) FROM ${transactionItems} WHERE ${transactionItems.transactionId} = ${transactions.id})`.as("items")
+          items: sql`(SELECT COUNT(*) FROM ${transactionItems} WHERE ${transactionItems.transaction_id} = ${transactions.id})`.as("items")
         })
         .from(transactions)
-        .innerJoin(users, eq(transactions.userId, users.id))
-        .where(eq(transactions.merchantId, merchant.id));
+        .innerJoin(users, eq(transactions.user_id, users.id))
+        .where(eq(transactions.merchant_id, merchant.id));
         
       // Aplicar filtros
       if (status) {
@@ -1014,14 +1014,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       if (paymentMethod) {
-        query = query.where(eq(transactions.paymentMethod, paymentMethod as string));
+        query = query.where(eq(transactions.payment_method, paymentMethod as string));
       }
       
       if (startDate && endDate) {
         query = query.where(
           and(
-            sql`${transactions.createdAt} >= ${startDate as string}`,
-            sql`${transactions.createdAt} <= ${endDate as string}`
+            sql`${transactions.created_at} >= ${startDate as string}`,
+            sql`${transactions.created_at} <= ${endDate as string}`
           )
         );
       }
@@ -1030,12 +1030,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalAmount = await db
         .select({ sum: sql`SUM(${transactions.amount})` })
         .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id));
+        .where(eq(transactions.merchant_id, merchant.id));
       
       const totalCashback = await db
-        .select({ sum: sql`SUM(${transactions.cashbackAmount})` })
+        .select({ sum: sql`SUM(${transactions.cashback_amount})` })
         .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id));
+        .where(eq(transactions.merchant_id, merchant.id));
       
       // Agrupar por status
       const statusCounts = await db
@@ -1044,22 +1044,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           count: sql`COUNT(*)`.as("count")
         })
         .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id))
+        .where(eq(transactions.merchant_id, merchant.id))
         .groupBy(transactions.status);
       
       // Agrupar por método de pagamento
       const paymentMethodSummary = await db
         .select({
-          method: transactions.paymentMethod,
+          method: transactions.payment_method,
           sum: sql`SUM(${transactions.amount})`.as("sum")
         })
         .from(transactions)
-        .where(eq(transactions.merchantId, merchant.id))
-        .groupBy(transactions.paymentMethod);
+        .where(eq(transactions.merchant_id, merchant.id))
+        .groupBy(transactions.payment_method);
       
       // Aplicar paginação
       const offset = (Number(page) - 1) * Number(limit);
-      query = query.orderBy(desc(transactions.createdAt)).limit(Number(limit)).offset(offset);
+      query = query.orderBy(desc(transactions.created_at)).limit(Number(limit)).offset(offset);
       
       const transactions_list = await query;
       
@@ -1144,9 +1144,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
@@ -1156,56 +1156,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
         // Total de cashback concedido no período
         const totalCashback = await db
-          .select({ sum: sql`SUM(${transactions.cashbackAmount})` })
+          .select({ sum: sql`SUM(${transactions.cashback_amount})` })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           );
         
         // Vendas agregadas por dia para gráfico de timeline
         const timeline = await db
           .select({
-            date: sql`DATE_TRUNC('day', ${transactions.createdAt})`.as("date"),
+            date: sql`DATE_TRUNC('day', ${transactions.created_at})`.as("date"),
             value: sql`SUM(${transactions.amount})`.as("value")
           })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           )
-          .groupBy(sql`DATE_TRUNC('day', ${transactions.createdAt})`)
-          .orderBy(sql`DATE_TRUNC('day', ${transactions.createdAt})`);
+          .groupBy(sql`DATE_TRUNC('day', ${transactions.created_at})`)
+          .orderBy(sql`DATE_TRUNC('day', ${transactions.created_at})`);
         
         // Vendas por método de pagamento
         const byPaymentMethod = await db
           .select({
-            name: transactions.paymentMethod,
+            name: transactions.payment_method,
             value: sql`SUM(${transactions.amount})`.as("value")
           })
           .from(transactions)
           .where(
             and(
-              eq(transactions.merchantId, merchant.id),
-              sql`${transactions.createdAt} >= ${start_date.toISOString()}`,
-              sql`${transactions.createdAt} <= ${end_date.toISOString()}`
+              eq(transactions.merchant_id, merchant.id),
+              sql`${transactions.created_at} >= ${start_date.toISOString()}`,
+              sql`${transactions.created_at} <= ${end_date.toISOString()}`
             )
           )
-          .groupBy(transactions.paymentMethod);
+          .groupBy(transactions.payment_method);
         
         // Top produtos vendidos
         const topProducts = await db
