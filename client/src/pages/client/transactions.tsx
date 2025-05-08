@@ -96,12 +96,12 @@ export default function ClientTransactions() {
     {
       header: "Valor",
       accessorKey: "amount",
-      cell: (row: any) => `R$ ${row.amount.toFixed(2)}`,
+      cell: (row: any) => `$ ${row.amount.toFixed(2)}`,
     },
     {
       header: "Cashback",
       accessorKey: "cashback",
-      cell: (row: any) => `R$ ${row.cashback.toFixed(2)}`,
+      cell: (row: any) => `$ ${row.cashback.toFixed(2)}`,
     },
     {
       header: "Status",
@@ -189,7 +189,7 @@ export default function ClientTransactions() {
               </div>
               <div className="flex justify-between py-1 border-b">
                 <span className="text-muted-foreground">Valor:</span>
-                <span className="font-medium">R$ {selectedTransaction.amount.toFixed(2)}</span>
+                <span className="font-medium">$ {selectedTransaction.amount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between py-1 border-b">
                 <span className="text-muted-foreground">Cashback:</span>

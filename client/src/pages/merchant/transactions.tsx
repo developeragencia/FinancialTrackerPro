@@ -209,7 +209,7 @@ export default function MerchantTransactions() {
       accessorKey: "cashback" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="text-green-600">
-          R$ {transaction.cashback.toFixed(2)}
+          $ {transaction.cashback.toFixed(2)}
         </span>
       ),
     },
@@ -336,7 +336,7 @@ export default function MerchantTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {totalAmount.toFixed(2)}
+                $ {totalAmount.toFixed(2)}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransactions.length} transações
@@ -350,7 +350,7 @@ export default function MerchantTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                R$ {totalCashback.toFixed(2)}
+                $ {totalCashback.toFixed(2)}
               </div>
               <p className="text-sm text-muted-foreground">
                 {((totalCashback / totalAmount) * 100).toFixed(1)}% do total
@@ -410,7 +410,7 @@ export default function MerchantTransactions() {
                         {PaymentMethodIcons[method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
                         <span className="ml-1">{paymentLabels[method] || method}</span>
                       </div>
-                      <span className="text-sm font-medium">R$ {amount.toFixed(2)}</span>
+                      <span className="text-sm font-medium">$ {amount.toFixed(2)}</span>
                     </div>
                   );
                 })}
