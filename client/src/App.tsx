@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { ThemeProvider } from "next-themes";
+import { ProtectedRoute } from "./lib/protected-route";
 
 // Auth Pages
 import Login from "@/pages/auth/login";
@@ -43,28 +44,28 @@ function Router() {
       <Route path="/register" component={Register} />
       
       {/* Client Routes */}
-      <Route path="/client" component={ClientDashboard} />
-      <Route path="/client/dashboard" component={ClientDashboard} />
-      <Route path="/client/transactions" component={ClientTransactions} />
-      <Route path="/client/transfers" component={ClientTransfers} />
-      <Route path="/client/qr-code" component={ClientQRCode} />
-      <Route path="/client/referrals" component={ClientReferrals} />
-      <Route path="/client/profile" component={ClientProfile} />
+      <ProtectedRoute path="/client" component={ClientDashboard} userType="client" />
+      <ProtectedRoute path="/client/dashboard" component={ClientDashboard} userType="client" />
+      <ProtectedRoute path="/client/transactions" component={ClientTransactions} userType="client" />
+      <ProtectedRoute path="/client/transfers" component={ClientTransfers} userType="client" />
+      <ProtectedRoute path="/client/qr-code" component={ClientQRCode} userType="client" />
+      <ProtectedRoute path="/client/referrals" component={ClientReferrals} userType="client" />
+      <ProtectedRoute path="/client/profile" component={ClientProfile} userType="client" />
       
       {/* Merchant Routes */}
-      <Route path="/merchant" component={MerchantDashboard} />
-      <Route path="/merchant/dashboard" component={MerchantDashboard} />
-      <Route path="/merchant/sales" component={MerchantSales} />
-      <Route path="/merchant/products" component={MerchantProducts} />
-      <Route path="/merchant/scanner" component={MerchantScanner} />
-      <Route path="/merchant/customers" component={MerchantCustomers} />
-      <Route path="/merchant/profile" component={MerchantProfile} />
+      <ProtectedRoute path="/merchant" component={MerchantDashboard} userType="merchant" />
+      <ProtectedRoute path="/merchant/dashboard" component={MerchantDashboard} userType="merchant" />
+      <ProtectedRoute path="/merchant/sales" component={MerchantSales} userType="merchant" />
+      <ProtectedRoute path="/merchant/products" component={MerchantProducts} userType="merchant" />
+      <ProtectedRoute path="/merchant/scanner" component={MerchantScanner} userType="merchant" />
+      <ProtectedRoute path="/merchant/customers" component={MerchantCustomers} userType="merchant" />
+      <ProtectedRoute path="/merchant/profile" component={MerchantProfile} userType="merchant" />
       
       {/* Admin Routes */}
-      <Route path="/admin" component={AdminDashboard} />
-      <Route path="/admin/dashboard" component={AdminDashboard} />
-      <Route path="/admin/users" component={AdminUsers} />
-      <Route path="/admin/stores" component={AdminStores} />
+      <ProtectedRoute path="/admin" component={AdminDashboard} userType="admin" />
+      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} userType="admin" />
+      <ProtectedRoute path="/admin/users" component={AdminUsers} userType="admin" />
+      <ProtectedRoute path="/admin/stores" component={AdminStores} userType="admin" />
       
       {/* 404 */}
       <Route component={NotFound} />
