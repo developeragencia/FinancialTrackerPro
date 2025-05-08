@@ -33,7 +33,8 @@ import {
   Calendar,
   BarChart,
   PieChart,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { LineChartComponent, BarChartComponent, PieChartComponent } from "@/components/ui/charts";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
@@ -167,6 +168,9 @@ export default function AdminStores() {
     queryKey: ['/api/admin/stores'],
     queryFn: getQueryFn({ on401: "throw" }),
   });
+  
+  // Use mock data for now until API is fully implemented
+  const storesData = data ? data.stores : stores;
 
   const handleViewStore = (store: any) => {
     setSelectedStore(store);
@@ -459,7 +463,7 @@ export default function AdminStores() {
         </CardHeader>
         <CardContent>
           <DataTable
-            data={data?.stores || stores}
+            data={storesData}
             columns={columns}
             actions={actions}
             filters={filters}
@@ -468,7 +472,7 @@ export default function AdminStores() {
             pagination={{
               pageIndex: 0,
               pageSize: 10,
-              pageCount: Math.ceil((data?.stores || stores).length / 10),
+              pageCount: Math.ceil(storesData.length / 10),
               onPageChange: (page) => console.log("Page:", page),
             }}
             exportable={true}
@@ -1023,26 +1027,5 @@ export default function AdminStores() {
         </DialogContent>
       </Dialog>
     </DashboardLayout>
-  );
-}
-
-function AlertCircle(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <line x1="12" x2="12" y1="8" y2="12" />
-      <line x1="12" x2="12.01" y1="16" y2="16" />
-    </svg>
   );
 }
