@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { StatCard, StatCardGrid } from "@/components/ui/stat-card";
 import { Button } from "@/components/ui/button";
 import { BarChartComponent } from "@/components/ui/charts";
-import { ShoppingCart, DollarSign, Users, Percent, Eye } from "lucide-react";
+import { ShoppingCart, DollarSign, Users, Percent, Eye, AlertCircle } from "lucide-react";
 import { Link } from "wouter";
 import { formatCurrency } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Interfaces para tipagem
 interface DashboardData {
@@ -68,6 +69,53 @@ export default function MerchantDashboard() {
         <div className="flex items-center justify-center h-64">
           <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-accent"></div>
         </div>
+      </DashboardLayout>
+    );
+  }
+  
+  if (error) {
+    return (
+      <DashboardLayout title="Dashboard" type="merchant">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4 mr-2" />
+          <AlertTitle>Erro ao carregar dados</AlertTitle>
+          <AlertDescription>
+            Ocorreu um erro ao carregar os dados do dashboard. Por favor, tente novamente mais tarde.
+          </AlertDescription>
+        </Alert>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Ações Rápidas</CardTitle>
+            <CardDescription>Você ainda pode acessar as funcionalidades principais</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+              <Link href="/merchant/sales">
+                <Button className="w-full bg-accent">
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Registrar Venda
+                </Button>
+              </Link>
+              <Link href="/merchant/scanner">
+                <Button className="w-full bg-accent">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                  </svg>
+                  Scanner QR Code
+                </Button>
+              </Link>
+              <Link href="/merchant/products">
+                <Button className="w-full bg-accent">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  Gerenciar Produtos
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </DashboardLayout>
     );
   }
