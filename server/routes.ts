@@ -1007,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [merchant] = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.user_id, merchantId));
+        .where(eq(merchants.user_id, merchant_id));
       
       if (!merchant) {
         return res.status(404).json({ message: "Lojista não encontrado" });
