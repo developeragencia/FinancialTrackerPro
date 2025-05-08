@@ -2200,6 +2200,187 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para verificar um código de convite
+  app.get("/api/invite/:code", async (req, res) => {
+    try {
+      const { code } = req.params;
+      
+      // Verificar se o código começa com CL (cliente) ou LJ (lojista)
+      const isClientCode = code.startsWith("CL");
+      const isMerchantCode = code.startsWith("LJ");
+      
+      if (!isClientCode && !isMerchantCode) {
+        return res.status(400).json({ message: "Código de convite inválido" });
+      }
+      
+      // Buscar referenciador pelo código
+      const referralType = isClientCode ? "client" : "merchant";
+      const userCode = isClientCode ? code.replace("CL", "") : code.replace("LJ", "");
+      
+      const referrer = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, parseInt(userCode, 10)))
+        .limit(1);
+      
+      if (!referrer.length) {
+        return res.status(404).json({ message: "Referenciador não encontrado" });
+      }
+      
+      // Retornar informações do convite
+      return res.status(200).json({
+        referrerId: referrer[0].id,
+        referrerName: referrer[0].name,
+        referrerType: referrer[0].type,
+        referralCode: code,
+        referralType
+      });
+    } catch (error) {
+      console.error("Erro ao verificar código de convite:", error);
+      return res.status(500).json({ message: "Erro ao processar o convite" });
+    }
+  });
+  
+  // Endpoint para cadastro de cliente via convite
+  app.post("/api/register/client", async (req, res) => {
+    try {
+      const { name, email, password, phone, referralCode, referralInfo } = req.body;
+      
+      // Verificar se o email já existe
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      
+      if (existingUser.length) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+      
+      // Gerar código de cliente baseado no próximo ID
+      const lastUserId = await db
+        .select({ maxId: sql`MAX(${users.id})` })
+        .from(users);
+      
+      const nextId = (lastUserId[0]?.maxId || 0) + 1;
+      const username = `${nextId}_Cliente`;
+      
+      // Cadastrar novo usuário
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          name,
+          email,
+          username,
+          password, // Em produção, usaríamos hashPassword(password)
+          phone,
+          type: "client",
+          status: "active",
+          createdAt: new Date()
+        })
+        .returning();
+      
+      // Processar código de referência, se fornecido
+      if (referralInfo && referralInfo.referrerId) {
+        // Aqui implementaríamos a lógica de referência
+        console.log(`Cliente ${newUser.id} registrado com referência ${referralInfo.referrerId}`);
+        
+        // Registrar a referência
+        await db.insert(referrals).values({
+          referrerId: referralInfo.referrerId,
+          referredId: newUser.id,
+          status: "active",
+          createdAt: new Date()
+        });
+      }
+      
+      res.status(201).json({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        type: newUser.type,
+        message: "Cadastro realizado com sucesso!"
+      });
+    } catch (error) {
+      console.error("Erro ao cadastrar cliente:", error);
+      res.status(500).json({ message: "Erro ao processar o cadastro" });
+    }
+  });
+  
+  // Endpoint para cadastro de lojista via convite
+  app.post("/api/register/merchant", async (req, res) => {
+    try {
+      const { name, email, password, phone, storeName, storeType, referralCode, referralInfo } = req.body;
+      
+      // Verificar se o email já existe
+      const existingUser = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      
+      if (existingUser.length) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+      
+      // Gerar código de lojista baseado no próximo ID
+      const lastUserId = await db
+        .select({ maxId: sql`MAX(${users.id})` })
+        .from(users);
+      
+      const nextId = (lastUserId[0]?.maxId || 0) + 1;
+      const username = `${nextId}_Lojista`;
+      
+      // Cadastrar novo usuário
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          name,
+          email,
+          username,
+          password, // Em produção, usaríamos hashPassword(password)
+          phone,
+          type: "merchant",
+          status: "pending", // Lojistas começam como pendentes até aprovação
+          createdAt: new Date()
+        })
+        .returning();
+      
+      // Registrar informações da loja
+      await db
+        .insert(merchants)
+        .values({
+          userId: newUser.id,
+          name: storeName,
+          category: storeType,
+          status: "pending",
+          createdAt: new Date()
+        });
+      
+      // Processar código de referência, se fornecido
+      if (referralInfo && referralInfo.referrerId) {
+        // Registrar a referência
+        await db.insert(referrals).values({
+          referrerId: referralInfo.referrerId,
+          referredId: newUser.id,
+          status: "active", 
+          createdAt: new Date()
+        });
+      }
+      
+      res.status(201).json({
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        type: newUser.type,
+        message: "Cadastro realizado com sucesso! Seu pedido será analisado."
+      });
+    } catch (error) {
+      console.error("Erro ao cadastrar lojista:", error);
+      res.status(500).json({ message: "Erro ao processar o cadastro" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

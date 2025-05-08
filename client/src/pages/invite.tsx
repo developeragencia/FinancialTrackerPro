@@ -126,16 +126,36 @@ export default function InvitePage() {
   // Mutation para cadastro de cliente
   const clientRegisterMutation = useMutation({
     mutationFn: async (data: z.infer<typeof clientSchema>) => {
-      const res = await apiRequest("POST", "/api/register/client", {
-        ...data,
-        type: "client"
-      });
-      return res.json();
+      try {
+        const res = await fetch("/api/register/client", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            referralInfo: inviteData ? {
+              referrerId: inviteData.referrerId,
+              referralCode: inviteData.referralCode
+            } : undefined
+          }),
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Erro ao realizar o cadastro");
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Erro no cadastro de cliente:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Você será redirecionado para a página de login.",
+        description: data.message || "Você será redirecionado para a página de login.",
         variant: "default",
       });
       setTimeout(() => {
@@ -154,16 +174,36 @@ export default function InvitePage() {
   // Mutation para cadastro de lojista
   const merchantRegisterMutation = useMutation({
     mutationFn: async (data: z.infer<typeof merchantSchema>) => {
-      const res = await apiRequest("POST", "/api/register/merchant", {
-        ...data,
-        type: "merchant"
-      });
-      return res.json();
+      try {
+        const res = await fetch("/api/register/merchant", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...data,
+            referralInfo: inviteData ? {
+              referrerId: inviteData.referrerId,
+              referralCode: inviteData.referralCode
+            } : undefined
+          }),
+        });
+        
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || "Erro ao realizar o cadastro");
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Erro no cadastro de lojista:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: "Seu cadastro será analisado e você receberá um email com as próximas instruções.",
+        description: data.message || "Seu cadastro será analisado e você receberá um email com as próximas instruções.",
         variant: "default",
       });
       setTimeout(() => {
@@ -196,11 +236,21 @@ export default function InvitePage() {
     queryKey: ['/api/invite', referralCode],
     queryFn: async () => {
       if (!referralCode) return null;
-      const res = await fetch(`/api/invite/${referralCode}`);
-      if (!res.ok) throw new Error('Código de convite inválido');
-      return res.json();
+      
+      try {
+        const res = await fetch(`/api/invite/${referralCode}`);
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Código de convite inválido');
+        }
+        return await res.json();
+      } catch (error) {
+        console.error('Erro ao verificar convite:', error);
+        throw error;
+      }
     },
-    enabled: !!referralCode
+    enabled: !!referralCode,
+    retry: 1
   });
 
   // Funções para submissão dos formulários
