@@ -915,6 +915,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obter histórico de transações do lojista
   app.get("/api/merchant/transactions", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       const { status, paymentMethod, startDate, endDate, page = 1, limit = 20 } = req.query;
       

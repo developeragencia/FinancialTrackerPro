@@ -79,23 +79,15 @@ export default function MerchantTransactions() {
   
   const { toast } = useToast();
   
-  // Query para buscar as vendas - substitui a API mockada
-  const { data, isLoading } = useQuery<{ transactions: Transaction[] }>({
-    queryKey: ['/api/merchant/sales'],
-    placeholderData: {
-      transactions: [
-        { id: 1, customer: "Maria Silva", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, paymentMethod: "credit_card", items: "5 itens", status: "completed" },
-        { id: 2, customer: "José Santos", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, paymentMethod: "pix", items: "3 itens", status: "completed" },
-        { id: 3, customer: "Ana Oliveira", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, paymentMethod: "cash", items: "7 itens", status: "completed" },
-        { id: 4, customer: "Carlos Souza", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, paymentMethod: "debit_card", items: "4 itens", status: "pending" },
-        { id: 5, customer: "Juliana Lima", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, paymentMethod: "credit_card", items: "12 itens", status: "completed" },
-        { id: 6, customer: "Roberto Alves", date: "20/07/2023 16:10", amount: 89.99, cashback: 1.80, paymentMethod: "pix", items: "2 itens", status: "completed" },
-        { id: 7, customer: "Fernanda Costa", date: "20/07/2023 14:25", amount: 45.50, cashback: 0.91, paymentMethod: "cash", items: "1 item", status: "completed" },
-        { id: 8, customer: "Pedro Dias", date: "20/07/2023 11:30", amount: 135.75, cashback: 2.71, paymentMethod: "credit_card", items: "4 itens", status: "cancelled" },
-        { id: 9, customer: "Camila Luz", date: "19/07/2023 17:15", amount: 220.00, cashback: 4.40, paymentMethod: "debit_card", items: "8 itens", status: "completed" },
-        { id: 10, customer: "Rodrigo Mendes", date: "19/07/2023 13:40", amount: 67.80, cashback: 1.36, paymentMethod: "cashback", items: "3 itens", status: "completed" }
-      ]
-    }
+  // Query para buscar as vendas - direto da API
+  const { data, isLoading } = useQuery<{ 
+    transactions: Transaction[],
+    totalAmount: number,
+    totalCashback: number,
+    statusCounts: { status: string, count: number }[],
+    paymentMethodSummary: { method: string, sum: number }[]
+  }>({
+    queryKey: ['/api/merchant/transactions']
   });
   
   // Função para filtrar as transações
@@ -130,16 +122,26 @@ export default function MerchantTransactions() {
   const totalAmount = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
   const totalCashback = filteredTransactions.reduce((sum, t) => sum + t.cashback, 0);
   
-  // Resumo por status
-  const completedTransactions = (data?.transactions || []).filter(t => t.status === "completed");
-  const pendingTransactions = (data?.transactions || []).filter(t => t.status === "pending");
-  const cancelledTransactions = (data?.transactions || []).filter(t => t.status === "cancelled");
+  // Use os status counts da API se disponíveis, caso contrário calcule localmente
+  const statusCounts = data?.statusCounts || [];
+  const completedCount = statusCounts.find(s => s.status === "completed")?.count || 
+    (data?.transactions || []).filter(t => t.status === "completed").length;
+  const pendingCount = statusCounts.find(s => s.status === "pending")?.count || 
+    (data?.transactions || []).filter(t => t.status === "pending").length;
+  const cancelledCount = statusCounts.find(s => s.status === "cancelled")?.count || 
+    (data?.transactions || []).filter(t => t.status === "cancelled").length;
   
-  // Resumo por método de pagamento
-  const paymentMethodSummary = (data?.transactions || []).reduce((acc, t) => {
-    acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + t.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  // Use o resumo de pagamentos da API se disponível, caso contrário calcule localmente
+  const paymentSummary = data?.paymentMethodSummary || [];
+  const paymentMethodSummary = paymentSummary.length > 0 
+    ? paymentSummary.reduce((acc, item) => {
+        acc[item.method] = parseFloat(item.sum.toString());
+        return acc;
+      }, {} as Record<string, number>)
+    : (data?.transactions || []).reduce((acc, t) => {
+        acc[t.paymentMethod] = (acc[t.paymentMethod] || 0) + t.amount;
+        return acc;
+      }, {} as Record<string, number>);
   
   // Exportar dados
   const handleExport = () => {
@@ -367,21 +369,21 @@ export default function MerchantTransactions() {
                     <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />
                     <span>Concluídas</span>
                   </div>
-                  <span className="text-sm font-medium">{completedTransactions.length}</span>
+                  <span className="text-sm font-medium">{completedCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center text-sm">
                     <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />
                     <span>Pendentes</span>
                   </div>
-                  <span className="text-sm font-medium">{pendingTransactions.length}</span>
+                  <span className="text-sm font-medium">{pendingCount}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center text-sm">
                     <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
                     <span>Canceladas</span>
                   </div>
-                  <span className="text-sm font-medium">{cancelledTransactions.length}</span>
+                  <span className="text-sm font-medium">{cancelledCount}</span>
                 </div>
               </div>
             </CardContent>
