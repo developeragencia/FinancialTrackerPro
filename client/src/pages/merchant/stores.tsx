@@ -35,7 +35,7 @@ export default function MerchantStores() {
   
   // Buscar todas as lojas
   const { data: storesData, isLoading } = useQuery({
-    queryKey: ['/api/stores'],
+    queryKey: ['/api/merchant/stores'],
   });
   
   // Filtrar lojas com base na busca e categoria

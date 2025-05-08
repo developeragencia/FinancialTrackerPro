@@ -1985,6 +1985,96 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Listar todas as lojas para exibição nos painéis
+  app.get("/api/merchant/stores", async (req, res) => {
+    try {
+      // Buscar todas as lojas ativas
+      const storesResult = await db.execute(
+        sql`
+        SELECT 
+          m.id, 
+          m.store_name, 
+          m.logo, 
+          m.category, 
+          m.description,
+          u.name as owner_name,
+          u.id as user_id,
+          u.email,
+          u.phone,
+          u.type
+        FROM merchants m
+        JOIN users u ON m.user_id = u.id
+        WHERE m.approved = true
+        ORDER BY m.store_name ASC
+        `
+      );
+      
+      // Formatar para o frontend
+      const stores = storesResult.rows.map(store => ({
+        id: store.id,
+        storeId: store.id,
+        userId: store.user_id,
+        name: store.store_name,
+        logo: store.logo || null,
+        category: store.category || 'Geral',
+        description: store.description || '',
+        ownerName: store.owner_name,
+        email: store.email,
+        phone: store.phone
+      }));
+      
+      res.json(stores);
+    } catch (error) {
+      console.error("Erro ao listar lojas:", error);
+      res.status(500).json({ message: "Erro ao listar lojas" });
+    }
+  });
+
+  // Cliente - Listar todas as lojas para exibição nos painéis
+  app.get("/api/client/stores", isUserType("client"), async (req, res) => {
+    try {
+      // Buscar todas as lojas ativas
+      const storesResult = await db.execute(
+        sql`
+        SELECT 
+          m.id, 
+          m.store_name, 
+          m.logo, 
+          m.category, 
+          m.description,
+          u.name as owner_name,
+          u.id as user_id,
+          u.email,
+          u.phone,
+          u.type
+        FROM merchants m
+        JOIN users u ON m.user_id = u.id
+        WHERE m.approved = true
+        ORDER BY m.store_name ASC
+        `
+      );
+      
+      // Formatar para o frontend
+      const stores = storesResult.rows.map(store => ({
+        id: store.id,
+        storeId: store.id,
+        userId: store.user_id,
+        name: store.store_name,
+        logo: store.logo || null,
+        category: store.category || 'Geral',
+        description: store.description || '',
+        ownerName: store.owner_name,
+        email: store.email,
+        phone: store.phone
+      }));
+      
+      res.json(stores);
+    } catch (error) {
+      console.error("Erro ao listar lojas:", error);
+      res.status(500).json({ message: "Erro ao listar lojas" });
+    }
+  });
+
   // QR Code para lojista
   // Rota para processar QR code (usado pelo scanner do lojista)
   app.post("/api/merchant/process-qrcode", isUserType("merchant"), async (req, res) => {

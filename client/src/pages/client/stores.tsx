@@ -34,7 +34,7 @@ export default function ClientStores() {
   
   // Buscar todas as lojas
   const { data: storesData, isLoading } = useQuery({
-    queryKey: ['/api/stores'],
+    queryKey: ['/api/client/stores'],
   });
   
   // Conteúdo simulado para "Novas Promoções"
