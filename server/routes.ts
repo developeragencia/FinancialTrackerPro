@@ -1764,86 +1764,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const clientId = req.user.id;
       
-      // Buscar dados do usuário para verificar código de referência
-      const [userData] = await db
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          referralCode: users.referralCode,
-        })
-        .from(users)
-        .where(eq(users.id, clientId));
-        
+      // Buscar dados do usuário com SQL direto
+      const userResult = await db.execute(
+        sql`SELECT id, name, email, referral_code FROM users WHERE id = ${clientId}`
+      );
+      
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const userData = userResult.rows[0];
+      
       // Se não houver código de referência, gerar um e salvar
-      let userReferralCode = userData.referralCode;
+      let userReferralCode = userData.referral_code;
       if (!userReferralCode) {
         userReferralCode = "CL" + clientId.toString().padStart(4, '0');
         
-        // Atualizar código de referência do usuário
-        await db
-          .update(users)
-          .set({ referralCode: userReferralCode })
-          .where(eq(users.id, clientId));
+        // Atualizar código de referência do usuário com SQL direto
+        await db.execute(
+          sql`UPDATE users SET referral_code = ${userReferralCode} WHERE id = ${clientId}`
+        );
       }
       
-      // Buscar todas as indicações do usuário
-      const referralsData = await db
-        .select({
-          id: referrals.id,
-          referredId: referrals.referredId,
-          bonus: referrals.bonus,
-          status: referrals.status,
-          createdAt: referrals.createdAt,
-        })
-        .from(referrals)
-        .where(eq(referrals.referrerId, clientId))
-        .orderBy(desc(referrals.createdAt));
-        
-      // Obter dados dos usuários indicados
-      const referredUserIds = referralsData.map(ref => ref.referredId);
-      const referredUsers = await db
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          photo: users.photo,
-          createdAt: users.createdAt,
-        })
-        .from(users)
-        .where(inArray(users.id, referredUserIds));
-      
-      // Criar mapa de usuários para facilitar acesso
-      const referredUsersMap = new Map(referredUsers.map(user => [user.id, user]));
+      // Buscar todas as indicações do usuário com SQL direto
+      const referralsResult = await db.execute(
+        sql`SELECT 
+            r.id, 
+            r.referred_id, 
+            r.bonus, 
+            r.status, 
+            r.created_at,
+            u.name as referred_name
+          FROM referrals r
+          JOIN users u ON r.referred_id = u.id
+          WHERE r.referrer_id = ${clientId}
+          ORDER BY r.created_at DESC`
+      );
       
       // Formatar lista de referências para o frontend
-      const referrals_list = referralsData.map(ref => {
-        const user = referredUsersMap.get(ref.referredId);
-        return {
-          id: ref.id,
-          name: user ? user.name : 'Usuário desconhecido',
-          date: format(new Date(ref.createdAt), 'dd/MM/yyyy'),
-          status: ref.status,
-          commission: parseFloat(ref.bonus).toFixed(2)
-        };
-      });
+      const referrals_list = referralsResult.rows.map(ref => ({
+        id: ref.id,
+        name: ref.referred_name || 'Usuário desconhecido',
+        date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
+        status: ref.status,
+        commission: parseFloat(ref.bonus).toFixed(2)
+      }));
       
       // Calcular estatísticas
-      const totalEarned = referralsData
-        .filter(ref => ref.status === 'active')
-        .reduce((sum, ref) => sum + parseFloat(ref.bonus), 0);
-        
-      const pendingReferrals = referralsData.filter(ref => ref.status === 'pending').length;
+      const totalEarnedResult = await db.execute(
+        sql`SELECT COALESCE(SUM(bonus), 0) as total
+            FROM referrals
+            WHERE referrer_id = ${clientId} AND status = 'active'`
+      );
+      const totalEarned = parseFloat(totalEarnedResult.rows[0]?.total || '0');
       
-      // Buscar configuração de comissão para referências
-      const [commissionSetting] = await db
-        .select()
-        .from(commissionSettings)
-        .where(eq(commissionSettings.key, 'referralBonus'));
-        
+      const pendingResult = await db.execute(
+        sql`SELECT COUNT(*) as count
+            FROM referrals
+            WHERE referrer_id = ${clientId} AND status = 'pending'`
+      );
+      const pendingReferrals = parseInt(pendingResult.rows[0]?.count || '0');
+      
+      // Buscar configuração de comissão para referências com SQL direto
+      const commissionResult = await db.execute(
+        sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
+      );
+      
       // Usar o valor padrão do sistema se não houver configuração
-      const commissionRate = commissionSetting 
-        ? parseFloat(commissionSetting.value) 
+      const commissionRate = commissionResult.rows.length > 0
+        ? parseFloat(commissionResult.rows[0].value) 
         : DEFAULT_SETTINGS.referralBonus;
       
       // Construir URL completa com base no host da requisição
@@ -1851,10 +1840,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const protocol = req.protocol || 'https';
       const referralUrl = `${protocol}://${host}/convite/${userReferralCode}`;
       
+      // Contar total de referências
+      const refCountResult = await db.execute(
+        sql`SELECT COUNT(*) as count
+            FROM referrals
+            WHERE referrer_id = ${clientId}`
+      );
+      const referralsCount = parseInt(refCountResult.rows[0]?.count || '0');
+      
       res.json({
         referralCode: userReferralCode,
         referralUrl,
-        referralsCount: referralsData.length,
+        referralsCount,
         pendingReferrals,
         totalEarned: totalEarned.toFixed(2),
         commission: (commissionRate * 100).toFixed(1),
@@ -1954,21 +1951,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Código de convite inválido" });
       }
       
-      // Buscar usuário pelo código de referência
-      const [referrerUser] = await db
-        .select({
-          id: users.id,
-          name: users.name,
-          email: users.email,
-          type: users.type,
-          photo: users.photo
-        })
-        .from(users)
-        .where(eq(users.referralCode, referralCode));
-        
-      if (!referrerUser) {
+      // Buscar usuário pelo código de referência com SQL direto
+      const userResult = await db.execute(
+        sql`SELECT id, name, email, type, photo 
+            FROM users 
+            WHERE referral_code = ${referralCode}`
+      );
+      
+      if (userResult.rows.length === 0) {
         return res.status(404).json({ message: "Código de convite não encontrado" });
       }
+      
+      const referrerUser = userResult.rows[0];
       
       // Verificar se o tipo do usuário corresponde ao prefixo do código
       const expectedType = isClient ? "client" : "merchant";
@@ -1979,19 +1973,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Dados do lojista, se for o caso
       let merchantData = null;
       if (isMerchant) {
-        const [merchantInfo] = await db
-          .select({
-            id: merchants.id,
-            userId: merchants.userId,
-            storeName: merchants.storeName,
-            logo: merchants.logo,
-            category: merchants.category,
-            description: merchants.description
-          })
-          .from(merchants)
-          .where(eq(merchants.userId, referrerUser.id));
-          
-        if (merchantInfo) {
+        const merchantResult = await db.execute(
+          sql`SELECT 
+              id, 
+              store_name as "storeName", 
+              logo, 
+              category, 
+              description
+            FROM merchants
+            WHERE user_id = ${referrerUser.id}`
+        );
+        
+        if (merchantResult.rows.length > 0) {
+          const merchantInfo = merchantResult.rows[0];
           merchantData = {
             storeName: merchantInfo.storeName,
             logo: merchantInfo.logo || "https://via.placeholder.com/100",
