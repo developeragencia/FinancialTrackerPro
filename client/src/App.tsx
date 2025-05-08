@@ -32,6 +32,7 @@ import MerchantReports from "@/pages/merchant/reports";
 import MerchantSettings from "@/pages/merchant/settings";
 import MerchantSupport from "@/pages/merchant/support";
 import MerchantReferrals from "@/pages/merchant/referrals";
+import MerchantStores from "@/pages/merchant/stores";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/dashboard";
@@ -85,6 +86,7 @@ function Router() {
       <ProtectedRoute path="/merchant/settings" component={MerchantSettings} userType="merchant" />
       <ProtectedRoute path="/merchant/support" component={MerchantSupport} userType="merchant" />
       <ProtectedRoute path="/merchant/referrals" component={MerchantReferrals} userType="merchant" />
+      <ProtectedRoute path="/merchant/stores" component={MerchantStores} userType="merchant" />
       
       {/* Admin Routes */}
       <ProtectedRoute path="/admin" component={AdminDashboard} userType="admin" />

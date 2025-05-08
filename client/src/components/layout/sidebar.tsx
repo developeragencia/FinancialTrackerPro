@@ -55,6 +55,7 @@ export function Sidebar({
     { href: "/client/transactions", icon: <List className="mr-2 h-5 w-5" />, label: "Transações" },
     { href: "/client/transfers", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Transferências" },
     { href: "/client/qr-code", icon: <QrCode className="mr-2 h-5 w-5" />, label: "QR Code" },
+    { href: "/client/stores", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojas" },
     { href: "/client/referrals", icon: <Users className="mr-2 h-5 w-5" />, label: "Indicar Amigos" },
     { href: "/client/profile", icon: <User className="mr-2 h-5 w-5" />, label: "Perfil" },
   ];
@@ -65,10 +66,11 @@ export function Sidebar({
     { href: "/merchant/transactions", icon: <List className="mr-2 h-5 w-5" />, label: "Histórico" },
     { href: "/merchant/products", icon: <Package className="mr-2 h-5 w-5" />, label: "Produtos" },
     { href: "/merchant/scanner", icon: <Scan className="mr-2 h-5 w-5" />, label: "Leitor QR" },
+    { href: "/merchant/stores", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojas Parceiras" },
     { href: "/merchant/referrals", icon: <Users className="mr-2 h-5 w-5" />, label: "Indicações" },
     { href: "/merchant/reports", icon: <BarChart className="mr-2 h-5 w-5" />, label: "Relatórios" },
     { href: "/merchant/settings", icon: <Settings className="mr-2 h-5 w-5" />, label: "Configurações" },
-    { href: "/merchant/profile", icon: <Store className="mr-2 h-5 w-5" />, label: "Minha Loja" },
+    { href: "/merchant/profile", icon: <User className="mr-2 h-5 w-5" />, label: "Minha Loja" },
     { href: "/merchant/support", icon: <Headphones className="mr-2 h-5 w-5" />, label: "Suporte" },
   ];
   
