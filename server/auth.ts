@@ -15,13 +15,17 @@ declare global {
     interface User {
       id: number;
       name: string;
+      username: string | null;
       email: string;
       password: string;
       phone: string | null;
-      cpfCnpj: string | null;
+      country: string | null;
+      countryCode: string | null;
       type: string;
       status: string;
       photo: string | null;
+      securityQuestion: string | null;
+      securityAnswer: string | null;
       createdAt: Date;
       lastLogin: Date | null;
     }

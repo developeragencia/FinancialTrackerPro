@@ -102,36 +102,7 @@ export default function AdminTransactions() {
       dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
       dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       search: searchTerm
-    }],
-    placeholderData: {
-      transactions: [
-        { id: 1, customer: "Maria Silva", merchant: "Supermercado ABC", date: "21/07/2023 15:45", amount: 150.00, cashback: 3.00, paymentMethod: "credit_card", items: "5 itens", status: "completed" },
-        { id: 2, customer: "José Santos", merchant: "Farmácia XYZ", date: "21/07/2023 14:30", amount: 75.20, cashback: 1.50, paymentMethod: "pix", items: "3 itens", status: "completed" },
-        { id: 3, customer: "Ana Oliveira", merchant: "Loja de Roupas 123", date: "21/07/2023 11:15", amount: 200.00, cashback: 4.00, paymentMethod: "cash", items: "7 itens", status: "completed" },
-        { id: 4, customer: "Carlos Souza", merchant: "Restaurante Bom Sabor", date: "21/07/2023 10:20", amount: 120.50, cashback: 2.41, paymentMethod: "debit_card", items: "4 itens", status: "pending" },
-        { id: 5, customer: "Juliana Lima", merchant: "Supermercado ABC", date: "21/07/2023 09:00", amount: 350.75, cashback: 7.01, paymentMethod: "credit_card", items: "12 itens", status: "completed" },
-        { id: 6, customer: "Roberto Alves", merchant: "Farmácia XYZ", date: "20/07/2023 16:10", amount: 89.99, cashback: 1.80, paymentMethod: "pix", items: "2 itens", status: "completed" },
-        { id: 7, customer: "Fernanda Costa", merchant: "Loja de Eletrônicos Top", date: "20/07/2023 14:25", amount: 45.50, cashback: 0.91, paymentMethod: "cash", items: "1 item", status: "completed" },
-        { id: 8, customer: "Pedro Dias", merchant: "Padaria Pão Quente", date: "20/07/2023 11:30", amount: 135.75, cashback: 2.71, paymentMethod: "credit_card", items: "4 itens", status: "cancelled" },
-        { id: 9, customer: "Camila Luz", merchant: "Supermercado ABC", date: "19/07/2023 17:15", amount: 220.00, cashback: 4.40, paymentMethod: "debit_card", items: "8 itens", status: "completed" },
-        { id: 10, customer: "Rodrigo Mendes", merchant: "Restaurante Bom Sabor", date: "19/07/2023 13:40", amount: 67.80, cashback: 1.36, paymentMethod: "cashback", items: "3 itens", status: "completed" }
-      ],
-      totalAmount: 1455.49,
-      totalCashback: 29.10,
-      statusCounts: [
-        { status: "completed", count: 8 },
-        { status: "pending", count: 1 },
-        { status: "cancelled", count: 1 }
-      ],
-      paymentMethodSummary: [
-        { method: "credit_card", sum: 636.50 },
-        { method: "debit_card", sum: 340.50 },
-        { method: "cash", sum: 245.50 },
-        { method: "pix", sum: 165.19 },
-        { method: "cashback", sum: 67.80 }
-      ],
-      pageCount: 2
-    }
+    }]
   });
   
   // Filtrar transações
