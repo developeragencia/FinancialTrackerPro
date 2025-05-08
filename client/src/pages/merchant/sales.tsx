@@ -200,7 +200,11 @@ export default function MerchantSales() {
     setSelectedCustomer(customer);
     setSearchTerm("");
     setCustomerResults([]);
-    setShowCustomerDialog(false);
+    
+    // Fechar diálogo explicitamente para evitar problemas
+    setTimeout(() => {
+      setShowCustomerDialog(false);
+    }, 100);
   };
 
   // Adicionar produto ao carrinho
@@ -223,7 +227,11 @@ export default function MerchantSales() {
     // Resetar seleção de produto
     setSelectedProduct(null);
     setQuantity(1);
-    setShowProductDialog(false);
+    
+    // Fechar diálogo explicitamente para evitar problemas
+    setTimeout(() => {
+      setShowProductDialog(false);
+    }, 100);
   };
 
   // Remover produto do carrinho
@@ -648,7 +656,13 @@ export default function MerchantSales() {
       </div>
 
       {/* Dialog para Busca de Cliente */}
-      <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+      <Dialog 
+        open={showCustomerDialog} 
+        onOpenChange={(open) => {
+          // Só permite fechar se for explicitamente fechado clicando em botões
+          if (!open) setShowCustomerDialog(false);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Buscar Cliente</DialogTitle>
@@ -743,7 +757,13 @@ export default function MerchantSales() {
       </Dialog>
 
       {/* Dialog para Adicionar Produto */}
-      <Dialog open={showProductDialog} onOpenChange={setShowProductDialog}>
+      <Dialog 
+        open={showProductDialog} 
+        onOpenChange={(open) => {
+          // Só permite fechar se for explicitamente fechado clicando em botões
+          if (!open) setShowProductDialog(false);
+        }}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Adicionar Produto</DialogTitle>

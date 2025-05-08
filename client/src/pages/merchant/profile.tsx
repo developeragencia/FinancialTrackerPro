@@ -314,36 +314,48 @@ export default function MerchantProfile() {
                           Ofereça bônus de cashback em determinadas situações
                         </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch 
+                      <div>
+                        <input 
+                          type="checkbox" 
                           id="enable-promotions"
                           name="enable-promotions"
-                          checked={cashbackPromotions.enabled}
+                          className="hidden"
                           defaultChecked={cashbackPromotions.enabled}
                         />
-                        <Label htmlFor="enable-promotions" className="sr-only">
-                          Habilitar promoções de cashback
-                        </Label>
+                        <Switch 
+                          id="enable-promotions-switch"
+                          checked={cashbackPromotions.enabled}
+                          onCheckedChange={(checked) => {
+                            const input = document.getElementById('enable-promotions') as HTMLInputElement;
+                            if (input) input.checked = checked;
+                          }}
+                        />
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between border-t pt-4">
                       <div className="space-y-0.5">
-                        <Label htmlFor="weekend-double">Cashback em dobro nos finais de semana</Label>
+                        <Label htmlFor="double-weekends">Cashback em dobro nos finais de semana</Label>
                         <p className="text-sm text-muted-foreground">
                           O cashback será dobrado em compras realizadas aos sábados e domingos
                         </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch 
-                          id="weekend-double"
+                      <div>
+                        <input 
+                          type="checkbox" 
+                          id="double-weekends"
                           name="double-weekends"
-                          checked={cashbackPromotions.doubleOnWeekends}
+                          className="hidden"
                           defaultChecked={cashbackPromotions.doubleOnWeekends}
                         />
-                        <Label htmlFor="weekend-double" className="sr-only">
-                          Cashback em dobro nos finais de semana
-                        </Label>
+                        <Switch 
+                          id="double-weekends-switch"
+                          checked={cashbackPromotions.doubleOnWeekends}
+                          onCheckedChange={(checked) => {
+                            const input = document.getElementById('double-weekends') as HTMLInputElement;
+                            if (input) input.checked = checked;
+                          }}
+                        />
                       </div>
                     </div>
                     
@@ -354,16 +366,22 @@ export default function MerchantProfile() {
                           Defina categorias de produtos com cashback diferenciado
                         </p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Switch 
+                      <div>
+                        <input 
+                          type="checkbox" 
                           id="special-categories"
                           name="special-categories"
-                          checked={cashbackPromotions.specialCategories}
+                          className="hidden"
                           defaultChecked={cashbackPromotions.specialCategories}
                         />
-                        <Label htmlFor="special-categories" className="sr-only">
-                          Cashback especial por categorias
-                        </Label>
+                        <Switch 
+                          id="special-categories-switch"
+                          checked={cashbackPromotions.specialCategories}
+                          onCheckedChange={(checked) => {
+                            const input = document.getElementById('special-categories') as HTMLInputElement;
+                            if (input) input.checked = checked;
+                          }}
+                        />
                       </div>
                     </div>
                     
