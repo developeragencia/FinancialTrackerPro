@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,29 +8,55 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Lock, Bell, Shield } from "lucide-react";
+import { Loader2, User, Lock, Bell, Shield, AlertTriangle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function ClientProfile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
 
-  // Query to get user profile data
-  const { data: user, isLoading } = useQuery({
+  // Query to get user profile data - com tratamento de erro melhorado
+  const { 
+    data: user, 
+    isLoading, 
+    isError, 
+    refetch 
+  } = useQuery({
     queryKey: ['/api/client/profile'],
+    retry: 2, // Limitar tentativas de retry para evitar requisições infinitas
+    refetchOnWindowFocus: false, // Desabilitar refresh automático no foco
+    onError: (error: any) => {
+      console.error("Erro ao carregar perfil:", error);
+      setError(error?.message || "Não foi possível carregar seus dados de perfil.");
+    }
   });
 
-  // Mock user data until API is available
-  const userData = user || {
-    name: "João Silva",
-    email: "joao@email.com",
-    photo: "",
-    phone: "(11) 98765-4321",
-    address: "Rua das Flores, 123",
-    city: "São Paulo",
-    state: "SP",
+  // Dados de usuário com fallback seguro
+  const userData = user ? {
+    ...user,
+    notifications: user.notifications || {
+      email: true,
+      push: true,
+      marketing: false
+    },
+    privacy: user.privacy || {
+      showBalance: true,
+      showActivity: true
+    }
+  } : {
+    id: authUser?.id || 0,
+    name: authUser?.name || "Usuário",
+    email: authUser?.email || "",
+    photo: authUser?.photo || "",
+    phone: "",
+    address: "",
+    city: "",
+    state: "",
     notifications: {
       email: true,
       push: true,
@@ -108,6 +134,25 @@ export default function ClientProfile() {
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : error ? (
+        <div className="flex flex-col justify-center items-center h-64 gap-4">
+          <div className="bg-destructive/10 p-3 rounded-full">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+          </div>
+          <div className="text-center">
+            <h3 className="text-lg font-semibold">Erro ao carregar perfil</h3>
+            <p className="text-muted-foreground mt-1">{error}</p>
+            <Button 
+              className="mt-4" 
+              onClick={() => {
+                setError(null);
+                refetch();
+              }}
+            >
+              Tentar novamente
+            </Button>
+          </div>
         </div>
       ) : (
         <Tabs defaultValue="personal" className="space-y-6">

@@ -2274,6 +2274,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Perfil do Cliente
+  app.get("/api/client/profile", isUserType("client"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const clientId = req.user.id;
+      
+      // Obter dados do usuário cliente
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, clientId));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+      
+      // Obter preferências do usuário (ou usar valores padrão)
+      let notifications = {
+        email: true, 
+        push: true, 
+        marketing: false
+      };
+      
+      let privacy = {
+        showBalance: true,
+        showActivity: true
+      };
+      
+      // Tentar obter configurações salvas do usuário
+      try {
+        const [userSettings] = await db
+          .select()
+          .from(settings)
+          .where(eq(settings.userId, clientId));
+          
+        if (userSettings && userSettings.preferences) {
+          const preferences = JSON.parse(userSettings.preferences);
+          if (preferences.notifications) {
+            notifications = {
+              ...notifications,
+              ...preferences.notifications
+            };
+          }
+          if (preferences.privacy) {
+            privacy = {
+              ...privacy,
+              ...preferences.privacy
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar preferências do usuário:", error);
+        // Continua usando os valores padrão
+      }
+      
+      // Criar objeto com os dados do usuário para o frontend
+      const clientProfile = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone || "",
+        photo: user.photo || "",
+        address: user.address || "",
+        city: user.city || "",
+        state: user.state || "",
+        notifications,
+        privacy
+      };
+      
+      res.json(clientProfile);
+    } catch (error) {
+      console.error("Erro ao buscar perfil do cliente:", error);
+      res.status(500).json({ message: "Erro ao buscar perfil" });
+    }
+  });
+  
   // Histórico de transferências do cliente
   app.get("/api/client/transfers", isUserType("client"), async (req, res) => {
     try {
