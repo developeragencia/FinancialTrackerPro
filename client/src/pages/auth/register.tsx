@@ -10,6 +10,7 @@ import { z } from "zod";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -95,6 +96,7 @@ export default function Register() {
       category: "",
       country: "",
       countryCode: "",
+      companyLogo: "",
       invitationCode: "",
       securityQuestion: "",
       securityAnswer: "",
@@ -390,6 +392,36 @@ export default function Register() {
                     <FormControl>
                       <Input placeholder="lojasilva" {...field} disabled={loading} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={merchantForm.control}
+                name="companyLogo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Logo da Empresa</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={(e) => {
+                          // Em uma implementação real, aqui faríamos upload da imagem
+                          // e atualizaríamos o campo com a URL da imagem
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Simular valor para o campo (normalmente seria URL da imagem)
+                            field.onChange(file.name);
+                          }
+                        }} 
+                        disabled={loading} 
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Selecione um arquivo de imagem para ser o logotipo da sua empresa
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
