@@ -26,15 +26,18 @@ export default function ClientReferrals() {
     queryKey: ['/api/client/referrals'],
     retry: 1,
     refetchOnWindowFocus: false,
+    refetchInterval: false, // Evita polling infinito
+    staleTime: 60000, // Dados são considerados atualizados por 1 minuto
     placeholderData: {
-      referralCode: user?.referralCode || "ABC123",
-      referralUrl: `https://valecashback.com/convite/${user?.referralCode || "ABC123"}`,
+      referralCode: user?.invitation_code || "ABC123",
+      referralUrl: `https://valecashback.com/convite/${user?.invitation_code || "ABC123"}`,
       referralsCount: 0,
       pendingReferrals: 0,
       totalEarned: "0.00",
       commission: "1.0", // Taxa de comissão - será substituída pelos dados do banco
       referrals: []
-    }
+    },
+    enabled: !!user // Só executa se o usuário estiver autenticado
   });
   
   // Exibir erro no console para diagnóstico
