@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, desc, sql, gt, gte, lt, lte, inArray } from "drizzle-orm";
+import { eq, and, desc, sql, gt, gte, lt, lte, inArray, ne } from "drizzle-orm";
 import crypto from "crypto";
 import { format } from "date-fns";
 import {
@@ -19,6 +19,7 @@ import {
   PaymentMethod,
   TransactionStatus,
 } from "@shared/schema";
+import { addAdminRoutes, addMerchantRoutes } from "./routes.admin";
 
 // Middleware para verificar autenticação
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -52,6 +53,10 @@ const DEFAULT_SETTINGS = {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticação e rotas relacionadas
   setupAuth(app);
+  
+  // Adicionar rotas administrativas e de lojista
+  addAdminRoutes(app);
+  addMerchantRoutes(app);
   
   // Inicializa as configurações de comissão
   await initializeCommissionSettings();
@@ -215,86 +220,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao buscar detalhes da loja:", error);
       res.status(500).json({ message: "Erro ao buscar detalhes da loja" });
-    }
-  });
-  
-  // API para listar lojas para o painel de administração (completa)
-  app.get("/api/admin/stores", isUserType("admin"), async (req, res) => {
-    try {
-      const allStores = await db
-        .select({
-          id: merchants.id,
-          name: merchants.store_name,
-          logo: merchants.logo,
-          category: merchants.category,
-          address: merchants.address,
-          city: merchants.city,
-          state: merchants.state,
-          commission_rate: merchants.commission_rate,
-          approved: merchants.approved,
-          created_at: merchants.created_at,
-          user_id: merchants.user_id,
-        })
-        .from(merchants)
-        .orderBy(desc(merchants.created_at));
-      
-      // Adicionar informações adicionais como avaliações e número de clientes
-      const storesWithDetails = await Promise.all(
-        allStores.map(async (store) => {
-          // Obter informações do usuário associado (lojista)
-          const [merchantUser] = await db
-            .select({
-              name: users.name,
-              email: users.email,
-              phone: users.phone,
-              document: users.document,
-              status: users.status,
-            })
-            .from(users)
-            .where(eq(users.id, store.user_id));
-            
-          // Contar o número de transações
-          const [transactionCount] = await db
-            .select({
-              count: sql`COUNT(*)`,
-            })
-            .from(transactions)
-            .where(eq(transactions.merchant_id, store.id));
-          
-          // Calcular o volume de vendas
-          const [salesVolume] = await db
-            .select({
-              total: sql`COALESCE(SUM(amount), 0)`,
-            })
-            .from(transactions)
-            .where(eq(transactions.merchant_id, store.id));
-          
-          return {
-            id: store.id,
-            name: store.name,
-            logo: store.logo || "https://ui-avatars.com/api/?name=" + encodeURIComponent(store.name) + "&background=random&color=fff&size=128",
-            category: store.category,
-            address: store.address,
-            city: store.city,
-            state: store.state,
-            commission_rate: store.commission_rate,
-            approved: store.approved,
-            created_at: store.created_at,
-            owner: merchantUser?.name || "Usuário Desconhecido",
-            email: merchantUser?.email || "",
-            phone: merchantUser?.phone || "",
-            cnpj: merchantUser?.document || "",
-            status: merchantUser?.status || "pending",
-            transactions: Number(transactionCount?.count) || 0,
-            volume: Number(salesVolume?.total) || 0,
-          };
-        })
-      );
-      
-      res.json({ stores: storesWithDetails });
-    } catch (error) {
-      console.error("Erro ao buscar lojas:", error);
-      res.status(500).json({ message: "Erro ao buscar lojas" });
     }
   });
   
@@ -1986,7 +1911,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Listar todas as lojas para exibição nos painéis
-  app.get("/api/merchant/stores", async (req, res) => {
+  app.get("/api/merchant/stores", isUserType("merchant"), async (req, res) => {
+    try {
+      // Obter o ID do lojista atual
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      const currentMerchantId = req.user.id;
+
+      // Buscar todas as lojas ativas exceto a do próprio lojista
+      const storesResult = await db
+        .select({
+          id: merchants.id,
+          store_name: merchants.store_name,
+          logo: merchants.logo,
+          category: merchants.category,
+          address: merchants.address,
+          city: merchants.city,
+          state: merchants.state,
+          commission_rate: merchants.commission_rate,
+          created_at: merchants.created_at,
+          user_id: users.id,
+          email: users.email,
+          phone: users.phone,
+          owner_name: users.name,
+          type: users.type
+        })
+        .from(merchants)
+        .innerJoin(users, eq(merchants.user_id, users.id))
+        .where(and(
+          eq(merchants.approved, true),
+          ne(users.id, currentMerchantId)
+        ))
+        .orderBy(merchants.store_name);
+      
+      // Formatar para o frontend
+      const stores = storesResult.map(store => ({
+        id: store.id,
+        storeId: store.id,
+        userId: store.user_id,
+        store_name: store.store_name,
+        name: store.store_name,
+        logo: store.logo || null,
+        category: store.category || 'Geral',
+        description: '', // Campo vazio pois não existe na tabela
+        address: store.address,
+        city: store.city,
+        state: store.state,
+        ownerName: store.owner_name,
+        email: store.email,
+        phone: store.phone,
+        commissionRate: store.commission_rate,
+        rating: 5.0, // Valor padrão para todas as lojas no momento
+        createdAt: store.created_at
+      }));
+      
+      res.json(stores);
+    } catch (error) {
+      console.error("Erro ao listar lojas para o lojista:", error);
+      res.status(500).json({ message: "Erro ao listar lojas" });
+    }
+  });
+  
+  app.get("/api/merchant/stores/old", async (req, res) => {
     try {
       // Buscar todas as lojas ativas
       const storesResult = await db.execute(

@@ -271,51 +271,78 @@ export default function ClientStores() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredStores.map((store: StoreItem) => (
                     <div
                       key={store.id}
-                      className={`border rounded-lg overflow-hidden hover:shadow-md transition cursor-pointer ${getCategoryClass(store.category)}`}
+                      className={`border rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer ${getCategoryClass(store.category)}`}
                       onClick={() => handleOpenStoreDetails(store)}
                     >
-                      <div className="p-4">
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={store.logo} alt={store.store_name || store.name} />
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {getInitials(store.store_name || store.name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold truncate">{store.store_name || store.name}</h3>
-                            <p className="text-sm text-muted-foreground">{store.category}</p>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-3 space-y-2">
-                          {store.address && (
-                            <div className="flex items-start text-sm">
-                              <MapPin className="h-4 w-4 mr-2 mt-0.5 text-muted-foreground" />
-                              <span className="truncate">{store.address}</span>
+                      {/* Header com logo e nome da loja */}
+                      <div className="relative bg-gradient-to-r from-primary/10 to-background/60 p-5 border-b">
+                        <div className="flex items-center gap-4">
+                          <div className="relative">
+                            <div className="h-20 w-20 rounded-lg overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center p-1">
+                              {store.logo ? (
+                                <img 
+                                  src={store.logo} 
+                                  alt={store.store_name || store.name || ""} 
+                                  className="object-contain max-h-full"
+                                />
+                              ) : (
+                                <div className="flex items-center justify-center h-full w-full bg-primary/10 text-primary text-xl font-bold">
+                                  {getInitials(store.store_name || store.name || "")}
+                                </div>
+                              )}
                             </div>
-                          )}
-                          
-                          <div className="flex items-center justify-between">
-                            <RatingStars rating={store.rating || 0} />
-                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                              {store.commissionRate}% Cashback
-                            </Badge>
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold">{store.store_name || store.name}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none">
+                                {store.category}
+                              </Badge>
+                              <span className="flex items-center text-sm text-muted-foreground">
+                                <Clock className="h-3 w-3 mr-1" />
+                                Desde {formatDate(store.createdAt)}
+                              </span>
+                            </div>
+                            <div className="mt-2">
+                              <RatingStars rating={store.rating || 0} />
+                            </div>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="bg-background/90 p-2 flex justify-between items-center border-t">
-                        <span className="text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          Desde {formatDate(store.createdAt)}
-                        </span>
-                        <Button variant="ghost" size="sm" className="text-xs h-7">
+                      {/* Corpo do card */}
+                      <div className="p-5 flex flex-col gap-4">
+                        {store.address && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <MapPin className="h-5 w-5 text-primary shrink-0" />
+                            <span>{store.address}</span>
+                          </div>
+                        )}
+                        
+                        {store.email && (
+                          <div className="flex items-start gap-2 text-sm">
+                            <Mail className="h-5 w-5 text-primary shrink-0" />
+                            <span>{store.email}</span>
+                          </div>
+                        )}
+                        
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-md px-3 py-1">
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            {store.commissionRate}% Cashback
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Rodapé do card */}
+                      <div className="bg-background p-4 flex justify-end items-center border-t">
+                        <Button size="sm" className="gap-1">
                           Ver detalhes
+                          <ArrowRight className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -329,22 +356,47 @@ export default function ClientStores() {
       
       {/* Modal de detalhes da loja */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent className="max-w-4xl">
           {selectedStore && (
             <>
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={selectedStore.logo} alt={selectedStore.store_name || selectedStore.name} />
-                    <AvatarFallback className="bg-primary/10 text-primary">
-                      {getInitials(selectedStore.store_name || selectedStore.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  {selectedStore.store_name || selectedStore.name}
-                </DialogTitle>
-                <DialogDescription>
-                  Detalhes e informações sobre a loja
-                </DialogDescription>
+              <DialogHeader className="pb-6">
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                  <div className="relative flex-shrink-0">
+                    <div className="h-28 w-28 rounded-xl overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center p-1">
+                      {selectedStore.logo ? (
+                        <img 
+                          src={selectedStore.logo} 
+                          alt={selectedStore.store_name || selectedStore.name || ""} 
+                          className="object-contain max-h-full"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full w-full bg-primary/10 text-primary text-2xl font-bold">
+                          {getInitials(selectedStore.store_name || selectedStore.name || "")}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <DialogTitle className="text-2xl mb-2">
+                      {selectedStore.store_name || selectedStore.name}
+                    </DialogTitle>
+                    <DialogDescription className="text-base mb-3">
+                      {selectedStore.description || `${selectedStore.store_name || selectedStore.name} é uma loja parceira do Vale Cashback.`}
+                    </DialogDescription>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none">
+                        {selectedStore.category || "Geral"}
+                      </Badge>
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        {selectedStore.commissionRate}% Cashback
+                      </Badge>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1">
+                        <Star className="h-3 w-3 fill-blue-500" />
+                        {selectedStore.rating || 5.0}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
               </DialogHeader>
               
               <Tabs defaultValue="info">
