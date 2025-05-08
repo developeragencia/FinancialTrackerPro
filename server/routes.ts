@@ -3259,7 +3259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Processar código de referência, se fornecido
       if (referralInfo && referralInfo.referrerId) {
         // Buscar configuração de comissão para referências de lojistas (ou usar valor padrão)
-        let referralBonus = 0.02; // 2% de bônus padrão para lojistas
+        let referralBonus = 0.01; // 1% de bônus padrão para lojistas (igual ao padrão do sistema)
         try {
           const commissionResult = await db.execute(
             sql`SELECT value FROM commission_settings WHERE key = 'merchantReferralBonus'`
