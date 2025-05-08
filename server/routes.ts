@@ -919,14 +919,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
       
-      const merchantId = req.user.id;
+      const userId = req.user.id;
       const { status, paymentMethod, startDate, endDate, page = 1, limit = 20 } = req.query;
       
       // Obter dados do merchant
-      const [merchant] = await db
+      const merchantResults = await db
         .select()
         .from(merchants)
-        .where(eq(merchants.userId, merchantId));
+        .where(eq(merchants.userId, userId));
+      
+      if (!merchantResults || merchantResults.length === 0) {
+        return res.status(404).json({ message: "Merchant não encontrado" });
+      }
+      
+      const merchant = merchantResults[0];
       
       // Construir a query
       let query = db
@@ -941,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           items: sql`(SELECT COUNT(*) FROM ${transactionItems} WHERE ${transactionItems.transactionId} = ${transactions.id})`.as("items")
         })
         .from(transactions)
-        .innerJoin(users, eq(transactions.customerId, users.id))
+        .innerJoin(users, eq(transactions.userId, users.id))
         .where(eq(transactions.merchantId, merchant.id));
         
       // Aplicar filtros
