@@ -1980,6 +1980,196 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // QR Code para lojista
+  app.post("/api/merchant/qrcode", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantId = req.user.id;
+      const { amount, description } = req.body;
+      
+      if (!amount || isNaN(parseFloat(amount.toString()))) {
+        return res.status(400).json({ message: "Valor inválido" });
+      }
+      
+      // Obter o ID da loja do comerciante
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantId));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      // Gerar um código único para o QR Code
+      const code = crypto.randomBytes(16).toString('hex');
+      
+      // Definir data de expiração (1 hora a partir de agora)
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+      
+      // Criar o registro do QR Code
+      const [qrCode] = await db
+        .insert(qrCodes)
+        .values({
+          user_id: merchantId,
+          code,
+          amount: parseFloat(amount.toString()),
+          description: description || `Pagamento para ${merchant.store_name}`,
+          expires_at: expiresAt,
+          created_at: new Date()
+        })
+        .returning();
+      
+      // Retornar os dados do QR Code
+      res.status(201).json({
+        id: qrCode.id,
+        code: qrCode.code,
+        amount: parseFloat(qrCode.amount.toString()),
+        description: qrCode.description,
+        expiresAt: qrCode.expires_at,
+        merchant: {
+          id: merchant.id,
+          name: merchant.store_name
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao gerar QR Code:", error);
+      res.status(500).json({ message: "Erro ao gerar QR Code" });
+    }
+  });
+  
+  // Processar pagamento por QR Code
+  app.post("/api/client/pay-qrcode", isUserType("client"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const clientId = req.user.id;
+      const { code, payment_method } = req.body;
+      
+      if (!code) {
+        return res.status(400).json({ message: "Código QR inválido" });
+      }
+      
+      // Buscar o QR Code
+      const [qrCode] = await db
+        .select()
+        .from(qrCodes)
+        .where(
+          and(
+            eq(qrCodes.code, code),
+            eq(qrCodes.used, false),
+            gt(qrCodes.expires_at, new Date())
+          )
+        );
+      
+      if (!qrCode) {
+        return res.status(404).json({ message: "QR Code inválido ou expirado" });
+      }
+      
+      // Obter dados do merchant (lojista que gerou o QR Code)
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, qrCode.user_id));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      // Obter configurações de comissão
+      const [settings] = await db
+        .select()
+        .from(commissionSettings)
+        .limit(1);
+      
+      let platformFee = DEFAULT_SETTINGS.platformFee;
+      let merchantCommission = DEFAULT_SETTINGS.merchantCommission;
+      let clientCashback = DEFAULT_SETTINGS.clientCashback;
+      
+      if (settings) {
+        platformFee = parseFloat(settings.platform_fee.toString());
+        merchantCommission = parseFloat(settings.merchant_commission.toString());
+        clientCashback = parseFloat(settings.client_cashback.toString());
+      }
+      
+      // Calcular valores
+      const amount = parseFloat(qrCode.amount.toString());
+      const cashbackAmount = amount * clientCashback;
+      
+      // Registrar a transação
+      const [transaction] = await db
+        .insert(transactions)
+        .values({
+          user_id: clientId,
+          merchant_id: merchant.id,
+          amount: amount.toString(),
+          cashback_amount: cashbackAmount.toString(),
+          description: qrCode.description,
+          status: "completed",
+          payment_method: payment_method || PaymentMethod.CASH,
+          created_at: new Date()
+        })
+        .returning();
+      
+      // Atualizar QR Code como usado
+      await db
+        .update(qrCodes)
+        .set({
+          used: true
+        })
+        .where(eq(qrCodes.id, qrCode.id));
+      
+      // Atualizar o cashback do cliente
+      const existingCashback = await db
+        .select()
+        .from(cashbacks)
+        .where(eq(cashbacks.user_id, clientId));
+        
+      if (existingCashback.length > 0) {
+        // Atualizar cashback existente
+        const currentBalance = parseFloat(existingCashback[0].balance.toString());
+        const currentTotalEarned = parseFloat(existingCashback[0].total_earned.toString());
+        
+        await db
+          .update(cashbacks)
+          .set({
+            balance: (currentBalance + cashbackAmount).toString(),
+            total_earned: (currentTotalEarned + cashbackAmount).toString(),
+            updated_at: new Date()
+          })
+          .where(eq(cashbacks.user_id, clientId));
+      } else {
+        // Criar novo registro de cashback
+        await db.insert(cashbacks).values({
+          user_id: clientId,
+          balance: cashbackAmount.toString(),
+          total_earned: cashbackAmount.toString(),
+          updated_at: new Date()
+        });
+      }
+      
+      res.status(201).json({
+        message: "Pagamento realizado com sucesso",
+        transaction: {
+          id: transaction.id,
+          amount,
+          cashback: cashbackAmount,
+          merchant: merchant.store_name,
+          date: transaction.created_at
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao processar pagamento:", error);
+      res.status(500).json({ message: "Erro ao processar pagamento" });
+    }
+  });
+  
   // ROTAS DO CLIENTE
   
   // Dashboard do Cliente

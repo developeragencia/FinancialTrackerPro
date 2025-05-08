@@ -22,7 +22,7 @@ export function useQRCode({ onSuccess, onError }: UseQRCodeProps = {}) {
   const generateQRCode = useCallback(async (amount: number, description?: string) => {
     setLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/qr-codes', {
+      const response = await apiRequest('POST', '/api/merchant/qrcode', {
         amount,
         description,
       });
@@ -44,11 +44,12 @@ export function useQRCode({ onSuccess, onError }: UseQRCodeProps = {}) {
     }
   }, [toast, onSuccess, onError]);
 
-  const validateQRCode = useCallback(async (code: string) => {
+  const validateQRCode = useCallback(async (code: string, payment_method = 'cashback') => {
     setLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/qr-codes/validate', {
+      const response = await apiRequest('POST', '/api/client/pay-qrcode', {
         code,
+        payment_method
       });
       
       const data = await response.json();
