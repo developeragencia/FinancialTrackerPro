@@ -10,6 +10,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 // Auth Pages
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
+import ForgotPassword from "@/pages/auth/forgot-password";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/dashboard";
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/auth" component={Login} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       
       {/* Invitation Routes */}
       <Route path="/convite/:code" component={InvitePage} />
