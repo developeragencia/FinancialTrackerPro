@@ -585,32 +585,32 @@ export default function MerchantSales() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
-                  <span className="text-green-600">R$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
+                  <span className="text-green-600">$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa de Indicação ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                  <span className="text-blue-600">R$ {cartItems.length > 0 
+                  <span className="text-blue-600">$ {cartItems.length > 0 
                     ? (total * SYSTEM_SETTINGS.referralRate).toFixed(2) 
                     : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                 </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Bônus de Indicação para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                    <span className="text-blue-600">R$ {cartItems.length > 0 
+                    <span className="text-blue-600">$ {cartItems.length > 0 
                       ? referralBonus.toFixed(2) 
                       : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa do Lojista ({SYSTEM_SETTINGS.merchantCommission * 100}%):</span>
-                  <span className="text-orange-600">R$ {cartItems.length > 0 
+                  <span className="text-orange-600">$ {cartItems.length > 0 
                     ? merchantCommission.toFixed(2) 
                     : (manualAmount * SYSTEM_SETTINGS.merchantCommission).toFixed(2)}</span>
                 </div>
                 <div className="pt-2 border-t">
                   <div className="flex justify-between font-medium">
                     <span>Valor Líquido:</span>
-                    <span>R$ {cartItems.length > 0 
+                    <span>$ {cartItems.length > 0 
                       ? (total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)
                       : (manualAmount - (manualAmount * SYSTEM_SETTINGS.merchantCommission) - (manualAmount * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
                   </div>
