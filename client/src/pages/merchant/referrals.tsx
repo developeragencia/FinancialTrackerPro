@@ -154,7 +154,44 @@ export default function MerchantReferrals() {
   // Colunas para a tabela de indicados
   const referralsColumns = [
     { header: "Nome", accessorKey: "name" },
-    { header: "Loja", accessorKey: "storeName" },
+    { 
+      header: "Tipo", 
+      accessorKey: "user_type",
+      cell: (row: any) => (
+        <div className="flex items-center">
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+            row.user_type === "merchant" 
+              ? "bg-blue-100 text-blue-800" 
+              : "bg-purple-100 text-purple-800"
+          }`}>
+            {row.user_type === "merchant" ? "Lojista" : "Cliente"}
+          </span>
+        </div>
+      )
+    },
+    { 
+      header: "Contato", 
+      accessorKey: "email",
+      cell: (row: any) => (
+        <div className="flex flex-col text-xs">
+          <span>{row.email || "Email não informado"}</span>
+          <span className="text-muted-foreground">{row.phone || "Telefone não informado"}</span>
+        </div>
+      )
+    },
+    { 
+      header: "Estabelecimento", 
+      accessorKey: "store_name",
+      cell: (row: any) => (
+        <div className="flex items-center">
+          {row.user_type === "merchant" ? (
+            <span>{row.store_name || "Loja sem nome"}</span>
+          ) : (
+            <span className="text-muted-foreground text-xs">N/A</span>
+          )}
+        </div>
+      )
+    },
     { header: "Data", accessorKey: "date" },
     { 
       header: "Status", 
@@ -162,11 +199,11 @@ export default function MerchantReferrals() {
       cell: (row: any) => (
         <div className="flex items-center">
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            row.status === "approved" 
+            row.status === "active" 
               ? "bg-green-100 text-green-800" 
               : "bg-yellow-100 text-yellow-800"
           }`}>
-            {row.status === "approved" ? "Aprovado" : "Pendente"}
+            {row.status === "active" ? "Ativo" : "Pendente"}
           </span>
         </div>
       )
