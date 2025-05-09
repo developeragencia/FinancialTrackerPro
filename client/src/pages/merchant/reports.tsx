@@ -36,7 +36,11 @@ import { format, subDays, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { LineChartComponent, BarChartComponent, PieChartComponent } from "@/components/ui/charts";
+import { 
+  LineChartComponent, 
+  BarChartComponent, 
+  PieChartComponent 
+} from "@/components/ui/charts";
 
 interface ReportFilters {
   period: "today" | "week" | "month" | "quarter" | "year" | "custom";
@@ -384,16 +388,32 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LineChartComponent
-                  title=""
-                  data={reportsData?.salesData.timeline || []}
-                  lines={[
-                    { dataKey: "value", name: "Vendas (R$)", stroke: "#0080ff" }
-                  ]}
-                  xAxisDataKey="date"
-                  height={300}
-                  grid
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={reportsData?.salesData.timeline || []}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        name="Vendas (R$)"
+                        stroke="#0080ff"
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
