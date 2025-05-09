@@ -168,11 +168,21 @@ export default function AdminSettings() {
   const ratesForm = useForm<z.infer<typeof ratesFormSchema>>({
     resolver: zodResolver(ratesFormSchema),
     defaultValues: {
-      cashbackRate: ratesSettings?.clientCashback || 2.0,
-      referralRate: ratesSettings?.referralCommission || 1.0,
-      merchantCommission: ratesSettings?.merchantCommission || 2.0,
-      minWithdrawal: ratesSettings?.minimumWithdrawal || 50.0,
-      maxCashbackBonus: ratesSettings?.maximumCashback || 10.0,
+      cashbackRate: ratesSettings?.clientCashback ? 
+        (typeof ratesSettings.clientCashback === 'string' ? 
+          parseFloat(ratesSettings.clientCashback) : ratesSettings.clientCashback) : 2.0,
+      referralRate: ratesSettings?.referralCommission ? 
+        (typeof ratesSettings.referralCommission === 'string' ? 
+          parseFloat(ratesSettings.referralCommission) : ratesSettings.referralCommission) : 1.0,
+      merchantCommission: ratesSettings?.merchantCommission ? 
+        (typeof ratesSettings.merchantCommission === 'string' ? 
+          parseFloat(ratesSettings.merchantCommission) : ratesSettings.merchantCommission) : 2.0,
+      minWithdrawal: ratesSettings?.minimumWithdrawal ? 
+        (typeof ratesSettings.minimumWithdrawal === 'string' ? 
+          parseFloat(ratesSettings.minimumWithdrawal) : ratesSettings.minimumWithdrawal) : 50.0,
+      maxCashbackBonus: ratesSettings?.maximumCashback ? 
+        (typeof ratesSettings.maximumCashback === 'string' ? 
+          parseFloat(ratesSettings.maximumCashback) : ratesSettings.maximumCashback) : 10.0,
     }
   });
   
