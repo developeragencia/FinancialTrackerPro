@@ -7,11 +7,15 @@ import {
   transactions,
   commissionSettings
 } from "@shared/schema";
+import { isUserType } from "./routes";
 
 // Rotas administrativas
 export function addAdminRoutes(app: Express) {
   // API para listar lojas para o painel de administração
-  app.get("/api/admin/stores", async (req, res) => {
+  app.get("/api/admin/stores", isUserType("admin"), async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
     try {
       const storesResult = await db
         .select({

@@ -30,7 +30,7 @@ const isAuthenticated = (req: Request, res: Response, next: Function) => {
 };
 
 // Middleware para verificar tipo de usuário
-const isUserType = (type: string) => (req: Request, res: Response, next: Function) => {
+export const isUserType = (type: string) => (req: Request, res: Response, next: Function) => {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ message: "Usuário não autenticado" });
   }
@@ -743,6 +743,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registrar uma nova venda
   app.post("/api/merchant/sales", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantUserId = req.user.id;
       
       // Obter dados do merchant
@@ -1021,6 +1025,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Perfil do Lojista
   app.get("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+
       const merchantId = req.user.id;
       
       // Obter dados do merchant
@@ -1072,6 +1080,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Atualizar perfil do lojista
   app.patch("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       const { 
         name, 
@@ -1151,6 +1163,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Atualizar configurações de cashback do lojista
   app.patch("/api/merchant/settings/cashback", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       const { cashbackPromotions } = req.body;
       
@@ -1332,6 +1348,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obter relatórios financeiros do lojista
   app.get("/api/merchant/reports", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       const { period, startDate, endDate, type = "sales" } = req.query;
       
