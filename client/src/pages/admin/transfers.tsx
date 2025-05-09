@@ -22,6 +22,7 @@ import {
   Search,
   Download,
   ChevronDown,
+  Circle,
   FileText,
   Eye,
   Printer,
@@ -376,29 +377,35 @@ export default function AdminTransfers() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {data?.statusCounts.map((statusCount) => {
-                  const statusIcons: Record<string, JSX.Element> = {
-                    "completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />,
-                    "pending": <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />,
-                    "cancelled": <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
-                  };
-                  
-                  const statusLabels: Record<string, string> = {
-                    "completed": "Concluídas",
-                    "pending": "Pendentes",
-                    "cancelled": "Canceladas"
-                  };
-                  
-                  return (
-                    <div key={statusCount.status} className="flex items-center justify-between">
-                      <div className="flex items-center text-sm">
-                        {statusIcons[statusCount.status]}
-                        <span>{statusLabels[statusCount.status]}</span>
+                {data?.statusCounts && data.statusCounts.length > 0 ? (
+                  data.statusCounts.map((statusCount) => {
+                    const statusIcons: Record<string, JSX.Element> = {
+                      "completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />,
+                      "pending": <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />,
+                      "cancelled": <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                    };
+                    
+                    const statusLabels: Record<string, string> = {
+                      "completed": "Concluídas",
+                      "pending": "Pendentes",
+                      "cancelled": "Canceladas"
+                    };
+                    
+                    return (
+                      <div key={statusCount.status} className="flex items-center justify-between">
+                        <div className="flex items-center text-sm">
+                          {statusIcons[statusCount.status] || <DollarSign className="h-3.5 w-3.5 mr-1.5" />}
+                          <span>{statusLabels[statusCount.status] || statusCount.status}</span>
+                        </div>
+                        <span className="text-sm font-medium">{statusCount.count}</span>
                       </div>
-                      <span className="text-sm font-medium">{statusCount.count}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-center text-muted-foreground py-2">
+                    Nenhum dado disponível
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -409,33 +416,45 @@ export default function AdminTransfers() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {data?.typeCounts.map((typeCount) => {
-                  const typeLabels: Record<string, string> = {
-                    "withdrawal": "Saques",
-                    "cashback": "Cashback",
-                    "referral": "Indicações"
-                  };
-                  
-                  const typeIcons: Record<string, JSX.Element> = {
-                    "withdrawal": <Banknote className="h-3.5 w-3.5 mr-1.5" />,
-                    "cashback": <CreditCard className="h-3.5 w-3.5 mr-1.5" />,
-                    "referral": <User className="h-3.5 w-3.5 mr-1.5" />
-                  };
-                  
-                  return (
-                    <div key={typeCount.type} className="flex items-center justify-between">
-                      <div className="flex items-center text-sm">
-                        {typeIcons[typeCount.type] || <DollarSign className="h-3.5 w-3.5 mr-1.5" />}
-                        <span>{typeLabels[typeCount.type] || typeCount.type}</span>
+                {data?.typeCounts && data.typeCounts.length > 0 ? (
+                  data.typeCounts.map((typeCount) => {
+                    const typeLabels: Record<string, string> = {
+                      "withdrawal": "Saques",
+                      "cashback": "Cashback",
+                      "referral": "Indicações",
+                      "merchant_withdrawal": "Saques Lojista",
+                      "client_withdrawal": "Saques Cliente",
+                      "internal_transfer": "Transferências Internas"
+                    };
+                    
+                    const typeIcons: Record<string, JSX.Element> = {
+                      "withdrawal": <Banknote className="h-3.5 w-3.5 mr-1.5" />,
+                      "cashback": <CreditCard className="h-3.5 w-3.5 mr-1.5" />,
+                      "referral": <User className="h-3.5 w-3.5 mr-1.5" />,
+                      "merchant_withdrawal": <Landmark className="h-3.5 w-3.5 mr-1.5" />,
+                      "client_withdrawal": <Banknote className="h-3.5 w-3.5 mr-1.5" />,
+                      "internal_transfer": <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                    };
+                    
+                    return (
+                      <div key={typeCount.type} className="flex items-center justify-between">
+                        <div className="flex items-center text-sm">
+                          {typeIcons[typeCount.type] || <DollarSign className="h-3.5 w-3.5 mr-1.5" />}
+                          <span>{typeLabels[typeCount.type] || typeCount.type}</span>
+                        </div>
+                        <span className="text-sm font-medium">$ {
+                          typeof typeCount.sum === 'string' ? 
+                            parseFloat(typeCount.sum).toFixed(2) : 
+                            (typeCount.sum || 0).toFixed(2)
+                        }</span>
                       </div>
-                      <span className="text-sm font-medium">$ {
-                        typeof typeCount.sum === 'string' ? 
-                          parseFloat(typeCount.sum).toFixed(2) : 
-                          typeCount.sum.toFixed(2)
-                      }</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-center text-muted-foreground py-2">
+                    Nenhum dado disponível
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
