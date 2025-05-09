@@ -728,7 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const merchant = merchantList[0];
         
-      // Listar transações sem usar orderBy(desc())
+      // Listar transações sem usar orderBy(desc()) - apenas transações válidas
       const all_transactions_list = await db
         .select({
           id: transactions.id,
@@ -744,8 +744,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(transactions)
         .innerJoin(users, eq(transactions.user_id, users.id))
         .leftJoin(transactionItems, eq(transactions.id, transactionItems.transaction_id))
-        .where(eq(transactions.merchant_id, merchant.id))
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending'])
+          )
+        )
         .groupBy(transactions.id, users.name);
+        
+      console.log(`Buscando vendas válidas para lojista (ID ${merchant.id}): ${all_transactions_list.length} encontradas`);
         
       // Ordenar manualmente por data de criação (decrescente)
       const transactions_list = all_transactions_list
@@ -1421,7 +1428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const merchant = merchantResults[0];
       
-      // Construir a query
+      // Construir a query - mostrando apenas transações válidas
       let query = db
         .select({
           id: transactions.id,
@@ -1435,7 +1442,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(transactions)
         .innerJoin(users, eq(transactions.user_id, users.id))
-        .where(eq(transactions.merchant_id, merchant.id));
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending'])
+          )
+        );
         
       // Aplicar filtros
       if (status) {
