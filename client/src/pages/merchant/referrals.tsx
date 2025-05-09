@@ -281,10 +281,10 @@ export default function MerchantReferrals() {
                 </CardContent>
                 <CardFooter className="flex flex-col items-start space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    Taxa de comissão: <span className="font-medium">{ratesSettings?.merchantCommission || referralsData?.commission}%</span> por indicação
+                    Taxa de comissão: <span className="font-medium">1%</span> por indicação
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    Aumente sua rede de parceiros indicando outros lojistas para o Vale Cashback. Você ganhará uma comissão sobre as vendas dos lojistas indicados.
+                    Aumente sua rede de parceiros indicando outros lojistas para o Vale Cashback. Você ganhará uma comissão de 1% sobre as vendas dos lojistas indicados.
                   </p>
                 </CardFooter>
               </Card>

@@ -41,7 +41,7 @@ export function DashboardLayout({
   const userInfo = {
     name: user?.name || "Usuário",
     photo: user?.photo,
-    extraInfo: type === "merchant" ? "Taxa de comissão: 2%" : undefined
+    extraInfo: type === "merchant" ? "Taxa de comissão: 1%" : undefined
   };
   
   return (
