@@ -3662,10 +3662,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
           if (existingReferral.length === 0) {
             // Registrar a referência apenas se não existir
+            // Buscar a taxa de referral_bonus configurada no sistema
+            let referralBonus = "0.01"; // Valor padrão de 1%
+            try {
+              const settingsResult = await db
+                .select()
+                .from(commissionSettings)
+                .limit(1);
+              
+              if (settingsResult.length > 0) {
+                referralBonus = settingsResult[0].referral_bonus.toString();
+              }
+            } catch (error) {
+              console.error("Erro ao buscar taxa de referral_bonus:", error);
+              // Mantém o valor padrão em caso de erro
+            }
+            
             await db.insert(referrals).values({
               referrer_id: referrer.id,
               referred_id: newUser.id,
-              bonus: "10.00", // Valor fixo de bônus para indicação de cliente
+              bonus: referralBonus, // Taxa de bônus configurada no sistema
               status: "active",
               created_at: new Date()
             });
@@ -3770,16 +3786,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Esta referência já existe" });
       }
       
+      // Buscar a taxa de referral_bonus configurada no sistema
+      let referralBonus = bonus || "0.01"; // Valor padrão de 1% se não for especificado
+      if (!bonus) {
+        try {
+          const settingsResult = await db
+            .select()
+            .from(commissionSettings)
+            .limit(1);
+          
+          if (settingsResult.length > 0) {
+            referralBonus = settingsResult[0].referral_bonus.toString();
+          }
+        } catch (error) {
+          console.error("Erro ao buscar taxa de referral_bonus:", error);
+          // Mantém o valor padrão em caso de erro
+        }
+      }
+      
       // Adicionar nova referência
       const [newReferral] = await db.insert(referrals).values({
         referrer_id,
         referred_id,
-        bonus: bonus || "10.00",
+        bonus: referralBonus,
         status: status || "active",
         created_at: new Date()
       }).returning();
       
-      console.log(`Referência de teste adicionada: ${referrer_id} -> ${referred_id} com bonus ${bonus || "10.00"}`);
+      console.log(`Referência de teste adicionada: ${referrer_id} -> ${referred_id} com bonus ${referralBonus}`);
       res.status(201).json({ 
         message: "Referência adicionada com sucesso",
         referral: newReferral
@@ -3869,12 +3903,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .limit(1);
             
           if (existingReferral.length === 0) {
+            // Buscar a taxa de referral_bonus configurada no sistema
+            let referralBonus = "0.01"; // Valor padrão de 1%
+            try {
+              const settingsResult = await db
+                .select()
+                .from(commissionSettings)
+                .limit(1);
+              
+              if (settingsResult.length > 0) {
+                referralBonus = settingsResult[0].referral_bonus.toString();
+              }
+            } catch (error) {
+              console.error("Erro ao buscar taxa de referral_bonus:", error);
+              // Mantém o valor padrão em caso de erro
+            }
+            
             // Registrar a referência com o bônus apenas se não existir
             await db.insert(referrals).values({
               referrer_id: referrer.id,
               referred_id: newUser.id,
-              bonus: "25.00", // Valor fixo maior para indicação de lojista
-              status: "active", 
+              bonus: referralBonus, // Taxa de bônus configurada no sistema
+              status: "active",
               created_at: new Date()
             });
             console.log(`Referência registrada com sucesso para o lojista ${newUser.id}`);
