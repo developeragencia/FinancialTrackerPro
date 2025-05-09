@@ -158,14 +158,14 @@ export function addAdminRoutes(app: Express) {
     }
   });
   
-  // Aprovar/rejeitar uma loja
-  app.patch("/api/admin/stores/:id/approve", isUserType("admin"), async (req, res) => {
+  // Atualizar status de uma loja (ativar/desativar)
+  app.patch("/api/admin/stores/:id/status", isUserType("admin"), async (req, res) => {
     if (!req.user) {
       return res.status(401).json({ message: "Usuário não autenticado" });
     }
     
     const storeId = parseInt(req.params.id);
-    const { approved } = req.body;
+    const { status } = req.body;
     
     if (isNaN(storeId)) {
       return res.status(400).json({ message: "ID de loja inválido" });
@@ -176,31 +176,91 @@ export function addAdminRoutes(app: Express) {
       await db
         .update(merchants)
         .set({ 
-          approved: approved === true,
-          updated_at: new Date() 
+          status: status 
         })
         .where(eq(merchants.id, storeId));
       
       // Registrar no log de auditoria
       await db.insert(auditLogs).values({
-        action: approved ? "store_approved" : "store_rejected",
         entity_type: "merchant",
         entity_id: storeId,
         user_id: req.user.id,
         details: JSON.stringify({
           storeId,
-          approved
+          status
         }),
         created_at: new Date()
       });
       
       res.json({ 
         success: true, 
-        message: approved ? "Loja aprovada com sucesso" : "Loja rejeitada com sucesso"
+        message: status === "active" ? "Loja ativada com sucesso" : "Loja desativada com sucesso"
       });
     } catch (error) {
       console.error("Erro ao atualizar status da loja:", error);
       res.status(500).json({ message: "Erro ao atualizar status da loja" });
+    }
+  });
+
+  // Excluir uma loja
+  app.delete("/api/admin/stores/:id", isUserType("admin"), async (req, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Usuário não autenticado" });
+    }
+    
+    const storeId = parseInt(req.params.id);
+    
+    if (isNaN(storeId)) {
+      return res.status(400).json({ message: "ID de loja inválido" });
+    }
+    
+    try {
+      // Buscar o email do usuário associado à loja para fins de log
+      const [store] = await db
+        .select({
+          user_id: merchants.user_id,
+          store_name: merchants.store_name,
+          email: users.email
+        })
+        .from(merchants)
+        .innerJoin(users, eq(merchants.user_id, users.id))
+        .where(eq(merchants.id, storeId));
+
+      if (!store) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      // Excluir a loja
+      await db
+        .delete(merchants)
+        .where(eq(merchants.id, storeId));
+      
+      // Registrar no log de auditoria
+      await db.insert(auditLogs).values({
+        entity_type: "merchant",
+        entity_id: storeId,
+        user_id: req.user.id,
+        details: JSON.stringify({
+          storeId,
+          storeName: store.store_name,
+          email: store.email,
+          action: "delete"
+        }),
+        created_at: new Date()
+      });
+      
+      res.json({ 
+        success: true, 
+        message: "Loja excluída com sucesso",
+        details: {
+          id: storeId,
+          name: store.store_name,
+          email: store.email
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao excluir loja:", error);
+      res.status(500).json({ message: "Erro ao excluir loja" });
     }
   });
   

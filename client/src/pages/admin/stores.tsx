@@ -155,9 +155,11 @@ export default function AdminStores() {
   const [selectedStore, setSelectedStore] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [commissionRate, setCommissionRate] = useState<string>("2.0");
+  const [storesToDelete, setStoresToDelete] = useState<string[]>([]);
   const { toast } = useToast();
 
   // Query to get stores data
