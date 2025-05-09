@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { ProtectedRouteMobile } from "./lib/protected-route-mobile";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { MobileProvider } from "@/hooks/use-mobile";
+import ClientCashbacks from "@/pages/client/cashbacks";
 
 // Auth Pages
 import Login from "@/pages/auth/login";
