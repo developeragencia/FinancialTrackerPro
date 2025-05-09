@@ -891,15 +891,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Se não houver referrerId explícito, verifica se o cliente possui um referenciador
       if (!referrerUserToBonus) {
         try {
-          // Verificamos se há algum registro na tabela de referências para este cliente
-          const referrerResult = await db
+          // Buscamos todos os registros e depois ordenamos manualmente
+          const allReferrers = await db
             .select({
-              referrer_id: referrals.referrer_id
+              referrer_id: referrals.referrer_id,
+              created_at: referrals.created_at
             })
             .from(referrals)
-            .where(eq(referrals.referred_id, customerId))
-            .orderBy(desc(referrals.created_at))
-            .limit(1);
+            .where(eq(referrals.referred_id, customerId));
+            
+          // Ordenamos por data de criação e pegamos o mais recente
+          const referrerResult = allReferrers
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            .slice(0, 1);
           
           if (referrerResult.length > 0) {
             referrerUserToBonus = referrerResult[0].referrer_id;
@@ -1475,11 +1479,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(transactions.merchant_id, merchant.id))
         .groupBy(transactions.payment_method);
       
-      // Aplicar paginação
+      // Aplicar paginação sem usar orderBy(desc())
       const offset = (Number(page) - 1) * Number(limit);
-      query = query.orderBy(desc(transactions.created_at)).limit(Number(limit)).offset(offset);
+      query = query.limit(Number(limit) * 2).offset(offset); // Buscamos mais itens para depois ordenar manualmente
       
-      const transactions_list = await query;
+      // Executar a consulta
+      const allTransactions = await query;
+      
+      // Ordenar manualmente por data de criação e aplicar o limite correto
+      const transactions_list = allTransactions
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, Number(limit));
       
       res.json({
         transactions: transactions_list,
