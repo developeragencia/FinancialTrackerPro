@@ -3758,6 +3758,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Valor de transferência inválido" });
       }
       
+      // Verificar se atende ao valor mínimo de 1 dólar
+      if (transferAmount < 1) {
+        return res.status(400).json({ message: "Valor mínimo para transferência é de $1.00" });
+      }
+      
       if (currentBalance < transferAmount) {
         return res.status(400).json({ message: "Saldo insuficiente para esta transferência" });
       }
@@ -3771,7 +3776,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           amount: transferAmount.toString(),
           status: "completed",
           description: description || "Transferência entre clientes",
-          created_at: new Date()
+          created_at: new Date(),
+          type: "transfer" // Adicionando o campo type
         })
         .returning();
       
