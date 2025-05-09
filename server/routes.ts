@@ -18,6 +18,9 @@ import {
   commissionSettings,
   PaymentMethod,
   TransactionStatus,
+  notifications,
+  NotificationType,
+  auditLogs
 } from "@shared/schema";
 import { addAdminRoutes, addMerchantRoutes, addClientRoutes } from "./routes.admin";
 

@@ -231,3 +231,34 @@ export type Setting = typeof settings.$inferSelect;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type CommissionSetting = typeof commissionSettings.$inferSelect;
 export type InsertCommissionSetting = z.infer<typeof insertCommissionSettingsSchema>;
+
+// Tipos de notificações
+export const NotificationType = {
+  TRANSACTION: "transaction",
+  CASHBACK: "cashback",
+  TRANSFER: "transfer",
+  REFERRAL: "referral",
+  SYSTEM: "system"
+} as const;
+
+export type NotificationTypeValues = typeof NotificationType[keyof typeof NotificationType];
+
+// Tabela de notificações
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  type: text("type").notNull().$type<NotificationTypeValues>(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  read: boolean("read").default(false).notNull(),
+  data: text("data"),
+  created_at: timestamp("created_at").defaultNow().notNull()
+});
+
+// Schema para inserção de notificações
+export const insertNotificationSchema = createInsertSchema(notifications)
+  .omit({ id: true, created_at: true });
+
+// Tipo de notificação
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
