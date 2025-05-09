@@ -29,6 +29,7 @@ import MerchantScanner from "@/pages/merchant/scanner";
 import MerchantCustomers from "@/pages/merchant/customers";
 import MerchantProfile from "@/pages/merchant/profile";
 import MerchantTransactions from "@/pages/merchant/transactions";
+import MerchantTransactionManagement from "@/pages/merchant/transaction-management";
 import MerchantReports from "@/pages/merchant/reports";
 import MerchantSettings from "@/pages/merchant/settings";
 import MerchantSupport from "@/pages/merchant/support";
@@ -91,6 +92,7 @@ function Router() {
       <ProtectedRoute path="/merchant/customers" component={MerchantCustomers} userType="merchant" />
       <ProtectedRoute path="/merchant/profile" component={MerchantProfile} userType="merchant" />
       <ProtectedRoute path="/merchant/transactions" component={MerchantTransactions} userType="merchant" />
+      <ProtectedRoute path="/merchant/transaction-management" component={MerchantTransactionManagement} userType="merchant" />
       <ProtectedRoute path="/merchant/reports" component={MerchantReports} userType="merchant" />
       <ProtectedRoute path="/merchant/settings" component={MerchantSettings} userType="merchant" />
       <ProtectedRoute path="/merchant/support" component={MerchantSupport} userType="merchant" />

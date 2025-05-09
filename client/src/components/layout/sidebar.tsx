@@ -64,6 +64,7 @@ export function Sidebar({
     { href: "/merchant/dashboard", icon: <Home className="mr-2 h-5 w-5" />, label: "Dashboard" },
     { href: "/merchant/sales", icon: <ShoppingCart className="mr-2 h-5 w-5" />, label: "Registrar Venda" },
     { href: "/merchant/transactions", icon: <List className="mr-2 h-5 w-5" />, label: "Histórico" },
+    { href: "/merchant/transaction-management", icon: <FileText className="mr-2 h-5 w-5" />, label: "Gerenciar Vendas" },
     { href: "/merchant/products", icon: <Package className="mr-2 h-5 w-5" />, label: "Produtos" },
     { href: "/merchant/scanner", icon: <Scan className="mr-2 h-5 w-5" />, label: "Leitor QR" },
     { href: "/merchant/stores", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojas Parceiras" },

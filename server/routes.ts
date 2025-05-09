@@ -765,6 +765,357 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Gerenciar status de uma venda (cancelar, reembolsar)
+  app.put("/api/merchant/sales/:transactionId/status", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantUserId = req.user.id;
+      const transactionId = parseInt(req.params.transactionId);
+      const { status, reason } = req.body;
+      
+      if (!transactionId || isNaN(transactionId)) {
+        return res.status(400).json({ message: "ID de transação inválido" });
+      }
+      
+      if (!status || !["completed", "cancelled", "refunded"].includes(status)) {
+        return res.status(400).json({ message: "Status inválido. Utilize 'completed', 'cancelled' ou 'refunded'" });
+      }
+      
+      // Obter dados do merchant
+      const merchantResults = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantUserId));
+        
+      if (merchantResults.length === 0) {
+        return res.status(404).json({ message: "Dados do lojista não encontrados" });
+      }
+      
+      const merchant = merchantResults[0];
+      
+      // Verificar se a transação existe e pertence a este lojista
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.id, transactionId),
+            eq(transactions.merchant_id, merchant.id)
+          )
+        );
+        
+      if (!transaction) {
+        return res.status(404).json({ message: "Transação não encontrada ou não pertence a este lojista" });
+      }
+      
+      // Obter status atual
+      const currentStatus = transaction.status;
+      
+      // Verificar se a mudança de status é válida
+      if (currentStatus === status) {
+        return res.status(400).json({ message: `A transação já está com status '${status}'` });
+      }
+      
+      // Lógica específica para cada tipo de mudança de status
+      if (status === "cancelled") {
+        // Apenas transações com status 'completed' ou 'pending' podem ser canceladas
+        if (![TransactionStatus.COMPLETED, TransactionStatus.PENDING].includes(currentStatus)) {
+          return res.status(400).json({ 
+            message: `Não é possível cancelar uma transação com status '${currentStatus}'` 
+          });
+        }
+        
+        // Atualizar status da transação
+        await db
+          .update(transactions)
+          .set({ 
+            status: TransactionStatus.CANCELLED,
+            updated_at: new Date(),
+            notes: reason ? `${transaction.notes || ''} | Cancelado: ${reason}` : transaction.notes 
+          })
+          .where(eq(transactions.id, transactionId));
+          
+        // Se houver cashback associado, reverter
+        if (parseFloat(transaction.cashback_amount) > 0) {
+          // Verificar cashback atual do cliente
+          const [cashback] = await db
+            .select()
+            .from(cashbacks)
+            .where(eq(cashbacks.user_id, transaction.user_id));
+            
+          if (cashback) {
+            // Calcular novo saldo (não permitir saldo negativo)
+            const currentBalance = parseFloat(cashback.balance);
+            const cashbackAmount = parseFloat(transaction.cashback_amount);
+            const newBalance = Math.max(0, currentBalance - cashbackAmount).toString();
+            
+            // Atualizar cashback
+            await db
+              .update(cashbacks)
+              .set({ 
+                balance: newBalance,
+                updated_at: new Date()
+              })
+              .where(eq(cashbacks.user_id, transaction.user_id));
+              
+            // Registrar transação de reversão de cashback
+            await db.insert(cashbacks).values({
+              user_id: transaction.user_id,
+              transaction_id: transaction.id,
+              amount: (-parseFloat(transaction.cashback_amount)).toString(),
+              status: "reversed",
+              description: "Cancelamento de transação",
+              created_at: new Date()
+            });
+          }
+        }
+        
+        // Registrar log
+        console.log(`Transação ${transactionId} cancelada por ${merchantUserId}. Motivo: ${reason || 'Não informado'}`);
+        
+        return res.json({ 
+          message: "Transação cancelada com sucesso",
+          transaction: {
+            id: transactionId,
+            status: TransactionStatus.CANCELLED
+          }
+        });
+      }
+      else if (status === "refunded") {
+        // Apenas transações com status 'completed' podem ser reembolsadas
+        if (currentStatus !== TransactionStatus.COMPLETED) {
+          return res.status(400).json({ 
+            message: `Não é possível reembolsar uma transação com status '${currentStatus}'` 
+          });
+        }
+        
+        // Atualizar status da transação
+        await db
+          .update(transactions)
+          .set({ 
+            status: TransactionStatus.REFUNDED,
+            updated_at: new Date(),
+            notes: reason ? `${transaction.notes || ''} | Reembolsado: ${reason}` : transaction.notes 
+          })
+          .where(eq(transactions.id, transactionId));
+          
+        // Registrar log
+        console.log(`Transação ${transactionId} reembolsada por ${merchantUserId}. Motivo: ${reason || 'Não informado'}`);
+        
+        return res.json({ 
+          message: "Transação reembolsada com sucesso",
+          transaction: {
+            id: transactionId,
+            status: TransactionStatus.REFUNDED
+          }
+        });
+      } 
+      else if (status === "completed") {
+        // Apenas transações com status 'pending' podem ser completadas
+        if (currentStatus !== TransactionStatus.PENDING) {
+          return res.status(400).json({ 
+            message: `Não é possível completar uma transação com status '${currentStatus}'` 
+          });
+        }
+        
+        // Atualizar status da transação
+        await db
+          .update(transactions)
+          .set({ 
+            status: TransactionStatus.COMPLETED,
+            updated_at: new Date()
+          })
+          .where(eq(transactions.id, transactionId));
+          
+        // Registrar log
+        console.log(`Transação ${transactionId} completada por ${merchantUserId}`);
+        
+        return res.json({ 
+          message: "Transação completada com sucesso",
+          transaction: {
+            id: transactionId,
+            status: TransactionStatus.COMPLETED
+          }
+        });
+      }
+      
+      // Caso chegue aqui, é um status não implementado
+      return res.status(400).json({ message: "Operação não suportada para este status" });
+      
+    } catch (error) {
+      console.error("Erro ao atualizar status da transação:", error);
+      res.status(500).json({ message: "Erro ao atualizar status da transação" });
+    }
+  });
+  
+  // Excluir uma transação (apenas se estiver com status adequado)
+  app.delete("/api/merchant/sales/:transactionId", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantUserId = req.user.id;
+      const transactionId = parseInt(req.params.transactionId);
+      
+      if (!transactionId || isNaN(transactionId)) {
+        return res.status(400).json({ message: "ID de transação inválido" });
+      }
+      
+      // Obter dados do merchant
+      const merchantResults = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantUserId));
+        
+      if (merchantResults.length === 0) {
+        return res.status(404).json({ message: "Dados do lojista não encontrados" });
+      }
+      
+      const merchant = merchantResults[0];
+      
+      // Verificar se a transação existe e pertence a este lojista
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.id, transactionId),
+            eq(transactions.merchant_id, merchant.id)
+          )
+        );
+        
+      if (!transaction) {
+        return res.status(404).json({ message: "Transação não encontrada ou não pertence a este lojista" });
+      }
+      
+      // Apenas transações com status 'cancelled' ou 'refunded' podem ser excluídas
+      if (![TransactionStatus.CANCELLED, TransactionStatus.REFUNDED].includes(transaction.status)) {
+        return res.status(400).json({ 
+          message: `Não é possível excluir uma transação com status '${transaction.status}'. Cancele ou reembolse primeiro.` 
+        });
+      }
+      
+      // Excluir itens da transação
+      await db
+        .delete(transactionItems)
+        .where(eq(transactionItems.transaction_id, transactionId));
+        
+      // Excluir a transação
+      await db
+        .delete(transactions)
+        .where(eq(transactions.id, transactionId));
+        
+      // Registrar log
+      console.log(`Transação ${transactionId} excluída por ${merchantUserId}`);
+      
+      return res.json({ 
+        message: "Transação excluída com sucesso"
+      });
+      
+    } catch (error) {
+      console.error("Erro ao excluir transação:", error);
+      res.status(500).json({ message: "Erro ao excluir transação" });
+    }
+  });
+  
+  // Editar uma transação
+  app.put("/api/merchant/sales/:transactionId", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantUserId = req.user.id;
+      const transactionId = parseInt(req.params.transactionId);
+      const { notes, payment_method } = req.body;
+      
+      if (!transactionId || isNaN(transactionId)) {
+        return res.status(400).json({ message: "ID de transação inválido" });
+      }
+      
+      // Obter dados do merchant
+      const merchantResults = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantUserId));
+        
+      if (merchantResults.length === 0) {
+        return res.status(404).json({ message: "Dados do lojista não encontrados" });
+      }
+      
+      const merchant = merchantResults[0];
+      
+      // Verificar se a transação existe e pertence a este lojista
+      const [transaction] = await db
+        .select()
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.id, transactionId),
+            eq(transactions.merchant_id, merchant.id)
+          )
+        );
+        
+      if (!transaction) {
+        return res.status(404).json({ message: "Transação não encontrada ou não pertence a este lojista" });
+      }
+      
+      // Apenas transações com status 'completed' ou 'pending' podem ser editadas
+      if (![TransactionStatus.COMPLETED, TransactionStatus.PENDING].includes(transaction.status)) {
+        return res.status(400).json({ 
+          message: `Não é possível editar uma transação com status '${transaction.status}'` 
+        });
+      }
+      
+      // Preparar dados para atualização
+      const updateData: any = {
+        updated_at: new Date()
+      };
+      
+      if (notes !== undefined) {
+        updateData.notes = notes;
+      }
+      
+      if (payment_method !== undefined && Object.values(PaymentMethod).includes(payment_method)) {
+        updateData.payment_method = payment_method;
+      }
+      
+      
+      // Verificar se há dados para atualizar
+      if (Object.keys(updateData).length === 1) { // apenas updated_at está presente
+        return res.status(400).json({ message: "Nenhum dado válido para atualização" });
+      }
+      
+      // Atualizar a transação
+      await db
+        .update(transactions)
+        .set(updateData)
+        .where(eq(transactions.id, transactionId));
+        
+      // Registrar log
+      console.log(`Transação ${transactionId} editada por ${merchantUserId}`);
+      
+      // Buscar a transação atualizada
+      const [updatedTransaction] = await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, transactionId));
+        
+      return res.json({ 
+        message: "Transação atualizada com sucesso",
+        transaction: updatedTransaction
+      });
+      
+    } catch (error) {
+      console.error("Erro ao editar transação:", error);
+      res.status(500).json({ message: "Erro ao editar transação" });
+    }
+  });
+  
   // Registrar uma nova venda
   app.post("/api/merchant/sales", isUserType("merchant"), async (req, res) => {
     try {
