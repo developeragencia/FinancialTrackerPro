@@ -3655,16 +3655,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .select()
             .from(referrals)
             .where(and(
-              eq(referrals.referrerId, referrer.id),
-              eq(referrals.referredId, newUser.id)
+              eq(referrals.referrer_id, referrer.id),
+              eq(referrals.referred_id, newUser.id)
             ))
             .limit(1);
             
           if (existingReferral.length === 0) {
             // Registrar a referência apenas se não existir
             await db.insert(referrals).values({
-              referrerId: referrer.id,
-              referredId: newUser.id,
+              referrer_id: referrer.id,
+              referred_id: newUser.id,
               bonus: "10.00", // Valor fixo de bônus para indicação de cliente
               status: "active",
               created_at: new Date()
@@ -3764,16 +3764,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .select()
             .from(referrals)
             .where(and(
-              eq(referrals.referrerId, referrer.id),
-              eq(referrals.referredId, newUser.id)
+              eq(referrals.referrer_id, referrer.id),
+              eq(referrals.referred_id, newUser.id)
             ))
             .limit(1);
             
           if (existingReferral.length === 0) {
             // Registrar a referência com o bônus apenas se não existir
             await db.insert(referrals).values({
-              referrerId: referrer.id,
-              referredId: newUser.id,
+              referrer_id: referrer.id,
+              referred_id: newUser.id,
               bonus: "25.00", // Valor fixo maior para indicação de lojista
               status: "active", 
               created_at: new Date()
