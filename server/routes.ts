@@ -2803,12 +2803,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             m.store_name as "merchantName"
           FROM transactions t
           JOIN merchants m ON t.merchant_id = m.id
-          WHERE t.user_id = ${clientId}
-          ORDER BY t.created_at DESC`
+          WHERE t.user_id = ${clientId}`
+      );
+      
+      // Ordenar manualmente por data de criação (decrescente)
+      const sortedResults = [...result.rows].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       
       // Formatar transações para o formato esperado pelo frontend
-      const formattedTransactions = result.rows.map(t => ({
+      const formattedTransactions = sortedResults.map(t => ({
         id: t.id,
         merchant: t.merchantName || 'Lojista desconhecido',
         date: format(new Date(t.date), 'dd/MM/yyyy HH:mm'),
@@ -2846,12 +2850,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           FROM cashbacks c
           LEFT JOIN transactions t ON c.transaction_id = t.id
           LEFT JOIN merchants m ON t.merchant_id = m.id
-          WHERE c.user_id = ${clientId}
-          ORDER BY c.created_at DESC`
+          WHERE c.user_id = ${clientId}`
+      );
+      
+      // Ordenar manualmente por data de criação (decrescente)
+      const sortedResults = [...result.rows].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       
       // Formatar cashbacks para o formato esperado pelo frontend
-      const cashbacks_list = result.rows.map(c => ({
+      const cashbacks_list = sortedResults.map(c => ({
         id: c.id,
         transactionId: c.transactionId,
         amount: parseFloat(c.amount),
@@ -2940,12 +2948,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             FROM referrals r
             JOIN users u ON r.referred_id = u.id
             LEFT JOIN merchants m ON m.user_id = u.id
-            WHERE r.referrer_id = ${clientId}
-            ORDER BY r.created_at DESC`
+            WHERE r.referrer_id = ${clientId}`
+        );
+        
+        // Ordenar manualmente por data de criação (decrescente)
+        const sortedReferrals = [...referralsResult.rows].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
         
         // Formatar lista de referências para o frontend
-        referrals_list = referralsResult.rows.map(ref => ({
+        referrals_list = sortedReferrals.map(ref => ({
           id: ref.id,
           name: ref.referred_name || 'Usuário desconhecido',
           store_name: ref.store_name || (ref.user_type === 'merchant' ? 'Loja sem nome' : ''),
