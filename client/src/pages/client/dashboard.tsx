@@ -5,11 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatCard, StatCardGrid } from "@/components/ui/stat-card";
 import { LineChartComponent } from "@/components/ui/charts";
-import { Wallet, ArrowRightLeft, QrCode, History, Tag, Gift, Loader2 } from "lucide-react";
+import { Wallet, ArrowRightLeft, QrCode, History, Tag, Gift, Loader2, Download } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { formatCurrency } from "@/lib/utils";
+import { InstallButton } from "@/components/ui/install-button";
 
 // Interfaces para tipagem
 interface Transaction {
@@ -240,6 +241,18 @@ export default function ClientDashboard() {
               <p className="text-sm text-muted-foreground">
                 Você pode transferir seu saldo de cashback para outras pessoas ou utilizá-lo em novos pagamentos através de QR Code.
               </p>
+            </div>
+          </div>
+          
+          {/* Botão de instalação */}
+          <div className="flex items-start p-3 bg-primary/10 rounded-lg">
+            <Download className="text-primary mt-1 mr-3 h-5 w-5" />
+            <div className="flex-1">
+              <h4 className="font-medium">Instale o Vale Cashback</h4>
+              <p className="text-sm text-muted-foreground mb-2">
+                Instale nosso app para ter uma experiência completa e mais prática no seu dispositivo.
+              </p>
+              <InstallButton />
             </div>
           </div>
         </CardContent>

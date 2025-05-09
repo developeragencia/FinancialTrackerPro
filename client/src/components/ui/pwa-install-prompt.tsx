@@ -7,8 +7,8 @@ import { Download, X, Smartphone, Play, Apple } from 'lucide-react';
 let deferredPrompt: any = null;
 
 export function PWAInstallPrompt() {
-  const [showPrompt, setShowPrompt] = useState(true); // Sempre mostra o banner de instalação
-  const [installable, setInstallable] = useState(true); // Sempre permite instalar
+  const [showPrompt, setShowPrompt] = useState(false); // Inicialmente não mostra o banner
+  const [installable, setInstallable] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [deviceOS, setDeviceOS] = useState<'android' | 'ios' | 'other'>('other');
 
@@ -16,8 +16,17 @@ export function PWAInstallPrompt() {
     // Detecta o sistema operacional do dispositivo
     setDeviceOS(getDeviceOS() as 'android' | 'ios' | 'other');
     
-    // Verifica se a aplicação está sendo executada em um dispositivo móvel
-    const isMobile = isMobileDevice();
+    // Configura para exibir o banner após um pequeno atraso
+    const showPromptTimer = setTimeout(() => {
+      // Verificar se o app já está instalado
+      const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                            (window.navigator as any).standalone === true;
+      
+      // Apenas mostra o prompt se não estiver instalado e não tiver sido dispensado
+      if (!isAppInstalled && !dismissed) {
+        setShowPrompt(true);
+      }
+    }, 2000);
     
     // Captura o evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: any) => {
@@ -42,8 +51,9 @@ export function PWAInstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
+      clearTimeout(showPromptTimer);
     };
-  }, []);
+  }, [dismissed]);
   
   // Função para instalar ou baixar o aplicativo
   const handleInstall = async () => {
@@ -74,6 +84,17 @@ export function PWAInstallPrompt() {
     }
   };
   
+  // Força a instalação através de um botão presente em algum lugar da UI (não no banner)
+  const forceShowInstallBanner = () => {
+    setShowPrompt(true);
+    setDismissed(false);
+  };
+  
+  // Expõe a função para o window para poder ser chamada de qualquer lugar
+  useEffect(() => {
+    (window as any).showInstallBanner = forceShowInstallBanner;
+  }, []);
+  
   // Função para redirecionar para a loja apropriada
   const redirectToStore = () => {
     const storeLinks = getAppStoreLinks();
@@ -95,9 +116,11 @@ export function PWAInstallPrompt() {
   const handleDismiss = () => {
     setDismissed(true);
     setShowPrompt(false);
+    // Salva a preferência do usuário no localStorage
+    localStorage.setItem('pwa-install-dismissed', 'true');
   };
   
-  if (!showPrompt || dismissed) return null;
+  if (!showPrompt) return null;
   
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg">
