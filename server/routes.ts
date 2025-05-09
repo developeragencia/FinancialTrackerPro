@@ -3884,6 +3884,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Rota para limpar transações inválidas
+  app.delete("/api/admin/cleanup/transactions", isUserType("admin"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      // Manter apenas as transações para o usuário 2 (Cliente Teste)
+      const validUserIds = [2, 3, 4, 5, 6];
+      
+      // Excluir todas as transações de usuários que não são os IDs válidos
+      const deleteResult = await db.execute(
+        sql`DELETE FROM transactions 
+            WHERE user_id NOT IN (${validUserIds.join(',')})
+            RETURNING id`
+      );
+      
+      const deletedCount = deleteResult.rows.length;
+      
+      // Registrar no log de auditoria
+      await db.insert(auditLogs).values({
+        action: "cleanup_transactions",
+        user_id: req.user.id,
+        details: `Removidas ${deletedCount} transações inválidas`,
+        created_at: new Date()
+      });
+      
+      res.json({
+        success: true,
+        message: `${deletedCount} transações inválidas foram removidas com sucesso.`
+      });
+    } catch (error) {
+      console.error("Erro ao limpar transações:", error);
+      res.status(500).json({ message: "Erro ao limpar transações" });
+    }
+  });
+
   // API para fornecer o primeiro lojista como referenciador padrão para convites via /merchant/referrals
   app.get("/api/merchants/first", async (req, res) => {
     try {
