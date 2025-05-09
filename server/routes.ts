@@ -3324,6 +3324,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API para fornecer o primeiro lojista como referenciador padrão para convites via /merchant/referrals
+  app.get("/api/merchants/first", async (req, res) => {
+    try {
+      // Buscar o primeiro lojista ativo do sistema como referência padrão
+      const result = await db.execute(
+        sql`SELECT u.id, u.name, u.invitation_code, u.type 
+            FROM users u 
+            JOIN merchants m ON u.id = m.user_id 
+            WHERE u.type = 'merchant' AND u.status = 'active' 
+            ORDER BY u.id ASC LIMIT 1`
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Nenhum lojista encontrado" });
+      }
+      
+      const merchant = result.rows[0];
+      
+      // Verificar se o lojista tem um código de referência, caso contrário, criar um
+      let referralCode = merchant.invitation_code;
+      if (!referralCode) {
+        referralCode = "LJ" + merchant.id.toString().padStart(4, '0');
+        
+        // Atualizar o código de referência do lojista
+        await db.execute(
+          sql`UPDATE users SET invitation_code = ${referralCode} WHERE id = ${merchant.id}`
+        );
+      }
+      
+      res.json({
+        referrerId: merchant.id,
+        referralCode: referralCode,
+        inviterName: merchant.name,
+        inviterType: 'merchant'
+      });
+    } catch (error) {
+      console.error("Erro ao buscar lojista de referência:", error);
+      res.status(500).json({ message: "Erro interno ao buscar lojista de referência" });
+    }
+  });
+  
+  // API para fornecer o primeiro cliente como referenciador padrão para convites via /client/referrals
+  app.get("/api/clients/first", async (req, res) => {
+    try {
+      // Buscar o primeiro cliente ativo do sistema como referência padrão
+      const result = await db.execute(
+        sql`SELECT id, name, invitation_code, type 
+            FROM users 
+            WHERE type = 'client' AND status = 'active' 
+            ORDER BY id ASC LIMIT 1`
+      );
+      
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Nenhum cliente encontrado" });
+      }
+      
+      const client = result.rows[0];
+      
+      // Verificar se o cliente tem um código de referência, caso contrário, criar um
+      let referralCode = client.invitation_code;
+      if (!referralCode) {
+        referralCode = "CL" + client.id.toString().padStart(4, '0');
+        
+        // Atualizar o código de referência do cliente
+        await db.execute(
+          sql`UPDATE users SET invitation_code = ${referralCode} WHERE id = ${client.id}`
+        );
+      }
+      
+      res.json({
+        referrerId: client.id,
+        referralCode: referralCode,
+        inviterName: client.name,
+        inviterType: 'client'
+      });
+    } catch (error) {
+      console.error("Erro ao buscar cliente de referência:", error);
+      res.status(500).json({ message: "Erro interno ao buscar cliente de referência" });
+    }
+  });
+  
   // Obter dados do código de convite
   app.get("/api/invite/:code", async (req, res) => {
     try {

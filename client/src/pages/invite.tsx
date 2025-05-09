@@ -125,11 +125,22 @@ export default function InvitePage() {
         } else {
           // Caso contrário, buscar o primeiro lojista do sistema como referência padrão
           fetch("/api/merchants/first")
-            .then(res => res.json())
+            .then(res => {
+              if (res.ok) return res.json();
+              throw new Error("Erro ao buscar lojista padrão");
+            })
             .then(data => {
               if (data && data.referralCode) {
                 console.log("Setting default merchant referral code:", data.referralCode);
                 setReferralCode(data.referralCode);
+                
+                // Atualizamos também o estado global do convite
+                queryClient.setQueryData(['/api/invite', data.referralCode], {
+                  referrerId: data.referrerId,
+                  referrerName: data.inviterName,
+                  referrerType: data.inviterType,
+                  referralCode: data.referralCode
+                });
               }
             })
             .catch(err => {
@@ -149,11 +160,22 @@ export default function InvitePage() {
         } else {
           // Buscar o primeiro cliente como referência padrão
           fetch("/api/clients/first")
-            .then(res => res.json())
+            .then(res => {
+              if (res.ok) return res.json();
+              throw new Error("Erro ao buscar cliente padrão");
+            })
             .then(data => {
               if (data && data.referralCode) {
                 console.log("Setting default client referral code:", data.referralCode);
                 setReferralCode(data.referralCode);
+                
+                // Atualizamos também o estado global do convite
+                queryClient.setQueryData(['/api/invite', data.referralCode], {
+                  referrerId: data.referrerId,
+                  referrerName: data.inviterName,
+                  referrerType: data.inviterType,
+                  referralCode: data.referralCode
+                });
               }
             })
             .catch(err => {
