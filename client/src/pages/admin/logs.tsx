@@ -82,8 +82,8 @@ export default function AdminLogs() {
     from: null,
     to: null,
   });
-  const [typeFilter, setTypeFilter] = useState<string | null>(null);
-  const [moduleFilter, setModuleFilter] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [moduleFilter, setModuleFilter] = useState<string>("all");
   const [activeTab, setActiveTab] = useState("logs");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -690,12 +690,12 @@ export default function AdminLogs() {
                 </div>
                 
                 <div className="flex flex-1 gap-4">
-                  <Select value={typeFilter || ""} onValueChange={(val) => setTypeFilter(val || null)}>
+                  <Select value={typeFilter} onValueChange={(val) => setTypeFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
                       <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os tipos</SelectItem>
+                      <SelectItem value="all">Todos os tipos</SelectItem>
                       <SelectItem value="info">Informação</SelectItem>
                       <SelectItem value="warning">Alerta</SelectItem>
                       <SelectItem value="error">Erro</SelectItem>
@@ -703,12 +703,12 @@ export default function AdminLogs() {
                     </SelectContent>
                   </Select>
                   
-                  <Select value={moduleFilter || ""} onValueChange={(val) => setModuleFilter(val || null)}>
+                  <Select value={moduleFilter} onValueChange={(val) => setModuleFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
                       <SelectValue placeholder="Módulo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os módulos</SelectItem>
+                      <SelectItem value="all">Todos os módulos</SelectItem>
                       <SelectItem value="auth">Autenticação</SelectItem>
                       <SelectItem value="payment">Pagamento</SelectItem>
                       <SelectItem value="user">Usuário</SelectItem>
@@ -763,7 +763,7 @@ export default function AdminLogs() {
                       <SelectValue placeholder="Ação" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todas as ações</SelectItem>
+                      <SelectItem value="all">Todas as ações</SelectItem>
                       <SelectItem value="create">Criação</SelectItem>
                       <SelectItem value="update">Edição</SelectItem>
                       <SelectItem value="delete">Exclusão</SelectItem>
@@ -778,7 +778,7 @@ export default function AdminLogs() {
                       <SelectValue placeholder="Recurso" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos os recursos</SelectItem>
+                      <SelectItem value="all">Todos os recursos</SelectItem>
                       <SelectItem value="user">Usuário</SelectItem>
                       <SelectItem value="settings">Configurações</SelectItem>
                       <SelectItem value="merchant">Loja</SelectItem>
