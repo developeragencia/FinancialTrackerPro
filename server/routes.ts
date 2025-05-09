@@ -1916,6 +1916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           sql`
           SELECT 
             r.id, 
+            r.referrer_id,
             r.referred_id, 
             r.bonus, 
             r.status, 
@@ -1932,6 +1933,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ORDER BY r.created_at DESC
           `
         );
+        
+        // Log para debug
+        console.log(`Encontradas ${referralsResult.rows.length} indicações para o lojista ${merchantId}`);
+        for (const ref of referralsResult.rows) {
+          console.log(`- ID: ${ref.id}, Referred: ${ref.referred_id}, Name: ${ref.referred_name}, Type: ${ref.user_type}, Status: ${ref.status}`);
+        }
         
         // Formatar lista de referências para o frontend
         referrals_list = referralsResult.rows.map(ref => ({
@@ -2936,6 +2943,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const referralsResult = await db.execute(
           sql`SELECT 
               r.id, 
+              r.referrer_id,
               r.referred_id, 
               r.bonus, 
               r.status, 
@@ -2948,8 +2956,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             FROM referrals r
             JOIN users u ON r.referred_id = u.id
             LEFT JOIN merchants m ON m.user_id = u.id
-            WHERE r.referrer_id = ${clientId}`
+            WHERE r.referrer_id = ${clientId}
+            ORDER BY r.created_at DESC`
         );
+        
+        // Log para debug
+        console.log(`Encontradas ${referralsResult.rows.length} indicações para o cliente ${clientId}`);
+        for (const ref of referralsResult.rows) {
+          console.log(`- ID: ${ref.id}, Referred: ${ref.referred_id}, Name: ${ref.referred_name}, Type: ${ref.user_type}, Status: ${ref.status}`);
+        }
         
         // Ordenar manualmente por data de criação (decrescente)
         const sortedReferrals = [...referralsResult.rows].sort((a, b) => 
