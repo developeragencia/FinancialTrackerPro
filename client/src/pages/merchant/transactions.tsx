@@ -169,20 +169,41 @@ export default function MerchantTransactions() {
     }, 1500);
   };
   
-  // Visualizar detalhes da transação
+  // Visualizar detalhes da transação com tratamento de erro
   const handleViewTransaction = (transaction: Transaction) => {
-    toast({
-      title: `Venda #${transaction.id}`,
-      description: `Cliente: ${transaction.customer}, Valor: $ ${transaction.amount.toFixed(2)}, Cashback: $ ${transaction.cashback.toFixed(2)}`,
-    });
+    try {
+      const amount = transaction.amount ? transaction.amount.toFixed(2) : '0.00';
+      const cashback = transaction.cashback ? transaction.cashback.toFixed(2) : '0.00';
+      
+      toast({
+        title: `Venda #${transaction.id}`,
+        description: `Cliente: ${transaction.customer}, Valor: $ ${amount}, Cashback: $ ${cashback}`,
+      });
+    } catch (error) {
+      console.error('Erro ao exibir detalhes da transação:', error);
+      toast({
+        title: `Venda #${transaction.id}`,
+        description: `Cliente: ${transaction.customer}`,
+        variant: "default",
+      });
+    }
   };
   
-  // Imprimir recibo
+  // Imprimir recibo com tratamento de erro
   const handlePrintReceipt = (transaction: Transaction) => {
-    toast({
-      title: "Imprimindo recibo",
-      description: `Preparando impressão do recibo para a venda #${transaction.id}`,
-    });
+    try {
+      toast({
+        title: "Imprimindo recibo",
+        description: `Preparando impressão do recibo para a venda #${transaction.id}`,
+      });
+    } catch (error) {
+      console.error('Erro ao preparar impressão do recibo:', error);
+      toast({
+        title: "Imprimindo recibo",
+        description: "Preparando impressão do recibo",
+        variant: "default",
+      });
+    }
   };
   
   // Definição das colunas da tabela
@@ -385,7 +406,7 @@ export default function MerchantTransactions() {
                 {formatCurrency(totalCashback)}
               </div>
               <p className="text-sm text-muted-foreground">
-                {((totalCashback / totalAmount) * 100).toFixed(1)}% do total
+                {totalAmount > 0 ? ((totalCashback / totalAmount) * 100).toFixed(1) : '0.0'}% do total
               </p>
             </CardContent>
           </Card>
