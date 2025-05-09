@@ -829,9 +829,9 @@ export function addAdminRoutes(app: Express) {
         formattedSettings.commission = {
           platformFee: commissionSetting.platform_fee,
           merchantCommission: commissionSetting.merchant_commission,
-          cashbackRate: commissionSetting.cashback_rate,
+          cashbackRate: commissionSetting.client_cashback,
           referralBonus: commissionSetting.referral_bonus,
-          updatedAt: commissionSetting.created_at
+          updatedAt: commissionSetting.updated_at
         };
       }
       
@@ -871,10 +871,10 @@ export function addAdminRoutes(app: Express) {
           .values({
             platform_fee: "2.0",
             merchant_commission: "2.0",
-            cashback_rate: "2.0",
+            client_cashback: "2.0",
             referral_bonus: "1.0",
-            created_at: new Date(),
-            created_by: req.user.id
+            updated_at: new Date(),
+            updated_by: req.user.id
           })
           .returning();
           
@@ -908,10 +908,10 @@ export function addAdminRoutes(app: Express) {
         .values({
           platform_fee: platform_fee.toString(),
           merchant_commission: merchant_commission.toString(),
-          cashback_rate: cashback_rate.toString(),
+          client_cashback: cashback_rate.toString(),
           referral_bonus: referral_bonus.toString(),
-          created_at: new Date(),
-          created_by: req.user.id
+          updated_at: new Date(),
+          updated_by: req.user.id
         })
         .returning();
       
