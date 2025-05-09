@@ -1203,11 +1203,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [updatedMerchant] = await db
         .update(merchants)
         .set({
-          logo: logoData,
-          updated_at: new Date()
+          logo: logoData
         })
         .where(eq(merchants.id, merchant.id))
         .returning();
+      
+      // Importar auditLogs do schema
+      const { auditLogs } = await import("@shared/schema");
       
       // Registrar a atualização no log de auditoria
       await db.insert(auditLogs).values({
@@ -1228,6 +1230,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Erro ao atualizar logo do lojista:", error);
       res.status(500).json({ message: "Erro ao atualizar logo" });
+    }
+  });
+  
+  // Atualizar status do lojista (ativo/inativo)
+  app.patch("/api/merchant/profile/status", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantId = req.user.id;
+      const { active } = req.body;
+      
+      if (active === undefined) {
+        return res.status(400).json({ message: "Status não informado" });
+      }
+      
+      // Buscar registro do lojista
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantId));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      // Determinar o novo status com base no valor 'active'
+      const newStatus = active ? "active" : "inactive";
+      
+      // Atualizar status no registro do usuário
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          status: newStatus,
+        })
+        .where(eq(users.id, merchantId))
+        .returning();
+      
+      // Importar auditLogs do schema
+      const { auditLogs } = await import("@shared/schema");
+      
+      // Registrar a atualização no log de auditoria
+      await db.insert(auditLogs).values({
+        action: active ? "merchant_activated" : "merchant_deactivated",
+        entity_type: "merchant",
+        entity_id: merchant.id,
+        user_id: merchantId,
+        details: JSON.stringify({
+          timestamp: new Date(),
+          previous_status: req.user.status,
+          new_status: newStatus
+        }),
+        created_at: new Date()
+      });
+      
+      res.json({
+        success: true,
+        status: newStatus
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar status do lojista:", error);
+      res.status(500).json({ message: "Erro ao atualizar status" });
     }
   });
   

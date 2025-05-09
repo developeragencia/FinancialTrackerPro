@@ -57,24 +57,39 @@ export default function MerchantProfile() {
   
   // Create direct mutation for logo upload with immediate feedback
   const logoMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
+    mutationFn: async (file: File) => {
       // Feedback imediato - atualizando a UI antes da resposta da API
-      if (formData.get('logo') instanceof File) {
-        const file = formData.get('logo') as File;
-        const tempUrl = URL.createObjectURL(file);
-        // Atualiza temporariamente a imagem antes da resposta do servidor
-        queryClient.setQueryData(['/api/merchant/profile'], (old: any) => ({
-          ...old,
-          logo: tempUrl
-        }));
-      }
+      const tempUrl = URL.createObjectURL(file);
       
-      const response = await apiRequest("POST", "/api/merchant/profile/logo", formData);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Falha ao atualizar logo");
-      }
-      return response.json();
+      // Atualiza temporariamente a imagem antes da resposta do servidor
+      queryClient.setQueryData(['/api/merchant/profile'], (old: any) => ({
+        ...old,
+        logo: tempUrl
+      }));
+      
+      // Converter a imagem para uma string base64
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const base64data = reader.result as string;
+          resolve(base64data);
+        };
+        reader.onerror = () => {
+          reject(new Error("Falha ao processar a imagem"));
+        };
+      }).then(async (base64data) => {
+        // Enviar a string base64 para o backend
+        const response = await apiRequest("POST", "/api/merchant/profile/logo", {
+          logo: base64data
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Falha ao atualizar logo");
+        }
+        return response.json();
+      });
     },
     onSuccess: () => {
       toast({
@@ -131,9 +146,7 @@ export default function MerchantProfile() {
 
       // Enviar o arquivo imediatamente
       setUploadingLogo(true);
-      const formData = new FormData();
-      formData.append('logo', file);
-      logoMutation.mutate(formData);
+      logoMutation.mutate(file);
     }
   };
 
@@ -328,8 +341,19 @@ export default function MerchantProfile() {
                             <span className="text-xs">Atualizando logo...</span>
                           </div>
                         )}
-                        <div className="flex items-center">
+                        <div className="flex items-center space-x-2">
                           {getStatusBadge(merchantData.status || 'pending')}
+                        </div>
+                        
+                        <div className="mt-2 flex items-center gap-2">
+                          <Switch 
+                            id="active-status" 
+                            checked={merchantData.status === 'active'} 
+                            onCheckedChange={handleStoreStatusChange}
+                          />
+                          <Label htmlFor="active-status" className="text-sm cursor-pointer">
+                            {merchantData.status === 'active' ? 'Loja Ativa' : 'Loja Inativa'}
+                          </Label>
                         </div>
                       </div>
                     </div>
@@ -450,20 +474,13 @@ export default function MerchantProfile() {
                       </div>
                       
                       <div className="space-y-2 flex items-center">
-                        <Switch 
-                          id="active-store"
-                          checked={merchantData.active}
-                          onCheckedChange={handleStoreStatusChange}
-                          className="mr-2"
-                        />
-                        <Label htmlFor="active-store">
-                          Loja ativa
-                          <span className="text-xs block text-muted-foreground">
-                            {merchantData.active 
-                              ? "Sua loja está visível para clientes" 
-                              : "Sua loja não está visível para clientes"}
-                          </span>
-                        </Label>
+                        <Alert variant="outline" className="bg-muted/40 border-accent/20">
+                          <AlertCircle className="h-4 w-4 text-accent" />
+                          <AlertTitle className="text-sm">Status da Loja</AlertTitle>
+                          <AlertDescription className="text-xs">
+                            Para alterar o status de visibilidade da loja, use o toggle próximo ao logo.
+                          </AlertDescription>
+                        </Alert>
                       </div>
                     </div>
                   </div>
