@@ -97,11 +97,11 @@ const menuItems = {
 
 export function MobileLayout({ children, title, hideHeader = false }: MobileLayoutProps) {
   const [location] = useLocation();
-  const { user, logoutMutation } = useAuth();
+  const { user, logout } = useAuth();
   const [menuOptions, setMenuOptions] = useState<any[]>([]);
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   useEffect(() => {
