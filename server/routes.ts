@@ -1309,17 +1309,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           // Formatar valor do bônus com precisão de 2 casas decimais
           const formattedBonus = parseFloat(calculatedReferralBonus.toFixed(2));
+          console.log(`✅ Processando bônus de indicação de ${formattedBonus} para o referenciador ${referrerUserToBonus}`);
           
           // Registra a transação de referência
-          await db.insert(referrals).values({
-            referrer_id: referrerUserToBonus,
-            referred_id: customerId,
-            bonus: formattedBonus.toString(),
-            status: "active",
-            created_at: new Date()
-          });
-          
-          console.log(`Bônus de referência no valor de ${formattedBonus} registrado para o usuário ${referrerUserToBonus}`);
+          try {
+            await db.insert(referrals).values({
+              referrer_id: referrerUserToBonus,
+              referred_id: customerId,
+              bonus: formattedBonus.toString(),
+              status: "active",
+              created_at: new Date()
+            });
+            
+            console.log(`✅ Bônus de referência no valor de ${formattedBonus} registrado para o usuário ${referrerUserToBonus}`);
+          } catch (refError) {
+            console.error(`❌ Erro ao registrar bônus de referência: ${refError.message}`);
+            // Continuar mesmo se falhar para tentar atualizar o cashback
+          }
           
           // Atualiza o cashback do referenciador
           const referrerCashback = await db
@@ -4508,15 +4514,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
             
             // Registrar a referência com o bônus apenas se não existir
-            await db.insert(referrals).values({
-              referrer_id: referrer.id,
-              referred_id: newUser.id,
-              bonus: bonusValue.toString(), // Taxa de bônus configurada no sistema
-              status: "active",
-              created_at: new Date()
-            });
-            
-            console.log(`Referência registrada com sucesso para o lojista ${newUser.id} com bônus de ${bonusValue}`);
+            try {
+              await db.insert(referrals).values({
+                referrer_id: referrer.id,
+                referred_id: newUser.id,
+                bonus: bonusValue.toString(), // Taxa de bônus configurada no sistema
+                status: "active",
+                created_at: new Date()
+              });
+              
+              console.log(`✅ Referência registrada com sucesso para o lojista ${newUser.id} com bônus de ${bonusValue}`);
+            } catch (refError) {
+              console.error(`❌ Erro ao registrar referência: ${refError.message}`);
+              // Continuamos para tentar atualizar o cashback mesmo se o registro falhar
+            }
             
             // Aplicar o bônus ao saldo de cashback do referenciador
             try {
