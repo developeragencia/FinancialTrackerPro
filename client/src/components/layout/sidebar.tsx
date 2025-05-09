@@ -82,6 +82,7 @@ export function Sidebar({
     { href: "/admin/stores", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojas" },
     { href: "/admin/transactions", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Transações" },
     { href: "/admin/transfers", icon: <Landmark className="mr-2 h-5 w-5" />, label: "Transferências" },
+    { href: "/admin/withdrawals", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Solicitações de Saque" },
     { href: "/admin/settings", icon: <Settings className="mr-2 h-5 w-5" />, label: "Configurações" },
     { href: "/admin/logs", icon: <History className="mr-2 h-5 w-5" />, label: "Logs e Auditoria" },
     { href: "/admin/support", icon: <Headphones className="mr-2 h-5 w-5" />, label: "Suporte" },
