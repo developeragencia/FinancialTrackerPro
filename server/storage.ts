@@ -9,6 +9,8 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  hashPassword(password: string): Promise<string>;
+  comparePasswords(supplied: string, stored: string): Promise<boolean>;
   sessionStore: session.Store;
 }
 
@@ -24,6 +26,36 @@ export class DatabaseStorage implements IStorage {
     
     // Inicializa os usuários padrão se não existirem
     this.initializeDefaultUsers();
+  }
+  
+  // Métodos para gerenciamento de senhas
+  async hashPassword(password: string): Promise<string> {
+    // Importar as funções necessárias
+    const { scrypt, randomBytes } = await import('crypto');
+    const { promisify } = await import('util');
+    
+    const scryptAsync = promisify(scrypt);
+    const salt = randomBytes(16).toString('hex');
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    return `${buf.toString('hex')}.${salt}`;
+  }
+
+  async comparePasswords(supplied: string, stored: string): Promise<boolean> {
+    try {
+      // Importar as funções necessárias
+      const { scrypt, timingSafeEqual } = await import('crypto');
+      const { promisify } = await import('util');
+      
+      const scryptAsync = promisify(scrypt);
+      
+      const [hashed, salt] = stored.split('.');
+      const hashedBuf = Buffer.from(hashed, 'hex');
+      const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+      return timingSafeEqual(hashedBuf, suppliedBuf);
+    } catch (error) {
+      console.error('Erro ao comparar senhas:', error);
+      return false;
+    }
   }
 
   private async initializeDefaultUsers() {
