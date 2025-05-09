@@ -534,20 +534,18 @@ export default function AdminStores() {
                     </Avatar>
                     
                     <div className="text-center mb-4">
-                      <h3 className="text-xl font-bold">{selectedStore.name}</h3>
-                      <p className="text-sm text-muted-foreground">{selectedStore.category}</p>
+                      <h3 className="text-xl font-bold">{selectedStore.name || selectedStore.store_name || "Loja"}</h3>
+                      <p className="text-sm text-muted-foreground">{selectedStore.category || "Geral"}</p>
                       
                       <Badge 
                         variant="outline"
                         className={
-                          selectedStore.status === "active" 
+                          selectedStore.approved !== false 
                             ? "bg-green-100 text-green-800 border-green-200 mt-2" 
-                            : selectedStore.status === "inactive"
-                            ? "bg-gray-100 text-gray-800 border-gray-200 mt-2"
-                            : "bg-yellow-100 text-yellow-800 border-yellow-200 mt-2"
+                            : "bg-gray-100 text-gray-800 border-gray-200 mt-2"
                         }
                       >
-                        {getStatusLabel(selectedStore.status)}
+                        {selectedStore.approved !== false ? "Ativa" : "Inativa"}
                       </Badge>
                     </div>
                     
@@ -591,16 +589,16 @@ export default function AdminStores() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-4 bg-muted/20 rounded-lg">
-                          <h4 className="text-sm text-muted-foreground mb-1">Volume de Vendas</h4>
+                          <h4 className="text-sm text-muted-foreground mb-1">Taxa de Comissão</h4>
                           <div className="text-2xl font-bold text-accent">
-                            R$ {selectedStore.volume.toFixed(2)}
+                            {selectedStore.commissionRate || "2.0"}%
                           </div>
                         </div>
                         
                         <div className="p-4 bg-muted/20 rounded-lg">
-                          <h4 className="text-sm text-muted-foreground mb-1">Transações</h4>
+                          <h4 className="text-sm text-muted-foreground mb-1">ID da Loja</h4>
                           <div className="text-2xl font-bold text-accent">
-                            {selectedStore.transactions}
+                            {selectedStore.id}
                           </div>
                         </div>
                       </div>
@@ -647,47 +645,23 @@ export default function AdminStores() {
                         <Settings className="mr-2 h-4 w-4" /> Taxa de Comissão
                       </Button>
                       
-                      {selectedStore.status === "pending" ? (
-                        <>
-                          <Button 
-                            variant="default"
-                            className="bg-green-600 hover:bg-green-700"
-                            onClick={() => {
-                              setIsDialogOpen(false);
-                              handleApprovalDialog(selectedStore);
-                            }}
-                          >
-                            <CheckCircle className="mr-2 h-4 w-4" /> Aprovar
-                          </Button>
-                          <Button 
-                            variant="destructive"
-                            onClick={() => {
-                              setIsDialogOpen(false);
-                              handleRejectDialog(selectedStore);
-                            }}
-                          >
-                            <XCircle className="mr-2 h-4 w-4" /> Rejeitar
-                          </Button>
-                        </>
-                      ) : (
-                        <Button 
-                          variant={selectedStore.status === "inactive" ? "default" : "destructive"}
-                          onClick={() => {
-                            setIsDialogOpen(false);
-                            handleBlockDialog(selectedStore);
-                          }}
-                        >
-                          {selectedStore.status === "inactive" ? (
-                            <>
-                              <CheckCircle className="mr-2 h-4 w-4" /> Ativar
-                            </>
-                          ) : (
-                            <>
-                              <Ban className="mr-2 h-4 w-4" /> Desativar
-                            </>
-                          )}
-                        </Button>
-                      )}
+                      <Button 
+                        variant={selectedStore.approved === false ? "default" : "destructive"}
+                        onClick={() => {
+                          setIsDialogOpen(false);
+                          handleBlockDialog(selectedStore);
+                        }}
+                      >
+                        {selectedStore.approved === false ? (
+                          <>
+                            <CheckCircle className="mr-2 h-4 w-4" /> Ativar
+                          </>
+                        ) : (
+                          <>
+                            <Ban className="mr-2 h-4 w-4" /> Desativar
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -721,9 +695,7 @@ export default function AdminStores() {
                         <div className="text-center">
                           <h3 className="text-muted-foreground text-sm">Ticket Médio</h3>
                           <div className="text-2xl font-bold">
-                            R$ {selectedStore.transactions > 0 
-                              ? (selectedStore.volume / selectedStore.transactions).toFixed(2) 
-                              : "0.00"}
+                            $ {(selectedStore.averageTicket || 0).toFixed(2)}
                           </div>
                         </div>
                       </CardContent>
@@ -734,7 +706,7 @@ export default function AdminStores() {
                         <div className="text-center">
                           <h3 className="text-muted-foreground text-sm">Comissão Total</h3>
                           <div className="text-2xl font-bold">
-                            R$ {(selectedStore.volume * (selectedStore.commissionRate / 100)).toFixed(2)}
+                            $ {((selectedStore.volume || 0) * ((selectedStore.commissionRate || 2) / 100)).toFixed(2)}
                           </div>
                         </div>
                       </CardContent>
@@ -745,7 +717,7 @@ export default function AdminStores() {
                         <div className="text-center">
                           <h3 className="text-muted-foreground text-sm">Transações/Dia</h3>
                           <div className="text-2xl font-bold">
-                            {(selectedStore.transactions / 30).toFixed(1)}
+                            {((selectedStore.transactions || 0) / 30).toFixed(1)}
                           </div>
                         </div>
                       </CardContent>
@@ -834,17 +806,17 @@ export default function AdminStores() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {selectedStore?.status === "inactive" ? "Ativar Loja" : "Desativar Loja"}
+              {selectedStore?.approved === false ? "Ativar Loja" : "Desativar Loja"}
             </DialogTitle>
             <DialogDescription>
-              {selectedStore?.status === "inactive" 
-                ? `Você está prestes a ativar a loja ${selectedStore?.name}. Isso permitirá que a loja opere no sistema.`
-                : `Você está prestes a desativar a loja ${selectedStore?.name}. Isso impedirá que a loja opere no sistema.`
+              {selectedStore?.approved === false
+                ? `Você está prestes a ativar a loja ${selectedStore?.name || selectedStore?.store_name}. Isso permitirá que a loja opere no sistema.`
+                : `Você está prestes a desativar a loja ${selectedStore?.name || selectedStore?.store_name}. Isso impedirá que a loja opere no sistema.`
               }
             </DialogDescription>
           </DialogHeader>
           
-          {selectedStore?.status !== "inactive" && (
+          {selectedStore?.approved !== false && (
             <div className="bg-yellow-50 p-3 rounded-lg border border-yellow-100 my-4">
               <div className="flex items-start space-x-2">
                 <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
@@ -868,7 +840,7 @@ export default function AdminStores() {
               Cancelar
             </Button>
             <Button
-              variant={selectedStore?.status === "inactive" ? "default" : "destructive"}
+              variant={selectedStore?.approved === false ? "default" : "destructive"}
               onClick={handleBlockStore}
               disabled={isProcessing}
             >
@@ -877,7 +849,7 @@ export default function AdminStores() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Processando...
                 </>
-              ) : selectedStore?.status === "inactive" ? "Confirmar Ativação" : "Confirmar Desativação"}
+              ) : selectedStore?.approved === false ? "Confirmar Ativação" : "Confirmar Desativação"}
             </Button>
           </DialogFooter>
         </DialogContent>
