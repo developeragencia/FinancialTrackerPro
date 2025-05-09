@@ -286,6 +286,7 @@ export function addWithdrawalRoutes(app: Express) {
         .set({
           status: WithdrawalStatus.CANCELLED,
           processed_at: new Date(),
+          updated_at: new Date(),
           notes: "Cancelado pelo lojista"
         })
         .where(eq(withdrawalRequests.id, requestId))
