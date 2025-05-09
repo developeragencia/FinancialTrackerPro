@@ -32,7 +32,7 @@ export default function MerchantReferrals() {
       approvedStores: 0,
       pendingStores: 0,
       totalEarned: "0.00",
-      commission: "2.0", // Taxa de comissão - será substituída pelos dados do banco
+      commission: "1.0", // Taxa de comissão - será substituída pelos dados do banco
       monthlyEarnings: [
         { month: "Jan", value: 0 },
         { month: "Fev", value: 0 },

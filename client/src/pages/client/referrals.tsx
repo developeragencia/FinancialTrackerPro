@@ -338,10 +338,10 @@ export default function ClientReferrals() {
                   </CardContent>
                   <CardFooter className="flex flex-col items-start space-y-2 bg-gradient-to-r from-primary/5 to-primary/10 mt-4 rounded-b-lg border-t border-primary/10">
                     <p className="text-sm">
-                      Taxa de comissão: <span className="font-medium text-primary">{ratesSettings?.referralCommission || referralsData?.commission}%</span> por indicação
+                      Taxa de comissão: <span className="font-medium text-primary">1%</span> por indicação
                     </p>
                     <p className="text-sm">
-                      Compartilhe seu código ou link de indicação com amigos e conhecidos. Quando eles se cadastrarem e realizarem compras, você receberá uma comissão sobre todas as transações deles.
+                      Compartilhe seu código ou link de indicação com amigos e conhecidos. Quando eles se cadastrarem e realizarem compras, você receberá uma comissão de 1% sobre todas as transações deles.
                     </p>
                   </CardFooter>
                 </Card>
