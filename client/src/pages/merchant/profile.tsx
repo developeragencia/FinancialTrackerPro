@@ -692,6 +692,95 @@ export default function MerchantProfile() {
               )}
             </Card>
           </TabsContent>
+          
+          {/* Segurança e Senha */}
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Alterar Senha</CardTitle>
+                <CardDescription>Altere sua senha de acesso ao sistema</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="current_password">Senha Atual</Label>
+                    <Input 
+                      id="current_password" 
+                      name="current_password" 
+                      type="password" 
+                      placeholder="Digite sua senha atual" 
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="new_password">Nova Senha</Label>
+                    <Input 
+                      id="new_password" 
+                      name="new_password" 
+                      type="password" 
+                      placeholder="Digite a nova senha" 
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm_password">Confirmar Nova Senha</Label>
+                    <Input 
+                      id="confirm_password" 
+                      name="confirm_password" 
+                      type="password" 
+                      placeholder="Confirme a nova senha" 
+                      required
+                    />
+                  </div>
+                  
+                  <Alert variant="outline" className="bg-muted/40 border-muted-foreground/20">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle className="text-sm">Segurança</AlertTitle>
+                    <AlertDescription className="text-xs">
+                      Use senhas fortes com pelo menos 6 caracteres, incluindo letras, números e caracteres especiais.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <Button type="submit" className="bg-primary" disabled={isChangingPassword}>
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Atualizando...
+                      </>
+                    ) : "Alterar Senha"}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+            
+            <Card>
+              <CardHeader>
+                <CardTitle>Segurança da Conta</CardTitle>
+                <CardDescription>Configurações de segurança adicionais</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-sm font-medium">Autenticação em Dois Fatores</h4>
+                    <p className="text-sm text-muted-foreground">Adicione uma camada extra de segurança</p>
+                  </div>
+                  <Button variant="outline" disabled>Em breve</Button>
+                </div>
+                
+                <Separator />
+                
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-sm font-medium">Logins Recentes</h4>
+                    <p className="text-sm text-muted-foreground">Verifique os dispositivos conectados</p>
+                  </div>
+                  <Button variant="outline" disabled>Em breve</Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Cashback Settings */}
           <TabsContent value="cashback">
