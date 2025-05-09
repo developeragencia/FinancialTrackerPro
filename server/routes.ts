@@ -3079,7 +3079,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cashbackResult = await db.execute(
         sql`SELECT COALESCE(SUM(balance), 0) as sum FROM cashbacks WHERE user_id = ${clientId}`
       );
-      const cashbackBalance = parseFloat(cashbackResult.rows[0]?.sum || '0');
+      const cashbackBaseBalance = parseFloat(cashbackResult.rows[0]?.sum || '0');
+      
+      // Calcular total de transferências enviadas
+      const sentTransfersResult = await db.execute(
+        sql`SELECT COALESCE(SUM(amount), 0) as sum FROM transfers 
+            WHERE from_user_id = ${clientId} AND status = 'completed'`
+      );
+      const sentTransfersTotal = parseFloat(sentTransfersResult.rows[0]?.sum || '0');
+      
+      // Calcular total de transferências recebidas
+      const receivedTransfersResult = await db.execute(
+        sql`SELECT COALESCE(SUM(amount), 0) as sum FROM transfers 
+            WHERE to_user_id = ${clientId} AND status = 'completed'`
+      );
+      const receivedTransfersTotal = parseFloat(receivedTransfersResult.rows[0]?.sum || '0');
+      
+      // Calcular saldo final considerando transferências
+      const cashbackBalance = cashbackBaseBalance - sentTransfersTotal + receivedTransfersTotal;
+      console.log(`Saldo calculado: Base ${cashbackBaseBalance} - Enviado ${sentTransfersTotal} + Recebido ${receivedTransfersTotal} = ${cashbackBalance}`);
       
       // Obter saldo de indicações usando SQL direto
       const referralResult = await db.execute(
