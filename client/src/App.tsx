@@ -104,6 +104,7 @@ function Router() {
       <ProtectedRouteMobile path="/merchant/support" component={MerchantSupport} userType="merchant" title="Suporte" />
       <ProtectedRouteMobile path="/merchant/referrals" component={MerchantReferrals} userType="merchant" title="Indicações" />
       <ProtectedRouteMobile path="/merchant/stores" component={MerchantStores} userType="merchant" title="Minhas Lojas" />
+      <ProtectedRouteMobile path="/merchant/withdrawals" component={MerchantWithdrawals} userType="merchant" title="Solicitar Saque" />
       
       {/* Admin Routes */}
       <ProtectedRouteMobile path="/admin" component={AdminDashboard} userType="admin" title="Dashboard" />
