@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { Sidebar, SidebarToggle } from "@/components/layout/sidebar";
-import { Bell, User, LogOut as Logout } from "lucide-react";
+import { User, LogOut as Logout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { NotificationBell } from "@/components/ui/notification-bell";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -57,12 +57,7 @@ export function DashboardLayout({
           <h1 className="text-xl font-bold ml-2">Vale Cashback</h1>
         </div>
         <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" className="text-white relative">
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 w-5 h-5 p-0 flex items-center justify-center bg-accent">
-              3
-            </Badge>
-          </Button>
+          <NotificationBell />
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

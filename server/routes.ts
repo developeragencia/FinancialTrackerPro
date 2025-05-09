@@ -16,9 +16,9 @@ import {
   referrals,
   transfers,
   commissionSettings,
+  notifications,
   PaymentMethod,
   TransactionStatus,
-  notifications,
   NotificationType,
   auditLogs
 } from "@shared/schema";
