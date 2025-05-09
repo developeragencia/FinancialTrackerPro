@@ -1,5 +1,5 @@
 import { MobileCard } from "@/components/mobile-card";
-import DashboardLayout from "@/components/ui/dashboard-layout";
+import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
