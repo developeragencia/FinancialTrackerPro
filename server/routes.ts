@@ -23,6 +23,7 @@ import {
   auditLogs
 } from "@shared/schema";
 import { addAdminRoutes, addMerchantRoutes, addClientRoutes } from "./routes.admin";
+import { addWithdrawalRoutes } from "./routes.withdrawal";
 
 // Middleware para verificar autenticação
 const isAuthenticated = (req: Request, res: Response, next: Function) => {
@@ -61,6 +62,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   addAdminRoutes(app);
   addMerchantRoutes(app);
   addClientRoutes(app);
+  
+  // Adicionar rotas de solicitação de saque
+  addWithdrawalRoutes(app);
   
   // ======== ROTAS DE NOTIFICAÇÕES ========
 

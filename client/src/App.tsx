@@ -39,6 +39,7 @@ import MerchantSettings from "@/pages/merchant/settings";
 import MerchantSupport from "@/pages/merchant/support";
 import MerchantReferrals from "@/pages/merchant/referrals";
 import MerchantStores from "@/pages/merchant/stores";
+import MerchantWithdrawals from "@/pages/merchant/withdrawals";
 
 // Admin Pages
 import AdminDashboard from "@/pages/admin/dashboard";
