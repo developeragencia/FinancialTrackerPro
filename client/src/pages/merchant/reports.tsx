@@ -19,9 +19,9 @@ import { Button } from "@/components/ui/button";
 import { 
   Calendar as CalendarIcon,
   Download,
-  BarChart,
-  LineChart,
-  PieChart,
+  BarChart as BarChartIcon,
+  LineChart as LineChartIcon,
+  PieChart as PieChartIcon,
   ArrowUpRight,
   ArrowDownRight,
   DollarSign,
@@ -36,11 +36,22 @@ import { format, subDays, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+// Importações para os gráficos do Recharts
 import { 
-  LineChartComponent, 
-  BarChartComponent, 
-  PieChartComponent 
-} from "@/components/ui/charts";
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from "recharts";
 
 interface ReportFilters {
   period: "today" | "week" | "month" | "quarter" | "year" | "custom";
@@ -224,7 +235,7 @@ export default function MerchantReports() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
           <TabsList>
             <TabsTrigger value="sales">
-              <BarChart className="h-4 w-4 mr-2" />
+              <BarChartIcon className="h-4 w-4 mr-2" />
               Vendas
             </TabsTrigger>
             <TabsTrigger value="customers">
@@ -425,14 +436,32 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PieChartComponent
-                  title=""
-                  data={reportsData?.salesData.byPaymentMethod || []}
-                  height={300}
-                  donut
-                  innerRadius={60}
-                  outerRadius={90}
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={reportsData?.salesData.byPaymentMethod || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={90}
+                        innerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(reportsData?.salesData.byPaymentMethod || []).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`hsl(var(--chart-${(index % 5) + 1}))`} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -523,16 +552,30 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <BarChartComponent
-                  title=""
-                  data={reportsData?.customersData.timeline || []}
-                  bars={[
-                    { dataKey: "value", name: "Clientes", fill: "#0080ff" }
-                  ]}
-                  xAxisDataKey="date"
-                  height={300}
-                  grid
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={reportsData?.customersData.timeline || []}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar
+                        dataKey="value"
+                        name="Clientes"
+                        fill="#0080ff"
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
@@ -544,14 +587,32 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PieChartComponent
-                  title=""
-                  data={reportsData?.customersData.byFrequency || []}
-                  height={300}
-                  donut
-                  innerRadius={60}
-                  outerRadius={90}
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={reportsData?.customersData.byFrequency || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={90}
+                        innerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(reportsData?.customersData.byFrequency || []).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`hsl(var(--chart-${(index % 5) + 1}))`} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -642,16 +703,32 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <LineChartComponent
-                  title=""
-                  data={reportsData?.cashbackData.timeline || []}
-                  lines={[
-                    { dataKey: "value", name: "Cashback (R$)", stroke: "#10b981" }
-                  ]}
-                  xAxisDataKey="date"
-                  height={300}
-                  grid
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                      data={reportsData?.cashbackData.timeline || []}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="value"
+                        name="Cashback (R$)"
+                        stroke="#10b981"
+                        activeDot={{ r: 8 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
             
@@ -663,14 +740,32 @@ export default function MerchantReports() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <PieChartComponent
-                  title=""
-                  data={reportsData?.cashbackData.distribution || []}
-                  height={300}
-                  donut
-                  innerRadius={60}
-                  outerRadius={90}
-                />
+                <div style={{ height: 300 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={reportsData?.cashbackData.distribution || []}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={90}
+                        innerRadius={60}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {(reportsData?.cashbackData.distribution || []).map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={`hsl(var(--chart-${(index % 5) + 1}))`} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
