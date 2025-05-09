@@ -3469,41 +3469,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const referralCode = req.params.code;
       
+      console.log(`Verificando código de convite: ${referralCode}`);
+      
       // Verificar formato do código
       if (!referralCode || referralCode.length < 4) {
+        console.warn(`Código de convite inválido (muito curto): ${referralCode}`);
         return res.status(404).json({ message: "Código de convite inválido" });
       }
       
-      // Determinar tipo baseado no prefixo
-      const isClient = referralCode.startsWith("CL");
-      const isMerchant = referralCode.startsWith("LJ");
+      // Determinar tipo baseado no prefixo (case insensitive)
+      const isClient = referralCode.toUpperCase().startsWith("CL");
+      const isMerchant = referralCode.toUpperCase().startsWith("LJ");
       
       if (!isClient && !isMerchant) {
+        console.warn(`Código de convite com formato inválido: ${referralCode}`);
         return res.status(404).json({ message: "Código de convite inválido" });
       }
       
-      // Buscar usuário pelo código de referência com SQL direto
+      // Buscar usuário pelo código de referência com SQL direto (case insensitive)
       const userResult = await db.execute(
-        sql`SELECT id, name, email, type, photo 
+        sql`SELECT id, name, email, type, photo, invitation_code 
             FROM users 
-            WHERE invitation_code = ${referralCode}`
+            WHERE LOWER(invitation_code) = LOWER(${referralCode})`
       );
       
       if (userResult.rows.length === 0) {
+        console.warn(`Nenhum usuário encontrado com código: ${referralCode}`);
         return res.status(404).json({ message: "Código de convite não encontrado" });
       }
       
       const referrerUser = userResult.rows[0];
+      console.log(`Usuário encontrado: ID=${referrerUser.id}, Nome=${referrerUser.name}, Tipo=${referrerUser.type}`);
       
       // Verificar se o tipo do usuário corresponde ao prefixo do código
       const expectedType = isClient ? "client" : "merchant";
+      
+      // Apenas logamos o aviso mas não bloqueamos mais o acesso
+      // Isso permite que links continuem funcionando mesmo se houver alguma inconsistência
       if (referrerUser.type !== expectedType) {
-        return res.status(400).json({ message: "Código de convite inválido" });
+        console.warn(`Tipo de usuário (${referrerUser.type}) não corresponde ao tipo esperado (${expectedType})`);
       }
       
       // Dados do lojista, se for o caso
       let merchantData = null;
-      if (isMerchant) {
+      if (referrerUser.type === "merchant") { // Usamos o tipo real do usuário
         const merchantResult = await db.execute(
           sql`SELECT 
               id, 
@@ -3518,20 +3527,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (merchantResult.rows.length > 0) {
           const merchantInfo = merchantResult.rows[0];
           merchantData = {
+            id: merchantInfo.id,
             store_name: merchantInfo.storeName,
             logo: merchantInfo.logo || "https://via.placeholder.com/100",
             category: merchantInfo.category,
             description: merchantInfo.description
           };
+          console.log(`Dados do lojista carregados com sucesso: ${JSON.stringify(merchantData)}`);
+        } else {
+          console.warn(`Nenhum dado de lojista encontrado para usuário ${referrerUser.id}`);
         }
       }
       
-      // Retornar informações sobre o convite
+      // Retornar informações sobre o convite com o código exato do usuário
+      // (não o da URL, para garantir consistência nos registros)
       res.json({
         referrerId: referrerUser.id,
         referrerName: referrerUser.name,
         referrerType: referrerUser.type,
-        referralCode: referralCode,
+        referralCode: referrerUser.invitation_code,
         merchantData
       });
     } catch (error) {
@@ -3638,16 +3652,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .returning();
       
-      // Processar código de referência, se fornecido
-      if (referralCode || (referralInfo && referralInfo.referralCode)) {
-        const code = referralCode || (referralInfo && referralInfo.referralCode);
-        console.log(`Processando indicação com código: ${code}`);
+      // Processar código de referência, se fornecido (via URL ou via formulário)
+      let refCode = null;
+      // Prioridade 1: Verificar referralInfo que vem de inviteData
+      if (referralInfo && referralInfo.referralCode) {
+        refCode = referralInfo.referralCode;
+        console.log("Usando código de referralInfo:", refCode);
+      } 
+      // Prioridade 2: Verificar referralCode do formulário
+      else if (referralCode) {
+        refCode = referralCode;
+        console.log("Usando código de referralCode:", refCode);
+      }
+      // Prioridade 3: Tentar extrair da URL de referrer (caso o usuário entre direto pelo link)
+      else if (req.headers.referer) {
+        const refererUrl = new URL(req.headers.referer);
+        const pathParts = refererUrl.pathname.split('/').filter(part => part.trim() !== '');
+        
+        console.log("Analisando URL de referência:", refererUrl.pathname);
+        
+        // Verificar se há algum código de indicação nos segmentos da URL
+        for (const part of pathParts) {
+          if (part.match(/^CL[0-9]+$/i) || part.match(/^LJ[0-9]+$/i)) {
+            refCode = part;
+            console.log("Código extraído da URL de referência:", refCode);
+            break;
+          }
+        }
+      }
+      
+      if (refCode) {
+        console.log(`Processando indicação com código: ${refCode}`);
         
         // Buscar usuário que fez a indicação pelo código
         const referrerQuery = await db
           .select()
           .from(users)
-          .where(eq(users.invitation_code, code))
+          .where(eq(users.invitation_code, refCode))
           .limit(1);
           
         if (referrerQuery.length > 0) {
@@ -3682,6 +3723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Mantém o valor padrão em caso de erro
             }
             
+            // Incluir SEMPRE o bônus padrão mesmo se ocorrer algum erro
             await db.insert(referrals).values({
               referrer_id: referrer.id,
               referred_id: newUser.id,
@@ -3689,12 +3731,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "active",
               created_at: new Date()
             });
-            console.log(`Referência registrada com sucesso para o cliente ${newUser.id}`);
+            console.log(`Referência registrada com sucesso para o cliente ${newUser.id} com bônus de ${referralBonus}`);
           } else {
             console.log(`Referência já existente para o cliente ${newUser.id}, ignorando duplicação`);
           }
         } else {
-          console.log(`Código de indicação ${code} não encontrado no banco de dados`);
+          console.log(`Código de indicação ${refCode} não encontrado no banco de dados`);
         }
       }
       
@@ -3880,16 +3922,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           created_at: new Date()
         });
       
-      // Processar código de referência, se fornecido
-      if (referralCode || (referralInfo && referralInfo.referralCode)) {
-        const code = referralCode || (referralInfo && referralInfo.referralCode);
-        console.log(`Processando indicação de lojista com código: ${code}`);
+      // Processar código de referência, se fornecido (via URL ou via formulário)
+      let refCode = null;
+      // Prioridade 1: Verificar referralInfo que vem de inviteData
+      if (referralInfo && referralInfo.referralCode) {
+        refCode = referralInfo.referralCode;
+        console.log("Usando código de referralInfo:", refCode);
+      } 
+      // Prioridade 2: Verificar referralCode do formulário
+      else if (referralCode) {
+        refCode = referralCode;
+        console.log("Usando código de referralCode:", refCode);
+      }
+      // Prioridade 3: Tentar extrair da URL de referrer (caso o usuário entre direto pelo link)
+      else if (req.headers.referer) {
+        const refererUrl = new URL(req.headers.referer);
+        const pathParts = refererUrl.pathname.split('/').filter(part => part.trim() !== '');
+        
+        console.log("Analisando URL de referência:", refererUrl.pathname);
+        
+        // Verificar se há algum código de indicação nos segmentos da URL
+        for (const part of pathParts) {
+          if (part.match(/^CL[0-9]+$/i) || part.match(/^LJ[0-9]+$/i)) {
+            refCode = part;
+            console.log("Código extraído da URL de referência:", refCode);
+            break;
+          }
+        }
+      }
+      
+      if (refCode) {
+        console.log(`Processando indicação de lojista com código: ${refCode}`);
         
         // Buscar usuário que fez a indicação pelo código
         const referrerQuery = await db
           .select()
           .from(users)
-          .where(eq(users.invitation_code, code))
+          .where(eq(users.invitation_code, refCode))
           .limit(1);
           
         if (referrerQuery.length > 0) {
@@ -3931,12 +4000,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "active",
               created_at: new Date()
             });
-            console.log(`Referência registrada com sucesso para o lojista ${newUser.id}`);
+            console.log(`Referência registrada com sucesso para o lojista ${newUser.id} com bônus de ${referralBonus}`);
           } else {
             console.log(`Referência já existente para o lojista ${newUser.id}, ignorando duplicação`);
           }
         } else {
-          console.log(`Código de indicação ${code} não encontrado no banco de dados`);
+          console.log(`Código de indicação ${refCode} não encontrado no banco de dados`);
         }
       }
       

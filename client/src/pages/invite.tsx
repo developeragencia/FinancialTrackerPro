@@ -388,26 +388,38 @@ export default function InvitePage() {
       if (!referralCode) return null;
       
       try {
+        console.log("Verificando informações do convite com código:", referralCode);
         const res = await fetch(`/api/invite/${referralCode}`);
         if (!res.ok) {
           const errorData = await res.json();
+          console.warn("Erro ao verificar convite:", errorData);
           throw new Error(errorData.message || 'Código de convite inválido');
         }
         const data = await res.json();
         
+        console.log("Dados de referência obtidos:", data);
+        
         // Armazena o nome do referenciador quando os dados são carregados
         if (data && data.referrerName) {
+          console.log("Referenciador encontrado:", data.referrerName);
           setReferrerName(data.referrerName);
         }
         
         return data;
       } catch (error) {
         console.error('Erro ao verificar convite:', error);
-        throw error;
+        // Mesmo com erro, ainda tenta usar o código de referência
+        return {
+          referralCode: referralCode,
+          // Campos vazios que serão preenchidos pelo servidor
+          referrerId: null,
+          referrerName: null
+        };
       }
     },
     enabled: !!referralCode,
-    retry: 1
+    retry: 2, // Aumenta o número de tentativas para garantir
+    staleTime: 60000 // Mantém os dados por 1 minuto
   });
 
   // Funções para submissão dos formulários
