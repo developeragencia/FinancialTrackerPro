@@ -238,6 +238,10 @@ export async function createWithdrawalRequestNotification(
         title = "Solicitação de Saque Recusada";
         message = `Sua solicitação de saque no valor de $${amount} foi recusada. Entre em contato com o suporte para mais informações.`;
         break;
+      case WithdrawalStatus.CANCELLED:
+        title = "Solicitação de Saque Cancelada";
+        message = `Sua solicitação de saque no valor de $${amount} foi cancelada e o valor foi retornado para sua carteira.`;
+        break;
     }
     
     await createNotification({

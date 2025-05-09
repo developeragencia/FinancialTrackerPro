@@ -195,20 +195,20 @@ export function addWithdrawalRoutes(app: Express) {
         .where(eq(cashbacks.user_id, userId));
       
       // Criar notificação para o lojista
-      await createWithdrawalRequestNotification({
+      await createWithdrawalRequestNotification(
         userId,
-        status: WithdrawalStatus.PENDING,
-        amount: amount.toFixed(2)
-      });
+        withdrawalRequest.id,
+        WithdrawalStatus.PENDING,
+        amount.toFixed(2)
+      );
       
       // Criar notificação para administradores
-      await createAdminWithdrawalNotification({
-        merchantId: merchant.id,
-        userId,
-        amount: amount.toFixed(2),
-        merchantName: merchant.store_name,
-        requestId: withdrawalRequest.id
-      });
+      await createAdminWithdrawalNotification(
+        merchant.id,
+        merchant.store_name,
+        withdrawalRequest.id,
+        amount.toFixed(2)
+      );
       
       // Retornar a solicitação criada
       res.status(201).json({
@@ -301,12 +301,12 @@ export function addWithdrawalRoutes(app: Express) {
         .where(eq(cashbacks.user_id, userId));
       
       // Notificar o lojista
-      await createWithdrawalRequestNotification({
-        userId: userId,
-        status: WithdrawalStatus.CANCELLED,
-        amount: withdrawalRequest.amount,
-        reason: "Solicitação de saque cancelada pelo lojista"
-      });
+      await createWithdrawalRequestNotification(
+        userId,
+        withdrawalRequest.id,
+        WithdrawalStatus.CANCELLED,
+        withdrawalRequest.amount
+      );
       
       res.json({
         success: true,
@@ -420,12 +420,12 @@ export function addWithdrawalRoutes(app: Express) {
       }
       
       // Enviar notificação para o lojista
-      await createWithdrawalRequestNotification({
-        userId: existingRequest.user_id,
+      await createWithdrawalRequestNotification(
+        existingRequest.user_id,
+        existingRequest.id,
         status,
-        amount: existingRequest.amount,
-        reason: admin_notes
-      });
+        existingRequest.amount
+      );
       
       res.json({
         success: true,
