@@ -53,10 +53,16 @@ export function isAppInstalled() {
 
 // Função para obter links de download direto para as lojas
 export function getAppStoreLinks() {
+  // URL atual da aplicação para uso no modo PWA
+  const currentUrl = window.location.origin;
+  
   return {
-    // Links de exemplo para app stores - substitua pelos links reais quando disponíveis
-    android: 'https://play.google.com/store/apps/details?id=com.valecashback.app',
-    ios: 'https://apps.apple.com/app/vale-cashback/id0000000000'
+    // Para download direto como app PWA, usamos a mesma URL
+    android: currentUrl,
+    ios: currentUrl,
+    // Links para lojas de aplicativos (quando disponíveis)
+    androidStore: 'https://play.google.com/store/apps/details?id=com.valecashback.app',
+    iosStore: 'https://apps.apple.com/app/vale-cashback/id0000000000'
   };
 }
 

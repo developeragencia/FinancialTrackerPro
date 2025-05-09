@@ -79,5 +79,20 @@
   "categories": ["finance", "business", "shopping"],
   "dir": "ltr",
   "lang": "pt-BR",
-  "prefer_related_applications": false
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.valecashback.app",
+      "id": "com.valecashback.app"
+    },
+    {
+      "platform": "itunes",
+      "url": "https://apps.apple.com/app/vale-cashback/id0000000000"
+    }
+  ],
+  "prefer_related_applications": true,
+  "capture_links": "existing-client-navigate",
+  "launch_handler": {
+    "client_mode": ["navigate-existing", "auto"]
+  }
 }
