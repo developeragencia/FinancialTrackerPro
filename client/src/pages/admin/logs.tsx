@@ -443,51 +443,105 @@ export default function AdminLogs() {
   // Renderizar estatísticas com base na aba ativa
   const renderStats = () => {
     if (activeTab === "logs") {
+      // Agrupar logs por tipo de ação e entidade
+      const actionGroups: Record<string, number> = {};
+      const entityGroups: Record<string, number> = {};
+      
+      logData?.logs?.forEach(log => {
+        // Agrupar por ação
+        actionGroups[log.action] = (actionGroups[log.action] || 0) + 1;
+        
+        // Agrupar por entidade
+        entityGroups[log.entityType] = (entityGroups[log.entityType] || 0) + 1;
+      });
+      
+      const actionCountsArray = Object.entries(actionGroups)
+        .map(([action, count]) => ({ action, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+        
+      const entityCountsArray = Object.entries(entityGroups)
+        .map(([entity, count]) => ({ entity, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      
       return (
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Por Tipo</CardTitle>
+              <CardTitle className="text-base">Por Ação</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {logData?.typeCounts.map((typeCount) => {
-                  const typeLabels: Record<string, string> = {
-                    "info": "Informação",
-                    "warning": "Alerta",
-                    "error": "Erro",
-                    "security": "Segurança"
+                {actionCountsArray.length > 0 ? actionCountsArray.map(item => {
+                  // Verificar qual ícone usar com base na ação
+                  const actionIcons: Record<string, React.ReactNode> = {
+                    "store_approved": <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />,
+                    "store_rejected": <AlertCircle className="h-3.5 w-3.5 text-red-500" />,
+                    "user_created": <User className="h-3.5 w-3.5 text-blue-500" />,
+                    "user_updated": <User className="h-3.5 w-3.5 text-blue-500" />,
+                    "user_deleted": <Trash2 className="h-3.5 w-3.5 text-red-500" />,
+                    "transfer_approved": <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />,
+                    "transfer_rejected": <AlertCircle className="h-3.5 w-3.5 text-red-500" />,
+                    "transfer_processing": <Clock className="h-3.5 w-3.5 text-yellow-500" />,
+                    "transfer_completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500" />,
+                    "transaction_created": <Activity className="h-3.5 w-3.5 text-blue-500" />,
+                    "transaction_updated": <Activity className="h-3.5 w-3.5 text-blue-500" />,
+                    "settings_updated": <HardDrive className="h-3.5 w-3.5 text-purple-500" />,
+                    "login_success": <User className="h-3.5 w-3.5 text-green-500" />,
+                    "login_failed": <AlertCircle className="h-3.5 w-3.5 text-red-500" />,
+                    "password_reset": <Shield className="h-3.5 w-3.5 text-yellow-500" />
                   };
                   
                   return (
-                    <div key={typeCount.type} className="flex items-center justify-between">
+                    <div key={item.action} className="flex items-center justify-between">
                       <div className="flex items-center text-sm">
-                        {LogTypeIcons[typeCount.type]}
-                        <span className="ml-1">{typeLabels[typeCount.type]}</span>
+                        {actionIcons[item.action] || <Info className="h-3.5 w-3.5 text-gray-500" />}
+                        <span className="ml-1 capitalize">{item.action.replace(/_/g, ' ')}</span>
                       </div>
-                      <span className="text-sm font-medium">{typeCount.count}</span>
+                      <span className="text-sm font-medium">{item.count}</span>
                     </div>
                   );
-                })}
+                }) : (
+                  <div className="text-sm text-muted-foreground">
+                    Nenhuma ação registrada
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
           
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">Por Módulo</CardTitle>
+              <CardTitle className="text-base">Por Entidade</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {logData?.moduleCounts.map((moduleCount) => (
-                  <div key={moduleCount.module} className="flex items-center justify-between">
-                    <div className="flex items-center text-sm">
-                      <Activity className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
-                      <span className="capitalize">{moduleCount.module}</span>
+                {entityCountsArray.length > 0 ? entityCountsArray.map(item => {
+                  // Ícones baseados no tipo de entidade
+                  const entityIcons: Record<string, React.ReactNode> = {
+                    "user": <User className="h-3.5 w-3.5 text-blue-500" />,
+                    "merchant": <HardDrive className="h-3.5 w-3.5 text-purple-500" />,
+                    "transaction": <Activity className="h-3.5 w-3.5 text-green-500" />,
+                    "transfer": <Activity className="h-3.5 w-3.5 text-yellow-500" />,
+                    "setting": <HardDrive className="h-3.5 w-3.5 text-gray-500" />,
+                    "commission_setting": <HardDrive className="h-3.5 w-3.5 text-orange-500" />
+                  };
+                  
+                  return (
+                    <div key={item.entity} className="flex items-center justify-between">
+                      <div className="flex items-center text-sm">
+                        {entityIcons[item.entity] || <HardDrive className="h-3.5 w-3.5 text-muted-foreground" />}
+                        <span className="ml-1 capitalize">{item.entity.replace(/_/g, ' ')}</span>
+                      </div>
+                      <span className="text-sm font-medium">{item.count}</span>
                     </div>
-                    <span className="text-sm font-medium">{moduleCount.count}</span>
+                  );
+                }) : (
+                  <div className="text-sm text-muted-foreground">
+                    Nenhuma entidade registrada
                   </div>
-                ))}
+                )}
               </div>
             </CardContent>
           </Card>

@@ -43,7 +43,9 @@ export function addAdminRoutes(app: Express) {
         
       // Valor total de transações
       const [transactionTotal] = await db
-        .select({ total: sum(transactions.total_amount) })
+        .select({ 
+          total: sql`SUM(${transactions.total_amount})` 
+        })
         .from(transactions);
         
       // Transferências pendentes
@@ -843,7 +845,9 @@ export function addAdminRoutes(app: Express) {
         let cashbackTotal = 0;
         if (user.type === 'client') {
           const [cashbackResult] = await db
-            .select({ total: sum(cashbacks.amount) })
+            .select({ 
+              total: sql`SUM(${cashbacks.amount})` 
+            })
             .from(cashbacks)
             .where(eq(cashbacks.user_id, user.id));
           
