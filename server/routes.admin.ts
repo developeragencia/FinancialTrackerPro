@@ -60,6 +60,30 @@ export function addAdminRoutes(app: Express) {
         .from(auditLogs)
         .orderBy(desc(auditLogs.created_at))
         .limit(1);
+
+      // Lojas recentes (substituindo lojas pendentes)
+      const recentStoresResult = await db
+        .select({
+          id: merchants.id,
+          store_name: merchants.store_name,
+          created_at: merchants.created_at,
+          category: merchants.category,
+          owner_name: users.name
+        })
+        .from(merchants)
+        .innerJoin(users, eq(merchants.user_id, users.id))
+        .orderBy(desc(merchants.created_at))
+        .limit(5);
+      
+      // Formatar lojas recentes
+      const recentStores = recentStoresResult.map(store => ({
+        id: store.id,
+        name: store.store_name,
+        owner: store.owner_name,
+        category: store.category || 'Geral',
+        date: new Date(store.created_at).toLocaleDateString('pt-BR'),
+        status: 'active'
+      }));
       
       // Retornar todos os dados combinados
       res.json({
@@ -68,6 +92,7 @@ export function addAdminRoutes(app: Express) {
         transactionCount: transactionCount?.count?.toString() || "0",
         transactionTotal: transactionTotal?.total?.toString() || "0",
         pendingTransfersCount: pendingTransfersCount?.count?.toString() || "0",
+        recentStores: recentStores,
         lastLog: lastLog || null
       });
     } catch (error) {

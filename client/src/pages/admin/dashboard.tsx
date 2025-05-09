@@ -21,8 +21,10 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
+import { getQueryFn } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
-// Mock data - would be replaced with real data from API
+// Mock data - usado apenas quando a API não retorna dados
 const stats = {
   totalUsers: 1250,
   activeToday: 315,
@@ -58,16 +60,47 @@ const userDistributionData = [
   { name: "Administradores", value: 5, color: "hsl(var(--chart-1))" }
 ];
 
-const pendingStores = [
-  { id: 1, name: "Restaurante Sabor Brasil", owner: "Paulo Mendes", date: "20/07/2023", category: "Alimentação" },
-  { id: 2, name: "Auto Peças Expresso", owner: "Sandra Lima", date: "19/07/2023", category: "Automotivo" }
+const recentStores = [
+  { id: 1, name: "Restaurante Sabor Brasil", owner: "Paulo Mendes", date: "20/07/2023", category: "Alimentação", status: "active" },
+  { id: 2, name: "Auto Peças Expresso", owner: "Sandra Lima", date: "19/07/2023", category: "Automotivo", status: "active" }
 ];
 
 export default function AdminDashboard() {
+  const { toast } = useToast();
+  
   // Query to get dashboard data
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['/api/admin/dashboard'],
+    queryFn: getQueryFn({ on401: "throw" }),
   });
+
+  if (error) {
+    console.error("Erro ao carregar dados do dashboard:", error);
+    toast({
+      title: "Erro",
+      description: "Não foi possível carregar os dados do dashboard",
+      variant: "destructive"
+    });
+  }
+
+  // Usar dados da API ou fallback para dados de mock
+  const dashboardData = data || {
+    userCount: stats.totalUsers.toString(),
+    merchantCount: "105",
+    transactionCount: stats.transactionsToday.toString(),
+    transactionTotal: stats.totalVolume.toString(),
+    recentStores: recentStores,
+    pendingTransfersCount: "0",
+    lastLog: null
+  } as {
+    userCount: string;
+    merchantCount: string;
+    transactionCount: string;
+    transactionTotal: string;
+    recentStores: typeof recentStores;
+    pendingTransfersCount: string;
+    lastLog: any | null;
+  };
 
   return (
     <DashboardLayout title="Dashboard" type="admin">
@@ -75,20 +108,20 @@ export default function AdminDashboard() {
       <StatCardGrid className="mb-6">
         <StatCard
           title="Total de Usuários"
-          value={stats.totalUsers.toString()}
+          value={dashboardData.userCount || "0"}
           description={`${stats.activeToday} ativos hoje`}
           icon={<Users className="h-5 w-5 text-primary" />}
         />
         <StatCard
-          title="Transações Hoje"
-          value={stats.transactionsToday.toString()}
+          title="Transações Totais"
+          value={dashboardData.transactionCount || "0"}
           description={`${stats.newAccounts} novas contas (7 dias)`}
           icon={<CreditCard className="h-5 w-5 text-primary" />}
         />
         <StatCard
           title="Volume Financeiro"
-          value={`$ ${stats.totalVolume.toFixed(2)}`}
-          description={`Cashback: $ ${stats.totalCashback.toFixed(2)}`}
+          value={`$ ${parseFloat(dashboardData.transactionTotal || "0").toFixed(2)}`}
+          description={`${dashboardData.merchantCount || "0"} lojistas`}
           icon={<BarChart className="h-5 w-5 text-primary" />}
         />
       </StatCardGrid>
@@ -131,12 +164,16 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {pendingStores.length === 0 ? (
+              {isLoading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Carregando lojas...
+                </div>
+              ) : dashboardData.recentStores?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   Não há lojas recentemente registradas.
                 </div>
               ) : (
-                pendingStores.map((store) => (
+                (dashboardData.recentStores || recentStores).map((store) => (
                   <div key={store.id} className="p-4 border rounded-lg">
                     <div className="flex justify-between mb-2">
                       <h3 className="font-medium">{store.name}</h3>
@@ -150,16 +187,22 @@ export default function AdminDashboard() {
                       <span>Data: {store.date}</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="bg-red-100 text-red-800 hover:bg-red-200 border-red-200">
-                        <XCircle className="mr-1 h-4 w-4" /> Desativar
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Eye className="mr-1 h-4 w-4" /> Detalhes
-                      </Button>
+                      <Link href={`/admin/stores/${store.id}`}>
+                        <Button variant="outline" size="sm">
+                          <Eye className="mr-1 h-4 w-4" /> Detalhes
+                        </Button>
+                      </Link>
                     </div>
                   </div>
                 ))
               )}
+              <div className="flex justify-end mt-4">
+                <Link href="/admin/stores">
+                  <Button variant="outline" size="sm">
+                    Ver todas as lojas
+                  </Button>
+                </Link>
+              </div>
             </div>
           </CardContent>
         </Card>
