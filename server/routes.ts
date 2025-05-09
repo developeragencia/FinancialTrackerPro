@@ -1306,46 +1306,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Se houver bônus de indicação, registra e atualiza o cashback do referenciador
       if (referrerUserToBonus && calculatedReferralBonus > 0) {
-        // Registra a transação de referência
-        await db.insert(referrals).values({
-          referrer_id: referrerUserToBonus,
-          referred_id: customerId,
-          bonus: calculatedReferralBonus.toString(),
-          status: "active",
-          created_at: new Date()
-        });
-        
-        // Atualiza o cashback do referenciador
-        const referrerCashback = await db
-          .select()
-          .from(cashbacks)
-          .where(eq(cashbacks.user_id, referrerUserToBonus));
+        try {
+          // Formatar valor do bônus com precisão de 2 casas decimais
+          const formattedBonus = parseFloat(calculatedReferralBonus.toFixed(2));
           
-        if (referrerCashback.length > 0) {
-          // Atualiza o cashback existente do referenciador
-          const currentBalance = parseFloat(referrerCashback[0].balance.toString());
-          const currentTotalEarned = parseFloat(referrerCashback[0].total_earned.toString());
-          
-          await db
-            .update(cashbacks)
-            .set({
-              balance: (currentBalance + calculatedReferralBonus).toString(),
-              total_earned: (currentTotalEarned + calculatedReferralBonus).toString(),
-              updated_at: new Date()
-            })
-            .where(eq(cashbacks.user_id, referrerUserToBonus));
-            
-          console.log(`Cashback do referenciador ${referrerUserToBonus} atualizado com bônus ${calculatedReferralBonus}`);
-        } else {
-          // Cria um novo registro de cashback para o referenciador
-          await db.insert(cashbacks).values({
-            user_id: referrerUserToBonus,
-            balance: calculatedReferralBonus.toString(),
-            total_earned: calculatedReferralBonus.toString(),
-            updated_at: new Date()
+          // Registra a transação de referência
+          await db.insert(referrals).values({
+            referrer_id: referrerUserToBonus,
+            referred_id: customerId,
+            bonus: formattedBonus.toString(),
+            status: "active",
+            created_at: new Date()
           });
           
-          console.log(`Novo cashback criado para referenciador ${referrerUserToBonus} com bônus ${calculatedReferralBonus}`);
+          console.log(`Bônus de referência no valor de ${formattedBonus} registrado para o usuário ${referrerUserToBonus}`);
+          
+          // Atualiza o cashback do referenciador
+          const referrerCashback = await db
+            .select()
+            .from(cashbacks)
+            .where(eq(cashbacks.user_id, referrerUserToBonus));
+            
+          if (referrerCashback.length > 0) {
+            // Atualiza o cashback existente do referenciador
+            let currentBalance = 0;
+            let currentTotalEarned = 0;
+            
+            try {
+              currentBalance = parseFloat(referrerCashback[0].balance?.toString() || "0");
+              currentTotalEarned = parseFloat(referrerCashback[0].total_earned?.toString() || "0");
+            } catch (error) {
+              console.error(`Erro ao converter valores de cashback para o usuário ${referrerUserToBonus}:`, error);
+            }
+            
+            // Formatar valores finais com precisão de 2 casas decimais
+            const newBalance = (currentBalance + formattedBonus).toFixed(2);
+            const newTotalEarned = (currentTotalEarned + formattedBonus).toFixed(2);
+            
+            await db
+              .update(cashbacks)
+              .set({
+                balance: newBalance,
+                total_earned: newTotalEarned,
+                updated_at: new Date()
+              })
+              .where(eq(cashbacks.user_id, referrerUserToBonus));
+              
+            console.log(`Cashback do referenciador ${referrerUserToBonus} atualizado: saldo ${currentBalance} -> ${newBalance}, total ganho ${currentTotalEarned} -> ${newTotalEarned}`);
+          } else {
+            // Cria um novo registro de cashback para o referenciador
+            await db.insert(cashbacks).values({
+              user_id: referrerUserToBonus,
+              balance: formattedBonus.toString(),
+              total_earned: formattedBonus.toString(),
+              updated_at: new Date()
+            });
+            
+            console.log(`Novo cashback criado para referenciador ${referrerUserToBonus} com bônus inicial de ${formattedBonus}`);
+          }
+        } catch (error) {
+          console.error(`Erro ao processar bônus de referência para o usuário ${referrerUserToBonus}:`, error);
         }
       }
       
@@ -4146,15 +4166,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Mantém o valor padrão em caso de erro
             }
             
+            // Converter o valor do bônus para número para operações seguras
+            let bonusValue = 0.01;
+            try {
+              bonusValue = parseFloat(referralBonus);
+              // Formatar com 2 casas decimais para consistência
+              bonusValue = parseFloat(bonusValue.toFixed(2));
+            } catch (error) {
+              console.error("Erro ao converter valor do bônus:", error);
+              bonusValue = 0.01; // Valor padrão seguro
+            }
+            
             // Incluir SEMPRE o bônus padrão mesmo se ocorrer algum erro
             await db.insert(referrals).values({
               referrer_id: referrer.id,
               referred_id: newUser.id,
-              bonus: referralBonus, // Taxa de bônus configurada no sistema
+              bonus: bonusValue.toString(), // Taxa de bônus configurada no sistema
               status: "active",
               created_at: new Date()
             });
-            console.log(`Referência registrada com sucesso para o cliente ${newUser.id} com bônus de ${referralBonus}`);
+            
+            console.log(`Referência registrada com sucesso para o cliente ${newUser.id} com bônus de ${bonusValue}`);
+            
+            // Aplicar o bônus ao saldo de cashback do referenciador
+            try {
+              // Buscar cashback atual do referenciador
+              const referrerCashback = await db
+                .select()
+                .from(cashbacks)
+                .where(eq(cashbacks.user_id, referrer.id));
+                
+              if (referrerCashback.length > 0) {
+                // Atualizar cashback existente
+                let currentBalance = 0;
+                let currentTotalEarned = 0;
+                
+                try {
+                  currentBalance = parseFloat(referrerCashback[0].balance?.toString() || "0");
+                  currentTotalEarned = parseFloat(referrerCashback[0].total_earned?.toString() || "0");
+                } catch (parseError) {
+                  console.error("Erro ao converter valores de cashback:", parseError);
+                }
+                
+                // Adicionar bônus ao saldo atual
+                const newBalance = (currentBalance + bonusValue).toFixed(2);
+                const newTotalEarned = (currentTotalEarned + bonusValue).toFixed(2);
+                
+                await db
+                  .update(cashbacks)
+                  .set({
+                    balance: newBalance,
+                    total_earned: newTotalEarned,
+                    updated_at: new Date()
+                  })
+                  .where(eq(cashbacks.user_id, referrer.id));
+                  
+                console.log(`Cashback do referenciador ${referrer.id} atualizado: saldo ${currentBalance} -> ${newBalance}`);
+              } else {
+                // Criar novo registro de cashback
+                await db.insert(cashbacks).values({
+                  user_id: referrer.id,
+                  balance: bonusValue.toString(),
+                  total_earned: bonusValue.toString(),
+                  updated_at: new Date()
+                });
+                
+                console.log(`Novo cashback criado para referenciador ${referrer.id} com bônus inicial de ${bonusValue}`);
+              }
+            } catch (cashbackError) {
+              console.error("Erro ao atualizar cashback do referenciador:", cashbackError);
+            }
           } else {
             console.log(`Referência já existente para o cliente ${newUser.id}, ignorando duplicação`);
           }
