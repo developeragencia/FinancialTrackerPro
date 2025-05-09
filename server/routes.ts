@@ -3702,26 +3702,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Verificar saldo disponível do usuário enviador
       // Obter o saldo do cashback
       const cashbackResult = await db.execute(
-        sql`SELECT balance FROM cashbacks WHERE user_id = ${fromUserId}`
+        sql`SELECT COALESCE(balance, '0') as balance FROM cashbacks WHERE user_id = ${fromUserId}`
       );
       
-      let cashbackBalance = parseFloat(cashbackResult.rows[0]?.balance || 0);
+      // Se não houver registro de cashback, considerar como zero
+      let cashbackBalance = 0;
+      if (cashbackResult.rows.length > 0) {
+        try {
+          cashbackBalance = parseFloat(cashbackResult.rows[0]?.balance || '0');
+          // Se for NaN, garantir que seja zero
+          if (isNaN(cashbackBalance)) cashbackBalance = 0;
+        } catch (e) {
+          console.error("Erro ao converter saldo de cashback:", e);
+          cashbackBalance = 0;
+        }
+      }
       
-      // Obter o saldo de transferências
+      // Obter o saldo de transferências (enviadas e recebidas)
       const transfersResult = await db.execute(
-        sql`SELECT SUM(
-              CASE WHEN from_user_id = ${fromUserId} THEN -amount::numeric ELSE amount::numeric END
-            ) as balance
+        sql`SELECT 
+              COALESCE(SUM(
+                CASE 
+                  WHEN from_user_id = ${fromUserId} THEN -amount::numeric 
+                  WHEN to_user_id = ${fromUserId} THEN amount::numeric
+                  ELSE 0 
+                END
+              ), 0) as balance
             FROM transfers
             WHERE (from_user_id = ${fromUserId} OR to_user_id = ${fromUserId})
               AND status = 'completed'`
       );
       
-      let transfersBalance = parseFloat(transfersResult.rows[0]?.balance || 0);
+      let transfersBalance = 0;
+      try {
+        transfersBalance = parseFloat(transfersResult.rows[0]?.balance || '0');
+        // Se for NaN, garantir que seja zero
+        if (isNaN(transfersBalance)) transfersBalance = 0;
+      } catch (e) {
+        console.error("Erro ao converter saldo de transferências:", e);
+        transfersBalance = 0;
+      }
       
       // Calcular o saldo total disponível
       const currentBalance = cashbackBalance + transfersBalance;
-      console.log("Saldo do cliente:", {
+      console.log("Saldo do cliente para transferência:", {
         clientId: fromUserId,
         cashbackBalance,
         transfersBalance,
@@ -3730,7 +3754,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const transferAmount = parseFloat(amount);
       
-      if (isNaN(currentBalance) || isNaN(transferAmount) || currentBalance < transferAmount) {
+      if (isNaN(transferAmount) || transferAmount <= 0) {
+        return res.status(400).json({ message: "Valor de transferência inválido" });
+      }
+      
+      if (currentBalance < transferAmount) {
         return res.status(400).json({ message: "Saldo insuficiente para esta transferência" });
       }
       
