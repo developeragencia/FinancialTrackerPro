@@ -5,6 +5,10 @@ import { Download, X, Smartphone } from 'lucide-react';
 
 // Variável global para armazenar o evento de instalação
 let deferredPrompt: any = null;
+// Quando a janela carrega, limpa variáveis de instalação do localStorage
+if (typeof window !== 'undefined') {
+  (window as any).deferredPrompt = null;
+}
 
 export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(true); // Sempre mostra o banner
