@@ -160,9 +160,12 @@ export default function AdminTransfers() {
       ? parseFloat(transfer.amount) 
       : transfer.amount;
     
+    // Garantir que o valor é um número válido antes de chamar toFixed
+    const formattedAmount = !isNaN(amount) ? amount.toFixed(2) : "0.00";
+    
     toast({
       title: `Transferência #${transfer.id}`,
-      description: `Usuário: ${transfer.userName}, Valor: $ ${amount.toFixed(2)}`,
+      description: `Usuário: ${transfer.userName}, Valor: $ ${formattedAmount}`,
     });
   };
   
@@ -216,9 +219,12 @@ export default function AdminTransfers() {
           ? parseFloat(transfer.amount) 
           : transfer.amount;
           
+        // Garantir que o valor é um número válido antes de chamar toFixed
+        const formattedAmount = !isNaN(amount) ? amount.toFixed(2) : "0.00";
+          
         return (
           <span className="font-medium">
-            $ {amount.toFixed(2)}
+            $ {formattedAmount}
           </span>
         );
       },
@@ -359,11 +365,7 @@ export default function AdminTransfers() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                $ {data?.totalAmount ? 
-                    (typeof data.totalAmount === 'string' ? 
-                      parseFloat(data.totalAmount).toFixed(2) : 
-                      data.totalAmount.toFixed(2)) 
-                    : "0.00"}
+                {formatCurrency(data?.totalAmount)}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransfers.length} transferências
@@ -442,11 +444,9 @@ export default function AdminTransfers() {
                           {typeIcons[typeCount.type] || <DollarSign className="h-3.5 w-3.5 mr-1.5" />}
                           <span>{typeLabels[typeCount.type] || typeCount.type}</span>
                         </div>
-                        <span className="text-sm font-medium">$ {
-                          typeof typeCount.sum === 'string' ? 
-                            parseFloat(typeCount.sum).toFixed(2) : 
-                            (typeCount.sum || 0).toFixed(2)
-                        }</span>
+                        <span className="text-sm font-medium">
+                          {formatCurrency(typeCount.sum)}
+                        </span>
                       </div>
                     );
                   })

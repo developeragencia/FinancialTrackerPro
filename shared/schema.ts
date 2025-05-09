@@ -125,6 +125,7 @@ export const transfers = pgTable("transfers", {
   description: text("description"),
   status: text("status").notNull().default("completed"),
   created_at: timestamp("created_at").notNull().defaultNow(),
+  type: text("type"),
 });
 
 // Referrals
