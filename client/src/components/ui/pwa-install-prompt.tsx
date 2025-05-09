@@ -18,61 +18,116 @@ export function PWAInstallPrompt() {
   const [showDialog, setShowDialog] = useState(false);
 
   useEffect(() => {
+    console.log('PWAInstallPrompt: Inicializando componente');
     // Reseta status no localStorage para garantir que sempre funcione
     localStorage.removeItem('pwa-install-dismissed');
     
-    // Define como instalável por padrão
+    // Define como instalável por padrão 
     forceInstallable = true;
     setInstallable(true);
     
     // Detecta o sistema operacional
     const os = getDeviceOS();
     setDeviceOS(os);
+    console.log('PWAInstallPrompt: Sistema operacional detectado:', os);
     
     // Verificar se o app já está instalado
     const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
                           (window.navigator as any).standalone === true;
     
     if (isAppInstalled) {
-      console.log('App já está instalado como PWA');
+      console.log('PWAInstallPrompt: App já está instalado como PWA, não exibindo prompt');
       return; // Não mostra o prompt se já estiver instalado
     }
+
+    // Obtém o valor de showPromptForced do localStorage ou URL
+    const params = new URLSearchParams(window.location.search);
+    const forceShowPrompt = params.get('showInstall') === 'true' || 
+                            localStorage.getItem('force-pwa-install') === 'true';
     
-    // Depois de 3 segundos, mostra o banner de instalação (para dar tempo de carregar a página)
-    const timer = setTimeout(() => {
+    if (forceShowPrompt) {
+      console.log('PWAInstallPrompt: Exibição forçada do prompt');
       setShowPrompt(true);
-    }, 3000);
+      // Limpa o parâmetro da URL sem recarregar a página
+      if (params.get('showInstall') === 'true') {
+        params.delete('showInstall');
+        const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+        window.history.replaceState({}, '', newUrl);
+      }
+    } else {
+      // Depois de 2 segundos, mostra o banner de instalação (para dar tempo de carregar a página)
+      console.log('PWAInstallPrompt: Agendando exibição do prompt em 2 segundos');
+      const timer = setTimeout(() => {
+        console.log('PWAInstallPrompt: Exibindo prompt após timeout');
+        setShowPrompt(true);
+      }, 2000);
+    }
     
     // Captura o evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: any) => {
       // Previne que o Chrome mostre o prompt nativo
       e.preventDefault();
       // Armazena o evento para uso posterior
-      console.log('BeforeInstallPrompt capturado!', e);
+      console.log('PWAInstallPrompt: BeforeInstallPrompt capturado!', e);
       deferredPrompt = e;
       setInstallable(true);
       
-      // Sempre mostra o banner
+      // Sempre mostra o banner quando o evento é capturado
       setShowPrompt(true);
     };
     
     // Detecta quando o app é instalado
     const handleAppInstalled = () => {
-      console.log('App instalado com sucesso!');
+      console.log('PWAInstallPrompt: App instalado com sucesso!');
       setShowPrompt(false);
       setShowDialog(false);
       deferredPrompt = null;
     };
     
+    // Adiciona um listener para mostrar o banner por interação do usuário
+    const handleUserInteraction = () => {
+      if (!showPrompt && !isAppInstalled && !dismissed) {
+        const isUserSession = localStorage.getItem('user-session-started');
+        if (isUserSession) {
+          console.log('PWAInstallPrompt: Exibindo prompt após interação do usuário');
+          setShowPrompt(true);
+          // Remove o listener após mostrar o banner
+          document.removeEventListener('click', handleUserInteraction);
+        } else {
+          localStorage.setItem('user-session-started', 'true');
+        }
+      }
+    };
+    
+    // Registra os event listeners
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
+    document.addEventListener('click', handleUserInteraction);
+    
+    // Força mostrar o banner após 5 segundos se o usuário estiver logado
+    const isLoggedIn = document.cookie.includes('connect.sid');
+    if (isLoggedIn) {
+      const timerForced = setTimeout(() => {
+        if (!showPrompt && !dismissed && !isAppInstalled) {
+          console.log('PWAInstallPrompt: Forçando exibição do prompt após 5s para usuário logado');
+          setShowPrompt(true);
+        }
+      }, 5000);
+      
+      return () => {
+        clearTimeout(timerForced);
+        window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+        window.removeEventListener('appinstalled', handleAppInstalled);
+        document.removeEventListener('click', handleUserInteraction);
+      };
+    }
     
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      clearTimeout(timer);
+      document.removeEventListener('click', handleUserInteraction);
     };
-  }, []);
+  }, [showPrompt, dismissed]);
   
   // Função para instalar o aplicativo diretamente (Chrome/Android)
   const handleNativeInstall = async () => {
@@ -127,7 +182,11 @@ export function PWAInstallPrompt() {
     setShowPrompt(false);
   };
   
-  if (!showPrompt && !showDialog || dismissed) return null;
+  // Se foi dispensado pelo usuário, não mostra nada
+  if (dismissed) return null;
+  
+  // Se não tem nada para mostrar (nem o prompt nem o diálogo), não mostra nada  
+  if (!showPrompt && !showDialog) return null;
   
   const isIOS = deviceOS === 'ios';
   const isAndroid = deviceOS === 'android';
