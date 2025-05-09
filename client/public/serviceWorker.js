@@ -1,68 +1,88 @@
-// Nome do cache do aplicativo
 const CACHE_NAME = 'vale-cashback-v1';
-
-// Lista de recursos que queremos armazenar em cache
 const urlsToCache = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/favicon.png',
-  '/icons/icon-48x48.png',
-  '/icons/icon-72x72.png',
-  '/icons/icon-96x96.png',
-  '/icons/icon-144x144.png',
   '/icons/icon-192x192.png',
-  '/icons/icon-384x384.png',
-  '/icons/icon-512x512.png'
+  '/icons/icon-512x512.png',
+  '/icons/apple-touch-icon.png',
+  '/static/js/main.js',
+  '/static/css/main.css',
+  '/login',
+  '/register',
+  '/client/dashboard',
+  '/merchant/dashboard',
+  '/admin/dashboard',
 ];
 
-// Instalação do Service Worker
-self.addEventListener('install', event => {
+// Instalação e armazenamento em cache dos recursos estáticos
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
+      .then((cache) => {
         console.log('Cache aberto');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// Estratégia de cache: Network First, then Cache
-self.addEventListener('fetch', event => {
-  // Não interceptar requisições de API
-  if (event.request.url.includes('/api/')) {
+// Estratégia de cache: Cache First, então Network
+self.addEventListener('fetch', (event) => {
+  // Não interceptar requisições que não sejam GET
+  if (event.request.method !== 'GET') return;
+
+  // Não interceptar requisições para APIs ou websockets
+  if (event.request.url.includes('/api/') || 
+      event.request.url.includes('/ws') ||
+      event.request.url.includes('socket.io')) {
     return;
   }
 
   event.respondWith(
-    fetch(event.request)
-      .then(response => {
-        // Se a resposta foi bem-sucedida, clone-a e armazene-a no cache
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(event.request, responseToCache);
-            });
+    caches.match(event.request)
+      .then((response) => {
+        // Retorna o recurso do cache se existir
+        if (response) {
+          return response;
         }
-        return response;
-      })
-      .catch(() => {
-        // Se a rede falhar, tente retornar do cache
-        return caches.match(event.request);
+
+        // Se não estiver no cache, busca da rede
+        return fetch(event.request)
+          .then((response) => {
+            // Resposta básica, não pode ser armazenada em cache
+            if (!response || response.status !== 200 || response.type !== 'basic') {
+              return response;
+            }
+
+            // Clona a resposta porque ela é um stream que só pode ser consumido uma vez
+            const responseToCache = response.clone();
+
+            // Armazena em cache para uso futuro
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+
+            return response;
+          })
+          .catch(() => {
+            // Se falhar ao buscar da rede e for uma página HTML, retorna a página offline
+            if (event.request.headers.get('accept').includes('text/html')) {
+              return caches.match('/');
+            }
+          });
       })
   );
 });
 
-// Atualização do Service Worker
-self.addEventListener('activate', event => {
+// Ativação e limpeza de caches antigos
+self.addEventListener('activate', (event) => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
-    caches.keys().then(cacheNames => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames.map(cacheName => {
+        cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
-            // Excluir caches antigos que não estão na whitelist
             return caches.delete(cacheName);
           }
         })
@@ -71,8 +91,8 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Receber mensagens para atualizar o conteúdo do cache
-self.addEventListener('message', event => {
+// Recebe mensagens do cliente
+self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }

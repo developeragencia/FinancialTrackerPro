@@ -125,6 +125,7 @@ function App() {
           <TooltipProvider>
             <Toaster />
             <Router />
+            <PWAInstallPrompt />
           </TooltipProvider>
         </AuthProvider>
       </ThemeProvider>
