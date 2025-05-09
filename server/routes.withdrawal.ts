@@ -248,6 +248,80 @@ export function addWithdrawalRoutes(app: Express) {
     }
   });
   
+  // Rota para lojista cancelar uma solicitação de saque pendente
+  app.delete("/api/merchant/withdrawal-requests/:id", isUserType("merchant"), async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      const requestId = parseInt(req.params.id);
+      
+      // Verificar se a solicitação existe e pertence ao lojista
+      const [withdrawalRequest] = await db
+        .select()
+        .from(withdrawalRequests)
+        .where(
+          and(
+            eq(withdrawalRequests.id, requestId),
+            eq(withdrawalRequests.user_id, userId)
+          )
+        );
+      
+      if (!withdrawalRequest) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Solicitação de saque não encontrada" 
+        });
+      }
+      
+      // Verificar se a solicitação ainda está pendente
+      if (withdrawalRequest.status !== WithdrawalStatus.PENDING) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Apenas solicitações pendentes podem ser canceladas" 
+        });
+      }
+      
+      // Atualizar o status da solicitação para cancelado
+      const [updatedRequest] = await db
+        .update(withdrawalRequests)
+        .set({
+          status: WithdrawalStatus.CANCELLED,
+          processed_at: new Date(),
+          notes: "Cancelado pelo lojista"
+        })
+        .where(eq(withdrawalRequests.id, requestId))
+        .returning();
+      
+      // Devolver o valor para a carteira do lojista
+      await db
+        .update(cashbacks)
+        .set({
+          balance: sql`balance + ${withdrawalRequest.amount}`,
+          updated_at: new Date()
+        })
+        .where(eq(cashbacks.user_id, userId));
+      
+      // Notificar o lojista
+      await createWithdrawalRequestNotification({
+        userId: userId,
+        status: WithdrawalStatus.CANCELLED,
+        amount: withdrawalRequest.amount,
+        reason: "Solicitação de saque cancelada pelo lojista"
+      });
+      
+      res.json({
+        success: true,
+        message: "Solicitação de saque cancelada com sucesso",
+        withdrawalRequest: updatedRequest
+      });
+    } catch (error) {
+      console.error("Erro ao cancelar solicitação de saque:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao cancelar solicitação de saque"
+      });
+    }
+  });
+  
   // Rota para administrador visualizar todas as solicitações de saque
   app.get("/api/admin/withdrawal-requests", isUserType("admin"), async (req: Request, res: Response) => {
     try {

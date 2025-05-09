@@ -248,7 +248,8 @@ export type NotificationTypeValues = typeof NotificationType[keyof typeof Notifi
 export const WithdrawalStatus = {
   PENDING: "pending",
   COMPLETED: "completed",
-  REJECTED: "rejected"
+  REJECTED: "rejected",
+  CANCELLED: "cancelled"
 } as const;
 
 export type WithdrawalStatusValues = typeof WithdrawalStatus[keyof typeof WithdrawalStatus];
