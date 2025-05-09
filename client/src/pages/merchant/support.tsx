@@ -60,7 +60,7 @@ const merchantFaqs = [
   },
   {
     question: "Como funciona o programa de indicações para lojistas?",
-    answer: "Ao indicar outros estabelecimentos para participar da plataforma, você recebe comissões contínuas sobre as vendas realizadas por eles. Você ganha 0,5% sobre todas as vendas processadas pela loja indicada, além de um bônus fixo mensal de R$ 50 por loja ativa que você indicou. Compartilhe seu código de indicação ou link personalizado com outros lojistas, e quando eles se cadastrarem usando seu código, serão automaticamente vinculados à sua indicação."
+    answer: "Ao indicar outros estabelecimentos para participar da plataforma, você recebe comissões contínuas sobre as vendas realizadas por eles. Você ganha 0,5% sobre todas as vendas processadas pela loja indicada, além de um bônus fixo mensal de $ 50 por loja ativa que você indicou. Compartilhe seu código de indicação ou link personalizado com outros lojistas, e quando eles se cadastrarem usando seu código, serão automaticamente vinculados à sua indicação."
   },
   {
     question: "Como configurar taxas de cashback personalizadas?",

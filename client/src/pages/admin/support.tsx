@@ -214,7 +214,7 @@ export default function AdminSupport() {
             },
             {
               id: 5,
-              content: "Olá Ana, verificamos o seu caso e identificamos um atraso no processamento do cashback. Já realizamos o crédito de R$ 3,00 em sua conta e também adicionamos um bônus de R$ 1,00 como compensação pelo transtorno. Pedimos desculpas pelo ocorrido.",
+              content: "Olá Ana, verificamos o seu caso e identificamos um atraso no processamento do cashback. Já realizamos o crédito de $ 3.00 em sua conta e também adicionamos um bônus de $ 1.00 como compensação pelo transtorno. Pedimos desculpas pelo ocorrido.",
               createdAt: "2023-07-19T14:30:00Z",
               isAdmin: true,
               user: {

@@ -69,7 +69,7 @@ const SYSTEM_SETTINGS = {
   cashbackRate: 0.02, // 2% - Cashback para o cliente
   referralRate: 0.01, // 1% - Bônus para quem indicou
   merchantCommission: 0.02, // 2% - Comissão do lojista
-  minWithdrawal: 50, // R$ 50,00
+  minWithdrawal: 50, // $ 50.00
 };
 
 export default function MerchantSales() {
@@ -340,12 +340,12 @@ export default function MerchantSales() {
     {
       header: "Valor",
       accessorKey: "amount" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `R$ ${parseFloat(String(item.amount)).toFixed(2)}`,
+      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.amount)).toFixed(2)}`,
     },
     {
       header: "Cashback",
       accessorKey: "cashback" as keyof SaleTransaction,
-      cell: (item: SaleTransaction) => `R$ ${parseFloat(String(item.cashback)).toFixed(2)}`,
+      cell: (item: SaleTransaction) => `$ ${parseFloat(String(item.cashback)).toFixed(2)}`,
     }
   ];
 

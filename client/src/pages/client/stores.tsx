@@ -567,7 +567,7 @@ export default function ClientStores() {
                               <p className="text-xs text-muted-foreground mt-1">Descrição do produto de exemplo</p>
                               <div className="mt-1">
                                 <Badge variant="outline" className="text-xs">
-                                  R$ 99.90
+                                  $ 99.90
                                 </Badge>
                               </div>
                             </div>
@@ -638,7 +638,7 @@ export default function ClientStores() {
                                   </p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-sm font-medium">R$ 100.00</p>
+                                  <p className="text-sm font-medium">$ 100.00</p>
                                   <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
                                     {(100 * (selectedStore ? Number(selectedStore.commissionRate || 0) : 0) / 100).toFixed(2)} cashback
                                   </Badge>
