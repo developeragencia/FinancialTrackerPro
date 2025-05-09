@@ -170,8 +170,8 @@ export default function AdminStores() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
   
-  // Use mock data for now until API is fully implemented
-  const storesData = data ? data.stores : stores;
+  // Usa os dados da API ou dados fictícios enquanto carrega
+  const storesData = data || [];
 
   const handleViewStore = (store: any) => {
     setSelectedStore(store);

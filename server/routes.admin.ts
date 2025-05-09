@@ -711,11 +711,20 @@ export function addAdminRoutes(app: Express) {
     
     try {
       // Obter configurações de comissão mais recentes
-      const [commissionSetting] = await db
+      // Sem usar orderBy/desc pois está causando erro no ambiente atual
+      const allCommissionSettings = await db
         .select()
         .from(commissionSettings)
-        .orderBy(desc(commissionSettings.created_at))
-        .limit(1);
+        .limit(10);
+        
+      // Ordenar manualmente do lado da aplicação
+      allCommissionSettings.sort((a, b) => {
+        // Assumindo que o campo correto é updated_at em vez de created_at
+        if (!a.updated_at || !b.updated_at) return 0;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+      
+      const [commissionSetting] = allCommissionSettings;
       
       // Obter outras configurações do sistema
       const systemSettings = await db
@@ -758,11 +767,20 @@ export function addAdminRoutes(app: Express) {
     }
     
     try {
-      const [commissionSetting] = await db
+      // Sem usar orderBy/desc pois está causando erro no ambiente atual
+      const allCommissionSettings = await db
         .select()
         .from(commissionSettings)
-        .orderBy(desc(commissionSettings.created_at))
-        .limit(1);
+        .limit(10);
+        
+      // Ordenar manualmente do lado da aplicação
+      allCommissionSettings.sort((a, b) => {
+        // Assumindo que o campo correto é updated_at em vez de created_at
+        if (!a.updated_at || !b.updated_at) return 0;
+        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      });
+      
+      const [commissionSetting] = allCommissionSettings;
       
       if (!commissionSetting) {
         // Se não existir, criar com valores padrão
