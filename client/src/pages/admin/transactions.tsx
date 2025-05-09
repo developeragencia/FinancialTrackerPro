@@ -32,7 +32,9 @@ import {
   CreditCard,
   QrCode,
   Wallet,
-  Store
+  Store,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { Calendar } from "@/components/ui/calendar";
@@ -141,9 +143,15 @@ export default function AdminTransactions() {
   
   // Visualizar detalhes da transação
   const handleViewTransaction = (transaction: Transaction) => {
+    const amount = typeof transaction.totalAmount === 'number' 
+      ? transaction.totalAmount.toFixed(2) 
+      : typeof transaction.totalAmount === 'string'
+        ? parseFloat(transaction.totalAmount).toFixed(2)
+        : "0.00";
+    
     toast({
       title: `Transação #${transaction.id}`,
-      description: `Cliente: ${transaction.customer.name}, Loja: ${transaction.merchant.name}, Valor: $ ${transaction.totalAmount.toFixed(2)}`,
+      description: `Cliente: ${transaction.customer.name}, Loja: ${transaction.merchant.name}, Valor: $ ${amount}`,
     });
   };
   
@@ -193,7 +201,11 @@ export default function AdminTransactions() {
       accessorKey: "totalAmount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="font-medium">
-          $ {transaction.totalAmount.toFixed(2)}
+          $ {typeof transaction.totalAmount === 'number' 
+              ? transaction.totalAmount.toFixed(2) 
+              : typeof transaction.totalAmount === 'string'
+                ? parseFloat(transaction.totalAmount).toFixed(2)
+                : "0.00"}
         </span>
       ),
     },
@@ -202,7 +214,11 @@ export default function AdminTransactions() {
       accessorKey: "cashbackAmount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="text-green-600">
-          $ {transaction.cashbackAmount.toFixed(2)}
+          $ {typeof transaction.cashbackAmount === 'number' 
+              ? transaction.cashbackAmount.toFixed(2) 
+              : typeof transaction.cashbackAmount === 'string'
+                ? parseFloat(transaction.cashbackAmount).toFixed(2)
+                : "0.00"}
         </span>
       ),
     },
@@ -336,12 +352,17 @@ export default function AdminTransactions() {
                   mode="range"
                   defaultMonth={new Date()}
                   selected={{
-                    from: dateRange.from ?? undefined,
-                    to: dateRange.to ?? undefined,
+                    from: dateRange.from || undefined,
+                    to: dateRange.to || undefined,
                   }}
                   onSelect={range => {
                     if (range?.from) {
-                      setDateRange({ from: range.from, to: range.to });
+                      setDateRange({ 
+                        from: range.from, 
+                        to: range.to || null 
+                      });
+                    } else {
+                      setDateRange({ from: null, to: null });
                     }
                   }}
                   locale={ptBR}
