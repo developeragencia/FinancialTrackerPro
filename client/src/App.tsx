@@ -6,7 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "./lib/protected-route";
+import { ProtectedRouteMobile } from "./lib/protected-route-mobile";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
+import { MobileProvider } from "@/hooks/use-mobile";
 
 // Auth Pages
 import Login from "@/pages/auth/login";
@@ -75,41 +77,41 @@ function Router() {
       <Route path="/:anypath/:anysubpath/:code" component={InvitePage} />
       
       {/* Client Routes */}
-      <ProtectedRoute path="/client" component={ClientDashboard} userType="client" />
-      <ProtectedRoute path="/client/dashboard" component={ClientDashboard} userType="client" />
-      <ProtectedRoute path="/client/transactions" component={ClientTransactions} userType="client" />
-      <ProtectedRoute path="/client/transfers" component={ClientTransfers} userType="client" />
-      <ProtectedRoute path="/client/qr-code" component={ClientQRCode} userType="client" />
-      <ProtectedRoute path="/client/referrals" component={ClientReferrals} userType="client" />
-      <ProtectedRoute path="/client/profile" component={ClientProfile} userType="client" />
-      <ProtectedRoute path="/client/stores" component={ClientStores} userType="client" />
+      <ProtectedRouteMobile path="/client" component={ClientDashboard} userType="client" title="Dashboard" />
+      <ProtectedRouteMobile path="/client/dashboard" component={ClientDashboard} userType="client" title="Dashboard" />
+      <ProtectedRouteMobile path="/client/transactions" component={ClientTransactions} userType="client" title="Transações" />
+      <ProtectedRouteMobile path="/client/transfers" component={ClientTransfers} userType="client" title="Transferências" />
+      <ProtectedRouteMobile path="/client/qr-code" component={ClientQRCode} userType="client" title="QR Code" />
+      <ProtectedRouteMobile path="/client/referrals" component={ClientReferrals} userType="client" title="Indicações" />
+      <ProtectedRouteMobile path="/client/profile" component={ClientProfile} userType="client" title="Meu Perfil" />
+      <ProtectedRouteMobile path="/client/stores" component={ClientStores} userType="client" title="Lojas" />
       
       {/* Merchant Routes */}
-      <ProtectedRoute path="/merchant" component={MerchantDashboard} userType="merchant" />
-      <ProtectedRoute path="/merchant/dashboard" component={MerchantDashboard} userType="merchant" />
-      <ProtectedRoute path="/merchant/sales" component={MerchantSales} userType="merchant" />
-      <ProtectedRoute path="/merchant/products" component={MerchantProducts} userType="merchant" />
-      <ProtectedRoute path="/merchant/scanner" component={MerchantScanner} userType="merchant" />
-      <ProtectedRoute path="/merchant/customers" component={MerchantCustomers} userType="merchant" />
-      <ProtectedRoute path="/merchant/profile" component={MerchantProfile} userType="merchant" />
-      <ProtectedRoute path="/merchant/transactions" component={MerchantTransactions} userType="merchant" />
-      <ProtectedRoute path="/merchant/transaction-management" component={MerchantTransactionManagement} userType="merchant" />
-      <ProtectedRoute path="/merchant/reports" component={MerchantReports} userType="merchant" />
-      <ProtectedRoute path="/merchant/settings" component={MerchantSettings} userType="merchant" />
-      <ProtectedRoute path="/merchant/support" component={MerchantSupport} userType="merchant" />
-      <ProtectedRoute path="/merchant/referrals" component={MerchantReferrals} userType="merchant" />
-      <ProtectedRoute path="/merchant/stores" component={MerchantStores} userType="merchant" />
+      <ProtectedRouteMobile path="/merchant" component={MerchantDashboard} userType="merchant" title="Dashboard" />
+      <ProtectedRouteMobile path="/merchant/dashboard" component={MerchantDashboard} userType="merchant" title="Dashboard" />
+      <ProtectedRouteMobile path="/merchant/sales" component={MerchantSales} userType="merchant" title="Vendas" />
+      <ProtectedRouteMobile path="/merchant/products" component={MerchantProducts} userType="merchant" title="Produtos" />
+      <ProtectedRouteMobile path="/merchant/scanner" component={MerchantScanner} userType="merchant" title="Scanner" />
+      <ProtectedRouteMobile path="/merchant/customers" component={MerchantCustomers} userType="merchant" title="Clientes" />
+      <ProtectedRouteMobile path="/merchant/profile" component={MerchantProfile} userType="merchant" title="Meu Perfil" />
+      <ProtectedRouteMobile path="/merchant/transactions" component={MerchantTransactions} userType="merchant" title="Transações" />
+      <ProtectedRouteMobile path="/merchant/transaction-management" component={MerchantTransactionManagement} userType="merchant" title="Gestão de Transações" />
+      <ProtectedRouteMobile path="/merchant/reports" component={MerchantReports} userType="merchant" title="Relatórios" />
+      <ProtectedRouteMobile path="/merchant/settings" component={MerchantSettings} userType="merchant" title="Configurações" />
+      <ProtectedRouteMobile path="/merchant/support" component={MerchantSupport} userType="merchant" title="Suporte" />
+      <ProtectedRouteMobile path="/merchant/referrals" component={MerchantReferrals} userType="merchant" title="Indicações" />
+      <ProtectedRouteMobile path="/merchant/stores" component={MerchantStores} userType="merchant" title="Minhas Lojas" />
       
       {/* Admin Routes */}
-      <ProtectedRoute path="/admin" component={AdminDashboard} userType="admin" />
-      <ProtectedRoute path="/admin/dashboard" component={AdminDashboard} userType="admin" />
-      <ProtectedRoute path="/admin/users" component={AdminUsers} userType="admin" />
-      <ProtectedRoute path="/admin/stores" component={AdminStores} userType="admin" />
-      <ProtectedRoute path="/admin/transactions" component={AdminTransactions} userType="admin" />
-      <ProtectedRoute path="/admin/transfers" component={AdminTransfers} userType="admin" />
-      <ProtectedRoute path="/admin/settings" component={AdminSettings} userType="admin" />
-      <ProtectedRoute path="/admin/logs" component={AdminLogs} userType="admin" />
-      <ProtectedRoute path="/admin/support" component={AdminSupport} userType="admin" />
+      <ProtectedRouteMobile path="/admin" component={AdminDashboard} userType="admin" title="Dashboard" />
+      <ProtectedRouteMobile path="/admin/dashboard" component={AdminDashboard} userType="admin" title="Dashboard" />
+      <ProtectedRouteMobile path="/admin/users" component={AdminUsers} userType="admin" title="Usuários" />
+      <ProtectedRouteMobile path="/admin/stores" component={AdminStores} userType="admin" title="Lojas" />
+      <ProtectedRouteMobile path="/admin/transactions" component={AdminTransactions} userType="admin" title="Transações" />
+      <ProtectedRouteMobile path="/admin/transfers" component={AdminTransfers} userType="admin" title="Transferências" />
+      <ProtectedRouteMobile path="/admin/settings" component={AdminSettings} userType="admin" title="Configurações" />
+      <ProtectedRouteMobile path="/admin/logs" component={AdminLogs} userType="admin" title="Logs" />
+      <ProtectedRouteMobile path="/admin/support" component={AdminSupport} userType="admin" title="Suporte" />
       
       {/* 404 */}
       <Route component={NotFound} />
@@ -122,11 +124,13 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light">
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Router />
-            <PWAInstallPrompt />
-          </TooltipProvider>
+          <MobileProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Router />
+              <PWAInstallPrompt />
+            </TooltipProvider>
+          </MobileProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

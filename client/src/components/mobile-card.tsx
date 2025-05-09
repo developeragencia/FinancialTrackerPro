@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
 
 interface MobileCardProps {
   children: ReactNode;
@@ -22,46 +22,45 @@ export function MobileCard({
   size = 'md',
 }: MobileCardProps) {
   const sizeClasses = {
-    sm: 'p-3',
-    md: 'p-4',
-    lg: 'p-5',
+    sm: 'p-2',
+    md: 'p-3',
+    lg: 'p-4',
   };
-  
+
   const variantClasses = {
-    default: 'bg-white dark:bg-gray-800 shadow-sm',
-    outline: 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
-    ghost: 'bg-transparent hover:bg-gray-50 dark:hover:bg-gray-900',
+    default: 'bg-white border shadow-sm hover:shadow-md',
+    outline: 'bg-transparent border border-border hover:border-primary/40',
+    ghost: 'bg-transparent border-none shadow-none hover:bg-accent',
   };
-  
+
   return (
     <Card 
       className={cn(
-        'rounded-xl transition-all', 
-        sizeClasses[size],
+        'transition-all duration-200 ease-in-out rounded-lg', 
         variantClasses[variant],
-        onClick && 'cursor-pointer hover:shadow-md active:scale-[0.98]',
+        onClick && 'cursor-pointer active:scale-95',
         className
       )}
       onClick={onClick}
     >
-      {(icon || title) && (
-        <div className="flex items-center gap-3 mb-2">
-          {icon && (
-            <div className="shrink-0 flex items-center justify-center">
-              {icon}
-            </div>
-          )}
-          {title && <h3 className="font-medium text-sm">{title}</h3>}
+      <CardContent className={cn('flex flex-col', sizeClasses[size])}>
+        {(icon || title) && (
+          <CardHeader className="p-0 pb-2 flex flex-row items-center gap-2">
+            {icon && <div className="text-primary">{icon}</div>}
+            {title && <CardTitle className="text-sm font-medium">{title}</CardTitle>}
+          </CardHeader>
+        )}
+        <div>
+          {children}
         </div>
-      )}
-      <div>{children}</div>
+      </CardContent>
     </Card>
   );
 }
 
 export function MobileCardGrid({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('grid grid-cols-2 gap-4', className)}>
+    <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-3', className)}>
       {children}
     </div>
   );

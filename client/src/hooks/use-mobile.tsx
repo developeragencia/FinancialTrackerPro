@@ -1,41 +1,30 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { isMobileDevice } from "@/pwaHelpers";
 
-interface MobileContextType {
+type MobileContextType = {
   isMobile: boolean;
-  isPWA: boolean;
-}
+};
 
-const MobileContext = createContext<MobileContextType | undefined>(undefined);
+const MobileContext = createContext<MobileContextType | null>(null);
 
 export function MobileProvider({ children }: { children: ReactNode }) {
-  const [isMobile, setIsMobile] = useState(false);
-  const [isPWA, setIsPWA] = useState(false);
-
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  
   useEffect(() => {
-    // Detecta se o dispositivo é móvel
-    const checkMobile = () => {
-      const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
-        navigator.userAgent
-      ) || window.innerWidth <= 768;
-      setIsMobile(mobileCheck);
+    // Detectar se é um dispositivo móvel na inicialização
+    setIsMobile(isMobileDevice());
+    
+    // Também monitorar mudanças no tamanho da janela
+    const handleResize = () => {
+      setIsMobile(isMobileDevice());
     };
-
-    // Detecta se está rodando como PWA instalado
-    const checkPWA = () => {
-      const isPWA = window.matchMedia('(display-mode: standalone)').matches || 
-                  (window.navigator as any).standalone === true;
-      setIsPWA(isPWA);
-    };
-
-    checkMobile();
-    checkPWA();
-
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
-
+  
   return (
-    <MobileContext.Provider value={{ isMobile, isPWA }}>
+    <MobileContext.Provider value={{ isMobile }}>
       {children}
     </MobileContext.Provider>
   );
@@ -43,8 +32,8 @@ export function MobileProvider({ children }: { children: ReactNode }) {
 
 export function useMobile() {
   const context = useContext(MobileContext);
-  if (context === undefined) {
-    throw new Error('useMobile must be used within a MobileProvider');
+  if (!context) {
+    throw new Error("useMobile must be used within a MobileProvider");
   }
   return context;
 }
