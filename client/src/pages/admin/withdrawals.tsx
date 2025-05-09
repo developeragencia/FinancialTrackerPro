@@ -28,6 +28,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Helmet } from "react-helmet";
 
 // Formatação de valores monetários
 const formatCurrency = (value: string | number) => {
@@ -417,6 +418,9 @@ const AdminWithdrawals = () => {
   
   return (
     <DashboardLayout type="admin" title="Solicitações de Saque">
+      <Helmet>
+        <title>Solicitações de Saque | Vale Cashback</title>
+      </Helmet>
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
