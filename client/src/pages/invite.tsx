@@ -69,19 +69,23 @@ export default function InvitePage() {
   
   // Extrai o código de referência da URL
   useEffect(() => {
-    // Exemplo de URL: /convite/ABC123 ou /parceiro/LJ123
+    // Procurando por código de referência em qualquer parte da URL
+    // Exemplos: /convite/CL0005, /como/te/CL0005, ou qualquer outra variação
     const pathParts = location.split('/');
     
-    if (pathParts.length >= 3) {
-      const path = pathParts[1];
-      const code = pathParts[2];
-      
-      if (path === "convite") {
+    // Verifica cada parte do caminho para encontrar um código de referência válido
+    for (const part of pathParts) {
+      // Verifica se é um código de referência de cliente
+      if (part.match(/^CL[0-9]+$/)) {
         setReferralType("client");
-        setReferralCode(code);
-      } else if (path === "parceiro") {
+        setReferralCode(part);
+        break;
+      } 
+      // Verifica se é um código de referência de lojista
+      else if (part.match(/^LJ[0-9]+$/)) {
         setReferralType("merchant");
-        setReferralCode(code);
+        setReferralCode(part);
+        break;
       }
     }
     

@@ -3269,6 +3269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para cadastro de cliente via convite
   app.post("/api/register/client", async (req, res) => {
     try {
+      console.log("Recebendo requisição de cadastro de cliente:", req.body);
       const { name, email, password, phone, referralCode, referralInfo } = req.body;
       
       // Verificar se o email já existe
@@ -3301,38 +3302,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone,
           type: "client",
           status: "active",
+          invitation_code: `CL${nextId.toString().padStart(4, '0')}`, // Gerar código de convite para o novo usuário
           created_at: new Date()
         })
         .returning();
       
       // Processar código de referência, se fornecido
-      if (referralInfo && referralInfo.referrerId) {
-        // Aqui implementaríamos a lógica de referência
-        console.log(`Cliente ${newUser.id} registrado com referência ${referralInfo.referrerId}`);
+      if (referralCode || (referralInfo && referralInfo.referralCode)) {
+        const code = referralCode || (referralInfo && referralInfo.referralCode);
+        console.log(`Processando indicação com código: ${code}`);
         
-        // Buscar configuração de comissão para referências (ou usar valor padrão)
-        let referralBonus = 0.01; // 1% de bônus padrão
-        try {
-          const commissionResult = await db.execute(
-            sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
-          );
+        // Buscar usuário que fez a indicação pelo código
+        const referrerQuery = await db
+          .select()
+          .from(users)
+          .where(eq(users.invitation_code, code))
+          .limit(1);
           
-          // Usar o valor padrão do sistema se não houver configuração
-          if (commissionResult.rows.length > 0) {
-            referralBonus = parseFloat(commissionResult.rows[0].value);
-          }
-        } catch (error) {
-          console.error("Erro ao buscar configuração de comissão:", error);
+        if (referrerQuery.length > 0) {
+          const referrer = referrerQuery[0];
+          console.log(`Cliente ${newUser.id} registrado com referência de ${referrer.id} (${referrer.name})`);
+          
+          // Registrar a referência
+          await db.insert(referrals).values({
+            referrerId: referrer.id,
+            referredId: newUser.id,
+            bonus: "10.00", // Valor fixo de bônus para indicação de cliente
+            status: "active",
+            created_at: new Date()
+          });
+        } else {
+          console.log(`Código de indicação ${code} não encontrado no banco de dados`);
         }
-        
-        // Registrar a referência
-        await db.insert(referrals).values({
-          referrerId: referralInfo.referrerId,
-          referredId: newUser.id,
-          bonus: "10.00", // Valor fixo de bônus para indicação de cliente
-          status: "active",
-          created_at: new Date()
-        });
       }
       
       res.status(201).json({
@@ -3383,6 +3384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           phone,
           type: "merchant",
           status: "pending", // Lojistas começam como pendentes até aprovação
+          invitation_code: `LJ${nextId.toString().padStart(4, '0')}`, // Gerar código de convite para o novo lojista
           created_at: new Date()
         })
         .returning();
@@ -3399,30 +3401,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       
       // Processar código de referência, se fornecido
-      if (referralInfo && referralInfo.referrerId) {
-        // Buscar configuração de comissão para referências de lojistas (ou usar valor padrão)
-        let referralBonus = 0.01; // 1% de bônus padrão para lojistas (igual ao padrão do sistema)
-        try {
-          const commissionResult = await db.execute(
-            sql`SELECT value FROM commission_settings WHERE key = 'merchantReferralBonus'`
-          );
-          
-          // Usar o valor padrão do sistema se não houver configuração
-          if (commissionResult.rows.length > 0) {
-            referralBonus = parseFloat(commissionResult.rows[0].value);
-          }
-        } catch (error) {
-          console.error("Erro ao buscar configuração de comissão:", error);
-        }
+      if (referralCode || (referralInfo && referralInfo.referralCode)) {
+        const code = referralCode || (referralInfo && referralInfo.referralCode);
+        console.log(`Processando indicação de lojista com código: ${code}`);
         
-        // Registrar a referência com o bônus
-        await db.insert(referrals).values({
-          referrerId: referralInfo.referrerId,
-          referredId: newUser.id,
-          bonus: "25.00", // Valor fixo maior para indicação de lojista
-          status: "active", 
-          created_at: new Date()
-        });
+        // Buscar usuário que fez a indicação pelo código
+        const referrerQuery = await db
+          .select()
+          .from(users)
+          .where(eq(users.invitation_code, code))
+          .limit(1);
+          
+        if (referrerQuery.length > 0) {
+          const referrer = referrerQuery[0];
+          console.log(`Lojista ${newUser.id} registrado com referência de ${referrer.id} (${referrer.name})`);
+          
+          // Registrar a referência com o bônus
+          await db.insert(referrals).values({
+            referrerId: referrer.id,
+            referredId: newUser.id,
+            bonus: "25.00", // Valor fixo maior para indicação de lojista
+            status: "active", 
+            created_at: new Date()
+          });
+        } else {
+          console.log(`Código de indicação ${code} não encontrado no banco de dados`);
+        }
       }
       
       res.status(201).json({

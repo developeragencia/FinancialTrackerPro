@@ -64,6 +64,8 @@ function Router() {
       {/* Invitation Routes */}
       <Route path="/convite/:code" component={InvitePage} />
       <Route path="/parceiro/:code" component={InvitePage} />
+      <Route path="/como/te/:code" component={InvitePage} />
+      <Route path="/:anypath/:anysubpath/:code" component={InvitePage} />
       
       {/* Client Routes */}
       <ProtectedRoute path="/client" component={ClientDashboard} userType="client" />
