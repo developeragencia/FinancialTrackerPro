@@ -362,6 +362,7 @@ const WithdrawalRequestForm = () => {
 // Componente de histórico de saques
 const WithdrawalHistory = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   
   const { data, isLoading, error } = useQuery({
     queryKey: ["/api/merchant/withdrawal-requests"],
@@ -373,6 +374,43 @@ const WithdrawalHistory = () => {
       return res.json();
     }
   });
+  
+  // Mutation para cancelar solicitação de saque
+  const cancelWithdrawalMutation = useMutation({
+    mutationFn: async (withdrawalId: number) => {
+      const res = await apiRequest("DELETE", `/api/merchant/withdrawal-requests/${withdrawalId}`);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Erro ao cancelar solicitação");
+      }
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Solicitação cancelada",
+        description: "A solicitação de saque foi cancelada com sucesso e o valor foi retornado para sua carteira.",
+        variant: "default",
+      });
+      
+      // Atualizar a lista de solicitações e o saldo disponível
+      queryClient.invalidateQueries({ queryKey: ["/api/merchant/withdrawal-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/merchant/wallet"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao cancelar",
+        description: error.message || "Ocorreu um erro ao cancelar a solicitação. Por favor, tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Função para confirmar e cancelar uma solicitação
+  const handleCancelWithdrawal = (withdrawalId: number) => {
+    if (confirm("Tem certeza que deseja cancelar esta solicitação de saque? O valor será retornado para sua carteira.")) {
+      cancelWithdrawalMutation.mutate(withdrawalId);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -410,6 +448,8 @@ const WithdrawalHistory = () => {
         return <Badge className="bg-green-500 hover:bg-green-600">Aprovado</Badge>;
       case "rejected":
         return <Badge variant="destructive">Recusado</Badge>;
+      case "cancelled":
+        return <Badge variant="secondary">Cancelado</Badge>;
       case "pending":
       default:
         return <Badge variant="outline">Pendente</Badge>;
@@ -433,6 +473,7 @@ const WithdrawalHistory = () => {
                 <TableHead>Valor</TableHead>
                 <TableHead>Método</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -452,7 +493,27 @@ const WithdrawalHistory = () => {
                       {withdrawal.status === "rejected" && (
                         <XCircle className="h-4 w-4 text-red-500" />
                       )}
+                      {withdrawal.status === "cancelled" && (
+                        <XCircle className="h-4 w-4 text-gray-500" />
+                      )}
                     </div>
+                  </TableCell>
+                  <TableCell>
+                    {withdrawal.status === "pending" && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => handleCancelWithdrawal(withdrawal.id)}
+                        disabled={cancelWithdrawalMutation.isPending}
+                      >
+                        {cancelWithdrawalMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Cancelar"
+                        )}
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
