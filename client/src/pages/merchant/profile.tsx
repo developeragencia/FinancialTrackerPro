@@ -55,9 +55,20 @@ export default function MerchantProfile() {
     minimumPurchase: 0
   };
   
-  // Create mutation for logo upload
+  // Create direct mutation for logo upload with immediate feedback
   const logoMutation = useMutation({
     mutationFn: async (formData: FormData) => {
+      // Feedback imediato - atualizando a UI antes da resposta da API
+      if (formData.get('logo') instanceof File) {
+        const file = formData.get('logo') as File;
+        const tempUrl = URL.createObjectURL(file);
+        // Atualiza temporariamente a imagem antes da resposta do servidor
+        queryClient.setQueryData(['/api/merchant/profile'], (old: any) => ({
+          ...old,
+          logo: tempUrl
+        }));
+      }
+      
       const response = await apiRequest("POST", "/api/merchant/profile/logo", formData);
       if (!response.ok) {
         const errorData = await response.json();
@@ -73,6 +84,8 @@ export default function MerchantProfile() {
       queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
     },
     onError: (error) => {
+      // Revalidar a query para reverter a alteração temporária em caso de erro
+      queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar a logo. Tente novamente.",
@@ -101,31 +114,22 @@ export default function MerchantProfile() {
     }
   };
 
-  // Função para lidar com o upload de logo
+  // Função simplificada para lidar com o upload de logo
   const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      const maxSize = 5 * 1024 * 1024; // 5MB
-
-      if (file.size > maxSize) {
+      
+      // Validações básicas sem interromper o fluxo com mensagens complexas
+      if (file.size > 5 * 1024 * 1024) {
         toast({
           title: "Arquivo muito grande",
-          description: "A imagem não pode ter mais de 5MB.",
+          description: "A imagem deve ter no máximo 5MB.",
           variant: "destructive"
         });
         return;
       }
 
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      if (!allowedTypes.includes(file.type)) {
-        toast({
-          title: "Formato inválido",
-          description: "Por favor, envie uma imagem JPG, PNG, GIF ou WebP.",
-          variant: "destructive"
-        });
-        return;
-      }
-
+      // Enviar o arquivo imediatamente
       setUploadingLogo(true);
       const formData = new FormData();
       formData.append('logo', file);
@@ -133,7 +137,7 @@ export default function MerchantProfile() {
     }
   };
 
-  // Função para abrir o seletor de arquivo
+  // Função simplificada para abrir o seletor de arquivo diretamente
   const triggerLogoFileInput = () => {
     if (logoInputRef.current) {
       logoInputRef.current.click();
@@ -290,20 +294,24 @@ export default function MerchantProfile() {
                 <form onSubmit={handleUpdateProfile}>
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex-shrink-0 flex flex-col items-center space-y-3">
-                      <div className="relative group">
-                        <Avatar className="h-24 w-24 cursor-pointer group-hover:opacity-80 transition-opacity">
+                      {/* Logo com clique fácil para upload */}
+                      <div 
+                        className="relative group cursor-pointer hover:shadow-lg transition-all duration-300 rounded-full overflow-hidden ring-2 ring-offset-2 ring-accent/50"
+                        onClick={triggerLogoFileInput}
+                      >
+                        <Avatar className="h-28 w-28 border-4 border-white shadow">
                           <AvatarImage src={merchantData.logo} alt={merchantData.name} />
-                          <AvatarFallback className="text-lg bg-accent text-white">
+                          <AvatarFallback className="text-2xl bg-accent text-white">
                             {getInitials(merchantData.name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div 
-                          className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                          onClick={triggerLogoFileInput}
-                        >
-                          <Camera className="w-6 h-6 text-white" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col items-center justify-end p-2 transition-all">
+                          <Camera className="w-6 h-6 text-white mb-1" />
+                          <span className="text-white text-xs font-medium">Clique para alterar</span>
                         </div>
                       </div>
+                      
+                      {/* Input file escondido */}
                       <input 
                         type="file" 
                         ref={logoInputRef} 
@@ -311,22 +319,18 @@ export default function MerchantProfile() {
                         accept="image/jpeg, image/png, image/gif, image/webp" 
                         className="hidden" 
                       />
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={triggerLogoFileInput}
-                        disabled={uploadingLogo}
-                      >
-                        {uploadingLogo ? (
-                          <>
-                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                            Enviando...
-                          </>
-                        ) : "Alterar logo"}
-                      </Button>
                       
-                      <div className="flex items-center mt-2">
-                        {getStatusBadge(merchantData.status || 'pending')}
+                      {/* Status da loja */}
+                      <div className="flex flex-col items-center gap-2">
+                        {uploadingLogo && (
+                          <div className="flex items-center text-accent">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            <span className="text-xs">Atualizando logo...</span>
+                          </div>
+                        )}
+                        <div className="flex items-center">
+                          {getStatusBadge(merchantData.status || 'pending')}
+                        </div>
                       </div>
                     </div>
                     
