@@ -55,11 +55,16 @@ function Router() {
   return (
     <Switch>
       {/* Auth Routes */}
-      <Route path="/" component={Login} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/auth" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      
+      {/* Smart Home Route - Redirects to appropriate dashboard based on user type */}
+      <ProtectedRoute path="/" component={() => {
+        // This is just a placeholder as the actual redirect happens in protected-route.tsx
+        return <div>Redirecionando...</div>;
+      }} />
       
       {/* Invitation Routes */}
       <Route path="/convite/:code" component={InvitePage} />

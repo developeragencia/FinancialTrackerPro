@@ -30,6 +30,20 @@ export function ProtectedRoute({
         if (!user) {
           return <Redirect to="/login" />;
         }
+        
+        // Se for a rota raiz, redirecionar para o dashboard apropriado baseado no tipo de usuário
+        if (path === '/') {
+          if (currentUserType === "client") {
+            return <Redirect to="/client/dashboard" />;
+          } else if (currentUserType === "merchant") {
+            return <Redirect to="/merchant/dashboard" />;
+          } else if (currentUserType === "admin") {
+            return <Redirect to="/admin/dashboard" />;
+          }
+          
+          // Fallback para caso o tipo não seja reconhecido
+          return <Redirect to="/login" />;
+        }
 
         // Se um tipo específico de usuário for requerido para esta rota
         if (userType && currentUserType !== userType) {

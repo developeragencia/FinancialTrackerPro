@@ -487,24 +487,24 @@ export default function AdminTransactions() {
               </div>
               
               <div className="flex flex-1 gap-4">
-                <Select value={status || ""} onValueChange={(val) => setStatus(val || null)}>
+                <Select value={status || "all"} onValueChange={(val) => setStatus(val === "all" ? null : val)}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="completed">Concluídas</SelectItem>
                     <SelectItem value="pending">Pendentes</SelectItem>
                     <SelectItem value="cancelled">Canceladas</SelectItem>
                   </SelectContent>
                 </Select>
                 
-                <Select value={paymentMethod || ""} onValueChange={(val) => setPaymentMethod(val || null)}>
+                <Select value={paymentMethod || "all"} onValueChange={(val) => setPaymentMethod(val === "all" ? null : val)}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Forma de pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os pagamentos</SelectItem>
+                    <SelectItem value="all">Todos os pagamentos</SelectItem>
                     <SelectItem value="cash">Dinheiro</SelectItem>
                     <SelectItem value="credit_card">Cartão de Crédito</SelectItem>
                     <SelectItem value="debit_card">Cartão de Débito</SelectItem>
@@ -513,12 +513,12 @@ export default function AdminTransactions() {
                   </SelectContent>
                 </Select>
                 
-                <Select value={merchantFilter || ""} onValueChange={(val) => setMerchantFilter(val || null)}>
+                <Select value={merchantFilter || "all"} onValueChange={(val) => setMerchantFilter(val === "all" ? null : val)}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Todas as lojas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as lojas</SelectItem>
+                    <SelectItem value="all">Todas as lojas</SelectItem>
                     <SelectItem value="1">Supermercado ABC</SelectItem>
                     <SelectItem value="2">Farmácia XYZ</SelectItem>
                     <SelectItem value="3">Loja de Roupas 123</SelectItem>
