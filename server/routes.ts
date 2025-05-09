@@ -918,12 +918,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let referralBonusRate = DEFAULT_SETTINGS.referralBonus; // 0.01 = 1%
             
             try {
-              const commissionResult = await db.execute(
-                sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
-              );
-              if (commissionResult.rows.length > 0 && commissionResult.rows[0].value) {
+              const commissionResult = await db
+                .select()
+                .from(commissionSettings)
+                .limit(1);
+                
+              if (commissionResult.length > 0 && commissionResult[0].referral_bonus) {
                 try {
-                  const valueStr = String(commissionResult.rows[0].value);
+                  const valueStr = String(commissionResult[0].referral_bonus);
                   const parsedValue = parseFloat(valueStr);
                   if (!isNaN(parsedValue)) {
                     referralBonusRate = parsedValue;
