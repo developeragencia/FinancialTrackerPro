@@ -3263,6 +3263,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Erro ao buscar dados do convite" });
     }
   });
+  
+  // Obter código de convite de um usuário pelo ID
+  app.get("/api/user/:id/invitecode", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      // Buscar usuário pelo ID
+      const userResult = await db.execute(
+        sql`SELECT id, name, type, invitation_code, photo
+            FROM users 
+            WHERE id = ${userId}`
+      );
+      
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const user = userResult.rows[0];
+      
+      // Verificar se o usuário tem um código de convite
+      if (!user.invitation_code) {
+        return res.status(404).json({ message: "Este usuário não possui um código de convite" });
+      }
+      
+      // Dados do lojista, se for o caso
+      let merchantData = null;
+      if (user.type === 'merchant') {
+        const merchantResult = await db.execute(
+          sql`SELECT store_name, logo, category
+              FROM merchants
+              WHERE user_id = ${user.id}`
+        );
+        
+        if (merchantResult.rows.length > 0) {
+          merchantData = merchantResult.rows[0];
+        }
+      }
+      
+      return res.json({
+        userId: user.id,
+        userName: user.name,
+        userType: user.type,
+        invitationCode: user.invitation_code,
+        photo: user.photo || null,
+        merchantData
+      });
+    } catch (error) {
+      console.error("Erro ao buscar código de convite:", error);
+      res.status(500).json({ message: "Erro ao processar a solicitação" });
+    }
+  });
 
   // Esta implementação foi removida para evitar duplicação de rotas
   
