@@ -68,7 +68,7 @@ export function addWithdrawalRoutes(app: Express) {
         currentBalance = parseFloat(cashbackResult[0].balance);
       }
       
-      // Buscar saques pendentes
+      // Buscar saques pendentes (apenas para exibição, pois o valor já foi descontado)
       const pendingWithdrawals = await db
         .select({
           total: sql`SUM(CAST(amount as DECIMAL(10,2)))`.as("total"),
@@ -85,7 +85,10 @@ export function addWithdrawalRoutes(app: Express) {
       // Calcular valores
       const pendingAmount = parseFloat(pendingWithdrawals[0]?.total || "0");
       const pendingCount = parseInt(pendingWithdrawals[0]?.count || "0");
-      const availableBalance = currentBalance - pendingAmount;
+      
+      // Como o valor já foi descontado do saldo ao criar a solicitação,
+      // o saldo disponível é igual ao saldo atual
+      const availableBalance = currentBalance;
       
       // Retornar dados da carteira
       res.json({
@@ -138,27 +141,12 @@ export function addWithdrawalRoutes(app: Express) {
       const amount = parseFloat(data.amount);
       const currentBalance = parseFloat(merchantBalance.balance);
       
-      // Verificar se existem solicitações de saque pendentes
-      const pendingWithdrawals = await db
-        .select({
-          total: sql`SUM(CAST(amount as DECIMAL(10,2)))`.as("total")
-        })
-        .from(withdrawalRequests)
-        .where(
-          and(
-            eq(withdrawalRequests.user_id, userId),
-            eq(withdrawalRequests.status, "pending")
-          )
-        );
-      
-      const pendingAmount = parseFloat(pendingWithdrawals[0]?.total || "0");
-      const availableBalance = currentBalance - pendingAmount;
-      
-      // Verificar se o saldo disponível é suficiente
-      if (amount > availableBalance) {
+      // Como o valor já é automaticamente descontado do saldo,
+      // verificamos apenas se o saldo atual é suficiente para o saque
+      if (amount > currentBalance) {
         return res.status(400).json({ 
           success: false, 
-          message: `Saldo insuficiente para este saque. Saldo disponível: $${availableBalance.toFixed(2)}` 
+          message: `Saldo insuficiente para este saque. Saldo disponível: $${currentBalance.toFixed(2)}` 
         });
       }
       
@@ -196,6 +184,15 @@ export function addWithdrawalRoutes(app: Express) {
           notes: null
         })
         .returning();
+        
+      // Descontar o valor imediatamente da carteira do lojista (aprovisionamento)
+      await db
+        .update(cashbacks)
+        .set({
+          balance: sql`balance - ${amount.toFixed(2)}`,
+          updated_at: new Date()
+        })
+        .where(eq(cashbacks.user_id, userId));
       
       // Criar notificação para o lojista
       await createWithdrawalRequestNotification({
@@ -336,12 +333,13 @@ export function addWithdrawalRoutes(app: Express) {
         .where(eq(withdrawalRequests.id, requestId))
         .returning();
       
-      // Se aprovado, deduzir do saldo do lojista
-      if (status === WithdrawalStatus.COMPLETED) {
+      // O valor já foi deduzido na criação da solicitação
+      // Se o admin rejeitar, devolver o valor para a carteira do lojista
+      if (status === WithdrawalStatus.REJECTED) {
         await db
           .update(cashbacks)
           .set({
-            balance: sql`balance - ${existingRequest.amount}`,
+            balance: sql`balance + ${existingRequest.amount}`,
             updated_at: new Date()
           })
           .where(eq(cashbacks.user_id, existingRequest.user_id));
