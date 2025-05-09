@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vale-cashback-v1';
+const CACHE_NAME = 'vale-cashback-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -17,10 +17,13 @@ const urlsToCache = [
 
 // Instalação e armazenamento em cache dos recursos estáticos
 self.addEventListener('install', (event) => {
+  // Força o ServiceWorker a se tornar ativo imediatamente, sobrescrevendo versões antigas
+  self.skipWaiting();
+  
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('Cache aberto');
+        console.log('Cache aberto - nova versão');
         return cache.addAll(urlsToCache);
       })
   );
@@ -77,12 +80,18 @@ self.addEventListener('fetch', (event) => {
 
 // Ativação e limpeza de caches antigos
 self.addEventListener('activate', (event) => {
+  // Força o controle imediato de todas as páginas abertas
+  event.waitUntil(clients.claim());
+  
+  // Limpa todos os caches antigos
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('Limpando caches antigos...');
       return Promise.all(
         cacheNames.map((cacheName) => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Excluindo cache antigo:', cacheName);
             return caches.delete(cacheName);
           }
         })

@@ -4,8 +4,27 @@ import App from "./App";
 import "./index.css";
 import { registerServiceWorker } from "./pwaHelpers";
 
-// Registra o service worker para suporte PWA
-registerServiceWorker();
+// Limpar cache do aplicativo para forçar a atualização
+const clearCache = async () => {
+  if ('caches' in window) {
+    try {
+      // Listar todos os caches e limpar
+      const cacheNames = await window.caches.keys();
+      await Promise.all(
+        cacheNames.map(cacheName => window.caches.delete(cacheName))
+      );
+      console.log('Cache do navegador limpo com sucesso');
+    } catch (err) {
+      console.error('Erro ao limpar cache:', err);
+    }
+  }
+};
+
+// Limpar cache antes de iniciar o aplicativo
+clearCache().then(() => {
+  // Registra o service worker para suporte PWA após limpar o cache
+  registerServiceWorker();
+});
 
 createRoot(document.getElementById("root")!).render(
   <>

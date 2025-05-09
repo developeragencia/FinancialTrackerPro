@@ -32,15 +32,30 @@ export function getDeviceOS() {
 // Função para registrar o service worker
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker
-        .register('/serviceWorker.js')
-        .then((registration) => {
-          console.log('Service Worker registrado com sucesso:', registration);
-        })
-        .catch((error) => {
-          console.error('Erro ao registrar o Service Worker:', error);
-        });
+    window.addEventListener('load', async () => {
+      try {
+        // Desregistrar qualquer Service Worker antigo primeiro
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+          console.log('Service Worker antigo desregistrado com sucesso');
+        }
+        
+        // Registrar o novo Service Worker com um timestamp para forçar atualização
+        const timestamp = new Date().getTime();
+        const registration = await navigator.serviceWorker.register(`/serviceWorker.js?v=${timestamp}`);
+        console.log('Service Worker registrado com sucesso:', registration);
+        
+        // Verificar atualizações imediatamente
+        registration.update();
+        
+        // Enviar mensagem para atualizar imediatamente se já houver um controlador
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+        }
+      } catch (error) {
+        console.error('Erro ao gerenciar o Service Worker:', error);
+      }
     });
   }
 }
