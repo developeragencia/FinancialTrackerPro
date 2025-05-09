@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, desc, sql, gt, gte, lt, lte, inArray, ne } from "drizzle-orm";
+import { eq, and, desc, sql, gt, gte, lt, lte, inArray, ne, count } from "drizzle-orm";
 import crypto from "crypto";
 import { format } from "date-fns";
 import {
@@ -67,6 +67,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Obter notificações do usuário atual
   app.get("/api/notifications", isAuthenticated, async (req, res) => {
     try {
+      // Verificamos se o usuário está definido
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       // Buscar todas as notificações do usuário, ordenadas por data de criação (mais recentes primeiro)
       const userNotifications = await db
         .select()
@@ -77,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Contar notificações não lidas
       const unreadCount = await db
-        .select({ count: sql`count(*)` })
+        .select({ count: count() })
         .from(notifications)
         .where(and(
           eq(notifications.user_id, req.user.id),
@@ -86,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         notifications: userNotifications,
-        unreadCount: parseInt(unreadCount[0].count.toString())
+        unreadCount: Number(unreadCount[0].count) || 0
       });
     } catch (error) {
       console.error("Erro ao buscar notificações:", error);
@@ -97,6 +102,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Marcar notificação como lida
   app.patch("/api/notifications/:id/read", isAuthenticated, async (req, res) => {
     try {
+      // Verificamos se o usuário está definido
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const notificationId = parseInt(req.params.id);
       
       // Verificar se a notificação existe e pertence ao usuário atual
@@ -129,6 +139,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Marcar todas as notificações como lidas
   app.patch("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
     try {
+      // Verificamos se o usuário está definido
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       await db
         .update(notifications)
         .set({ read: true })

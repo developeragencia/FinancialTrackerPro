@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, BellRing, MoreHorizontal } from 'lucide-react';
+import { Bell, BellRing, MoreHorizontal, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,12 +19,9 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-// Para garantir que não dê erro, vamos usar a formatação sem locale
-// import { pt } from 'date-fns/locale';
 
 export interface Notification {
   id: number;
