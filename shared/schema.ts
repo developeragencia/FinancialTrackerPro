@@ -238,10 +238,20 @@ export const NotificationType = {
   CASHBACK: "cashback",
   TRANSFER: "transfer",
   REFERRAL: "referral",
-  SYSTEM: "system"
+  SYSTEM: "system",
+  WITHDRAWAL: "withdrawal"
 } as const;
 
 export type NotificationTypeValues = typeof NotificationType[keyof typeof NotificationType];
+
+// Status de solicitação de saque
+export const WithdrawalStatus = {
+  PENDING: "pending",
+  COMPLETED: "completed",
+  REJECTED: "rejected"
+} as const;
+
+export type WithdrawalStatusValues = typeof WithdrawalStatus[keyof typeof WithdrawalStatus];
 
 // Tabela de notificações
 export const notifications = pgTable("notifications", {
@@ -262,3 +272,33 @@ export const insertNotificationSchema = createInsertSchema(notifications)
 // Tipo de notificação
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+// Tabela de solicitações de saque
+export const withdrawalRequests = pgTable("withdrawal_requests", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id),
+  merchant_id: integer("merchant_id").notNull().references(() => merchants.id),
+  amount: numeric("amount").notNull(),
+  full_name: text("full_name").notNull(),
+  store_name: text("store_name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email").notNull(),
+  bank_name: text("bank_name").notNull(),
+  agency: text("agency").notNull(),
+  account: text("account").notNull(),
+  payment_method: text("payment_method").notNull().default("bank"),  // bank ou zelle
+  status: text("status").notNull().default("pending").$type<WithdrawalStatusValues>(),
+  notes: text("notes"),
+  processed_by: integer("processed_by").references(() => users.id),
+  processed_at: timestamp("processed_at"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Schema para inserção de solicitações de saque
+export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalRequests)
+  .omit({ id: true, status: true, processed_by: true, processed_at: true, created_at: true, updated_at: true });
+
+// Tipo de solicitação de saque
+export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
+export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSchema>;
