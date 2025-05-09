@@ -4496,15 +4496,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
               // Mantém o valor padrão em caso de erro
             }
             
+            // Converter o valor do bônus para número para operações seguras
+            let bonusValue = 0.01;
+            try {
+              bonusValue = parseFloat(referralBonus);
+              // Formatar com 2 casas decimais para consistência
+              bonusValue = parseFloat(bonusValue.toFixed(2));
+            } catch (error) {
+              console.error("Erro ao converter valor do bônus:", error);
+              bonusValue = 0.01; // Valor padrão seguro
+            }
+            
             // Registrar a referência com o bônus apenas se não existir
             await db.insert(referrals).values({
               referrer_id: referrer.id,
               referred_id: newUser.id,
-              bonus: referralBonus, // Taxa de bônus configurada no sistema
+              bonus: bonusValue.toString(), // Taxa de bônus configurada no sistema
               status: "active",
               created_at: new Date()
             });
-            console.log(`Referência registrada com sucesso para o lojista ${newUser.id} com bônus de ${referralBonus}`);
+            
+            console.log(`Referência registrada com sucesso para o lojista ${newUser.id} com bônus de ${bonusValue}`);
+            
+            // Aplicar o bônus ao saldo de cashback do referenciador
+            try {
+              // Buscar cashback atual do referenciador
+              const referrerCashback = await db
+                .select()
+                .from(cashbacks)
+                .where(eq(cashbacks.user_id, referrer.id));
+                
+              if (referrerCashback.length > 0) {
+                // Atualizar cashback existente
+                let currentBalance = 0;
+                let currentTotalEarned = 0;
+                
+                try {
+                  currentBalance = parseFloat(referrerCashback[0].balance?.toString() || "0");
+                  currentTotalEarned = parseFloat(referrerCashback[0].total_earned?.toString() || "0");
+                } catch (parseError) {
+                  console.error("Erro ao converter valores de cashback:", parseError);
+                }
+                
+                // Adicionar bônus ao saldo atual
+                const newBalance = (currentBalance + bonusValue).toFixed(2);
+                const newTotalEarned = (currentTotalEarned + bonusValue).toFixed(2);
+                
+                await db
+                  .update(cashbacks)
+                  .set({
+                    balance: newBalance,
+                    total_earned: newTotalEarned,
+                    updated_at: new Date()
+                  })
+                  .where(eq(cashbacks.user_id, referrer.id));
+                  
+                console.log(`Cashback do referenciador ${referrer.id} atualizado: saldo ${currentBalance} -> ${newBalance}`);
+              } else {
+                // Criar novo registro de cashback
+                await db.insert(cashbacks).values({
+                  user_id: referrer.id,
+                  balance: bonusValue.toString(),
+                  total_earned: bonusValue.toString(),
+                  updated_at: new Date()
+                });
+                
+                console.log(`Novo cashback criado para referenciador ${referrer.id} com bônus inicial de ${bonusValue}`);
+              }
+            } catch (cashbackError) {
+              console.error("Erro ao atualizar cashback do referenciador:", cashbackError);
+            }
           } else {
             console.log(`Referência já existente para o lojista ${newUser.id}, ignorando duplicação`);
           }
