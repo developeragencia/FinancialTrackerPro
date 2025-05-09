@@ -493,6 +493,41 @@ export default function MerchantProfile() {
 
           {/* Cashback Settings */}
           <TabsContent value="cashback">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-indigo-100">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <DollarSign className="w-8 h-8 text-indigo-600 mb-2" />
+                    <p className="text-sm text-indigo-700">Cashback Base</p>
+                    <h3 className="text-2xl font-bold text-indigo-900">{merchantData.cashbackRate || 2}%</h3>
+                    <p className="text-xs text-indigo-600 text-center">Porcentagem padrão de retorno para o cliente</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-violet-100">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <PercentIcon className="w-8 h-8 text-violet-600 mb-2" />
+                    <p className="text-sm text-violet-700">Comissão Sistema</p>
+                    <h3 className="text-2xl font-bold text-violet-900">{merchantData.commissionRate || 2}%</h3>
+                    <p className="text-xs text-violet-600 text-center">Taxa cobrada pelo Vale Cashback</p>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-teal-50 to-green-50 border-green-100">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <Store className="w-8 h-8 text-green-600 mb-2" />
+                    <p className="text-sm text-green-700">Total de Cashback</p>
+                    <h3 className="text-2xl font-bold text-green-900">{merchantData.cashbackTotal ? formatCurrency(merchantData.cashbackTotal) : formatCurrency(0)}</h3>
+                    <p className="text-xs text-green-600 text-center">Valor total distribuído em cashback</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          
             <Card>
               <CardHeader>
                 <CardTitle>Configurações de Cashback</CardTitle>
@@ -513,7 +548,9 @@ export default function MerchantProfile() {
                         enabled: formData.get('enable-promotions') === 'on',
                         doubleOnWeekends: formData.get('double-weekends') === 'on',
                         specialCategories: formData.get('special-categories') === 'on',
-                        minimumPurchase: parseFloat(formData.get('minimum-purchase') as string) || 0
+                        minimumPurchase: parseFloat(formData.get('minimum-purchase') as string) || 0,
+                        firstPurchaseBonus: formData.get('first-purchase-bonus') === 'on',
+                        birthDayBonus: formData.get('birthday-bonus') === 'on'
                       }
                     };
                     
@@ -541,6 +578,14 @@ export default function MerchantProfile() {
                     setIsUpdating(false);
                   }
                 }}>
+                  <Alert className="mb-6 bg-blue-50 border-blue-100">
+                    <AlertCircle className="h-4 w-4 text-blue-600" />
+                    <AlertTitle className="text-blue-800">Informação</AlertTitle>
+                    <AlertDescription className="text-blue-700">
+                      O cashback é calculado como uma porcentagem do valor da compra. Você pode personalizar regras adicionais abaixo.
+                    </AlertDescription>
+                  </Alert>
+                
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
@@ -554,7 +599,16 @@ export default function MerchantProfile() {
                       </div>
                     </div>
                     
-                    <div className="flex items-center justify-between border-t pt-4">
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                      <h3 className="font-medium">Configurações de Promoções</h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Defina regras especiais para aumentar a fidelização de clientes
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
                       <div className="space-y-0.5">
                         <Label htmlFor="enable-promotions">Habilitar promoções de cashback</Label>
                         <p className="text-sm text-muted-foreground">
@@ -602,15 +656,16 @@ export default function MerchantProfile() {
                             const input = document.getElementById('double-weekends') as HTMLInputElement;
                             if (input) input.checked = checked;
                           }}
+                          disabled={!cashbackPromotions.enabled}
                         />
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between border-t pt-4">
                       <div className="space-y-0.5">
-                        <Label htmlFor="special-categories">Cashback especial por categorias</Label>
+                        <Label htmlFor="special-categories">Cashback para categorias especiais</Label>
                         <p className="text-sm text-muted-foreground">
-                          Defina categorias de produtos com cashback diferenciado
+                          Oferece cashback aumentado para certas categorias de produtos
                         </p>
                       </div>
                       <div>
@@ -628,42 +683,114 @@ export default function MerchantProfile() {
                             const input = document.getElementById('special-categories') as HTMLInputElement;
                             if (input) input.checked = checked;
                           }}
+                          disabled={!cashbackPromotions.enabled}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="first-purchase-bonus">Bônus na primeira compra</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Oferece um bônus extra na primeira compra de um cliente
+                        </p>
+                      </div>
+                      <div>
+                        <input 
+                          type="checkbox" 
+                          id="first-purchase-bonus"
+                          name="first-purchase-bonus"
+                          className="hidden"
+                          defaultChecked={cashbackPromotions.firstPurchaseBonus}
+                        />
+                        <Switch 
+                          id="first-purchase-bonus-switch"
+                          checked={cashbackPromotions.firstPurchaseBonus || false}
+                          onCheckedChange={(checked) => {
+                            const input = document.getElementById('first-purchase-bonus') as HTMLInputElement;
+                            if (input) input.checked = checked;
+                          }}
+                          disabled={!cashbackPromotions.enabled}
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between border-t pt-4">
+                      <div className="space-y-0.5">
+                        <Label htmlFor="birthday-bonus">Bônus de aniversário</Label>
+                        <p className="text-sm text-muted-foreground">
+                          Oferece cashback dobrado quando cliente compra no mês do seu aniversário
+                        </p>
+                      </div>
+                      <div>
+                        <input 
+                          type="checkbox" 
+                          id="birthday-bonus"
+                          name="birthday-bonus"
+                          className="hidden"
+                          defaultChecked={cashbackPromotions.birthDayBonus}
+                        />
+                        <Switch 
+                          id="birthday-bonus-switch"
+                          checked={cashbackPromotions.birthDayBonus || false}
+                          onCheckedChange={(checked) => {
+                            const input = document.getElementById('birthday-bonus') as HTMLInputElement;
+                            if (input) input.checked = checked;
+                          }}
+                          disabled={!cashbackPromotions.enabled}
                         />
                       </div>
                     </div>
                     
                     <div className="border-t pt-4">
-                      <Label htmlFor="minimum-purchase">Valor mínimo para cashback (R$)</Label>
-                      <p className="text-sm text-muted-foreground mb-2">
-                        Valor mínimo de compra para que o cliente receba cashback
-                      </p>
-                      <div className="flex gap-4 items-center">
-                        <Input 
-                          id="minimum-purchase"
-                          name="minimum-purchase"
-                          type="number"
-                          defaultValue={cashbackPromotions.minimumPurchase}
-                          className="w-32"
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="minimum-purchase">Valor mínimo de compra para cashback</Label>
                         <p className="text-sm text-muted-foreground">
-                          0 = sem valor mínimo
+                          Defina um valor mínimo de compra para que o cashback seja aplicado
                         </p>
+                        <div className="relative">
+                          <span className="absolute left-3 top-2.5 text-muted-foreground">$</span>
+                          <Input 
+                            id="minimum-purchase"
+                            name="minimum-purchase"
+                            type="number" 
+                            className="pl-7"
+                            defaultValue={cashbackPromotions.minimumPurchase || 0}
+                            min={0}
+                            step={5}
+                            disabled={!cashbackPromotions.enabled}
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    <div className="flex justify-end">
-                      <Button type="submit" className="bg-accent">
-                        Salvar configurações
-                      </Button>
-                    </div>
+                  </div>
+                  
+                  <div className="mt-6 flex justify-end">
+                    <Button type="submit" className="bg-accent" disabled={isUpdating}>
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : "Salvar configurações"}
+                    </Button>
                   </div>
                 </form>
               </CardContent>
+              <CardFooter className="bg-muted/50 justify-between flex-col sm:flex-row items-start border-t">
+                <div className="text-sm text-muted-foreground">
+                  <span className="flex items-center mb-1"><CheckCircle className="h-3 w-3 mr-1 text-green-600" /> Cálculo automático de taxas</span>
+                  <span className="flex items-center"><CheckCircle className="h-3 w-3 mr-1 text-green-600" /> Distribuição proporcional do cashback</span>
+                </div>
+                <div className="text-sm text-muted-foreground mt-2 sm:mt-0">
+                  <span className="flex items-center">Última atualização: {new Date().toLocaleDateString()}</span>
+                </div>
+              </CardFooter>
             </Card>
             
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Informações Públicas</CardTitle>
+                <CardTitle>Visualização para Clientes</CardTitle>
                 <CardDescription>
                   Assim é como os clientes veem sua loja
                 </CardDescription>
@@ -716,14 +843,32 @@ export default function MerchantProfile() {
                         </div>
                       </div>
                       
-                      <div className="mt-4 flex items-center">
-                        <div className="px-3 py-1 rounded-full bg-accent text-white text-sm">
-                          {merchantData.commissionRate || 2}% de cashback
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <div className="px-3 py-1 rounded-full bg-accent/90 text-white text-sm">
+                          {merchantData.cashbackRate || 2}% de cashback
                         </div>
                         
-                        {cashbackPromotions.doubleOnWeekends && (
-                          <div className="ml-2 px-3 py-1 rounded-full bg-blue-500 text-white text-sm">
+                        {cashbackPromotions.enabled && cashbackPromotions.doubleOnWeekends && (
+                          <div className="px-3 py-1 rounded-full bg-blue-600 text-white text-sm">
                             2x aos finais de semana
+                          </div>
+                        )}
+                        
+                        {cashbackPromotions.enabled && cashbackPromotions.firstPurchaseBonus && (
+                          <div className="px-3 py-1 rounded-full bg-green-600 text-white text-sm">
+                            Bônus na primeira compra
+                          </div>
+                        )}
+                        
+                        {cashbackPromotions.enabled && cashbackPromotions.birthDayBonus && (
+                          <div className="px-3 py-1 rounded-full bg-purple-600 text-white text-sm">
+                            Bônus de aniversário
+                          </div>
+                        )}
+                        
+                        {cashbackPromotions.enabled && cashbackPromotions.minimumPurchase > 0 && (
+                          <div className="px-3 py-1 rounded-full bg-gray-600 text-white text-sm">
+                            Mínimo: {formatCurrency(cashbackPromotions.minimumPurchase)}
                           </div>
                         )}
                       </div>
