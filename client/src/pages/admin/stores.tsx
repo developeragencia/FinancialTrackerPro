@@ -34,7 +34,9 @@ import {
   BarChart,
   PieChart,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  AlertTriangle,
+  Trash
 } from "lucide-react";
 import { LineChartComponent, BarChartComponent, PieChartComponent } from "@/components/ui/charts";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
@@ -152,6 +154,8 @@ const stores = [
 ];
 
 export default function AdminStores() {
+  // Importe useEffect do React
+  const { useEffect } = React;
   const [selectedStore, setSelectedStore] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
@@ -325,6 +329,66 @@ export default function AdminStores() {
     },
   ];
 
+  const handleDeleteDialog = (store: any) => {
+    setSelectedStore(store);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleDeleteStore = async () => {
+    if (!selectedStore) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      // API call to delete the store
+      const response = await apiRequest("DELETE", `/api/admin/stores/${selectedStore.id}`);
+      const data = await response.json();
+      
+      if (response.ok) {
+        toast({
+          title: "Loja excluída",
+          description: `${selectedStore.name} foi excluída com sucesso.`,
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/dashboard'] });
+        setIsDeleteDialogOpen(false);
+      } else {
+        throw new Error(data.message || "Erro ao excluir loja");
+      }
+    } catch (error) {
+      console.error("Erro ao excluir loja:", error);
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao excluir a loja.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+  
+  // Encontrar lojas com os emails especificados para exclusão
+  const findStoresByEmails = async () => {
+    const emailsToDelete = ["alexmoura-2025@hotmail.com", "lojista@valecashback.com"];
+    
+    if (data && Array.isArray(data)) {
+      const foundStores = data.filter(store => 
+        emailsToDelete.includes(store.email)
+      );
+      
+      if (foundStores.length > 0) {
+        setStoresToDelete(foundStores.map(store => `${store.id}: ${store.name} (${store.email})`));
+      }
+    }
+  };
+  
+  useEffect(() => {
+    if (data) {
+      findStoresByEmails();
+    }
+  }, [data]);
+
   // Actions configuration
   const actions = [
     {
@@ -347,6 +411,11 @@ export default function AdminStores() {
       icon: <Ban className="h-4 w-4" />,
       onClick: handleBlockDialog,
     },
+    {
+      label: "Excluir",
+      icon: <XCircle className="h-4 w-4" />,
+      onClick: handleDeleteDialog,
+    }
   ];
 
   // Filter options
