@@ -53,6 +53,7 @@ export default function InvitePage() {
   const [referralType, setReferralType] = useState<"client" | "merchant">("client");
   const [referralCode, setReferralCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const [referrerName, setReferrerName] = useState<string | null>(null);
   
   // Se já estiver autenticado, redireciona para a página inicial apropriada
   useEffect(() => {
