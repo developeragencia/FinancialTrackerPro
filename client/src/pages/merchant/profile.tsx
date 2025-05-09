@@ -20,9 +20,11 @@ import { formatCurrency } from "@/lib/utils";
 
 export default function MerchantProfile() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [selectedTab, setSelectedTab] = useState("general");
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Query to get merchant profile data
@@ -54,6 +56,60 @@ export default function MerchantProfile() {
     specialCategories: false,
     minimumPurchase: 0
   };
+  
+  // Mutation para atualizar a foto de perfil do lojista
+  const photoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      // Feedback imediato - atualizando a UI antes da resposta da API
+      const tempUrl = URL.createObjectURL(file);
+      
+      // Atualiza temporariamente a imagem antes da resposta do servidor
+      queryClient.setQueryData(['/api/merchant/profile'], (old: any) => ({
+        ...old,
+        photo: tempUrl
+      }));
+      
+      // Converter a imagem para uma string base64
+      return new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => {
+          const base64data = reader.result as string;
+          resolve(base64data);
+        };
+        reader.onerror = () => {
+          reject(new Error("Falha ao processar a imagem"));
+        };
+      }).then(async (base64data) => {
+        // Enviar a string base64 para o backend
+        const response = await apiRequest("POST", "/api/merchant/profile/photo", {
+          photo: base64data
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Falha ao atualizar foto");
+        }
+        return response.json();
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Foto atualizada",
+        description: "Sua foto de perfil foi atualizada com sucesso."
+      });
+      queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+    },
+    onError: (error) => {
+      // Revalidar a query para reverter a alteração temporária em caso de erro
+      queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar a foto. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  });
   
   // Create direct mutation for logo upload with immediate feedback
   const logoMutation = useMutation({
