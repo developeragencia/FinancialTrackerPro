@@ -87,9 +87,11 @@ export default function MerchantTransactions() {
     statusCounts: { status: string, count: number }[],
     paymentMethodSummary: { method: string, sum: number }[]
   }>({
-    queryKey: ['/api/merchant/transactions'],
+    queryKey: ['api/merchant/transactions'],
+    refetchOnWindowFocus: false,
+    retry: 1,
     // Adicionando fallback para evitar tela branca
-    initialData: {
+    placeholderData: {
       transactions: [],
       totalAmount: 0,
       totalCashback: 0,
@@ -126,9 +128,9 @@ export default function MerchantTransactions() {
     return true;
   });
   
-  // Calcular totais
-  const totalAmount = filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
-  const totalCashback = filteredTransactions.reduce((sum, t) => sum + t.cashback, 0);
+  // Calcular totais com segurança contra valores null/undefined
+  const totalAmount = filteredTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+  const totalCashback = filteredTransactions.reduce((sum, t) => sum + (t.cashback || 0), 0);
   
   // Use os status counts da API se disponíveis, caso contrário calcule localmente
   const statusCounts = data?.statusCounts || [];
