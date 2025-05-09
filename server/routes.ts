@@ -2975,9 +2975,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let whereClause;
       if (method === "email") {
-        whereClause = sql`email = ${search}`;
+        whereClause = sql`email ILIKE ${`%${search}%`}`;
       } else if (method === "phone") {
-        whereClause = sql`phone = ${search}`;
+        whereClause = sql`phone ILIKE ${`%${search}%`}`;
       } else {
         return res.status(400).json({ message: "Método de busca inválido" });
       }
