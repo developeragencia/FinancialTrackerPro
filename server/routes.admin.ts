@@ -19,6 +19,7 @@ import {
 import { createWithdrawalRequestNotification } from "./helpers/notification";
 import { isUserType } from "./routes";
 import { formatCurrency } from "../client/src/lib/utils";
+import { storage } from "./storage";
 
 // Função para determinar o tipo de transferência
 function getTransferType(transfer: any) {
@@ -39,6 +40,178 @@ function getTransferType(transfer: any) {
 
 // Rotas administrativas
 export function addAdminRoutes(app: Express) {
+  // Rota para obter o perfil do administrador
+  app.get("/api/admin/profile", isUserType("admin"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const adminId = req.user.id;
+      
+      // Obter dados do usuário administrador
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, adminId));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Administrador não encontrado" });
+      }
+      
+      // Retornar perfil formatado
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        phone: user.phone,
+        photo: user.photo,
+        type: user.type,
+        status: user.status,
+        created_at: user.created_at,
+        last_login: user.last_login
+      });
+    } catch (error) {
+      console.error("Erro ao obter perfil do administrador:", error);
+      res.status(500).json({ message: "Erro ao obter perfil do administrador" });
+    }
+  });
+  
+  // Rota para atualizar o perfil do administrador
+  app.patch("/api/admin/profile", isUserType("admin"), async (req, res) => {
+    try {
+      const { name, email, phone } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      // Validação simples
+      if (!name && !email && !phone) {
+        return res.status(400).json({ message: "Nenhum dado fornecido para atualização" });
+      }
+      
+      // Verificar se o email já está em uso por outro usuário
+      if (email) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.email, email),
+            ne(users.id, req.user.id)
+          ));
+          
+        if (existingUser) {
+          return res.status(400).json({ message: "Este e-mail já está sendo usado por outro usuário" });
+        }
+      }
+      
+      // Atualizar o usuário
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          name: name || undefined,
+          email: email || undefined,
+          phone: phone || undefined,
+        })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      res.json({
+        message: "Perfil atualizado com sucesso",
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          photo: updatedUser.photo
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar perfil do administrador:", error);
+      res.status(500).json({ message: "Erro ao atualizar perfil do administrador" });
+    }
+  });
+  
+  // Rota para atualizar a foto do perfil do administrador
+  app.post("/api/admin/profile/photo", isUserType("admin"), async (req, res) => {
+    try {
+      const { photo } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!photo) {
+        return res.status(400).json({ message: "Nenhuma imagem fornecida" });
+      }
+      
+      // Validar a imagem (base64)
+      if (!photo.startsWith('data:image/')) {
+        return res.status(400).json({ message: "Formato de imagem inválido" });
+      }
+      
+      // Atualizar a foto do perfil
+      const [updatedUser] = await db
+        .update(users)
+        .set({ photo })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      res.json({
+        message: "Foto de perfil atualizada com sucesso",
+        photo: updatedUser.photo
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar foto do perfil:", error);
+      res.status(500).json({ message: "Erro ao atualizar foto do perfil" });
+    }
+  });
+  
+  // Rota para alterar a senha do administrador
+  app.post("/api/admin/profile/password", isUserType("admin"), async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Senha atual e nova senha são obrigatórias" });
+      }
+      
+      // Obter o usuário
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user.id));
+        
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar a senha atual
+      const passwordMatch = await storage.comparePasswords(currentPassword, user.password);
+      if (!passwordMatch) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+      
+      // Atualizar a senha
+      const hashedPassword = await storage.hashPassword(newPassword);
+      await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, req.user.id));
+        
+      res.json({ message: "Senha atualizada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      res.status(500).json({ message: "Erro ao atualizar senha" });
+    }
+  });
+  
   // Dashboard do admin - estatísticas
   app.get("/api/admin/dashboard", isUserType("admin"), async (req, res) => {
     if (!req.user) {
@@ -1218,6 +1391,214 @@ export function addAdminRoutes(app: Express) {
 
 // API para listar lojas na visão do cliente
 export function addClientRoutes(app: Express) {
+  // Rota para obter o perfil do cliente
+  app.get("/api/client/profile", isUserType("client"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const clientId = req.user.id;
+      
+      // Obter dados do usuário cliente
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, clientId));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Cliente não encontrado" });
+      }
+      
+      // Obter preferências do usuário (ou usar valores padrão)
+      let notifications = {
+        email: true, 
+        push: true, 
+        marketing: false
+      };
+      
+      let privacy = {
+        showBalance: true,
+        showActivity: true
+      };
+      
+      try {
+        const [userSettings] = await db
+          .select()
+          .from(settings)
+          .where(eq(settings.user_id, clientId));
+          
+        if (userSettings) {
+          if (userSettings.notifications) {
+            notifications = JSON.parse(userSettings.notifications);
+          }
+          
+          if (userSettings.privacy) {
+            privacy = JSON.parse(userSettings.privacy);
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar preferências do usuário:", error);
+      }
+      
+      // Retornar perfil formatado
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        phone: user.phone,
+        photo: user.photo,
+        type: user.type,
+        status: user.status,
+        created_at: user.created_at,
+        last_login: user.last_login,
+        invitation_code: user.invitation_code,
+        notifications,
+        privacy
+      });
+    } catch (error) {
+      console.error("Erro ao obter perfil do cliente:", error);
+      res.status(500).json({ message: "Erro ao obter perfil do cliente" });
+    }
+  });
+  
+  // Rota para atualizar o perfil do cliente
+  app.patch("/api/client/profile", isUserType("client"), async (req, res) => {
+    try {
+      const { name, email, phone, address, city, state } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      // Validação simples
+      if (!name && !email && !phone) {
+        return res.status(400).json({ message: "Nenhum dado fornecido para atualização" });
+      }
+      
+      // Verificar se o email já está em uso por outro usuário
+      if (email) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.email, email),
+            ne(users.id, req.user.id)
+          ));
+          
+        if (existingUser) {
+          return res.status(400).json({ message: "Este e-mail já está sendo usado por outro usuário" });
+        }
+      }
+      
+      // Atualizar o usuário
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          name: name || undefined,
+          email: email || undefined,
+          phone: phone || undefined,
+          // Adicionar outros campos conforme necessário
+        })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      res.json({
+        message: "Perfil atualizado com sucesso",
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          phone: updatedUser.phone,
+          photo: updatedUser.photo
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar perfil do cliente:", error);
+      res.status(500).json({ message: "Erro ao atualizar perfil do cliente" });
+    }
+  });
+  
+  // Rota para atualizar a foto do perfil do cliente
+  app.post("/api/client/profile/photo", isUserType("client"), async (req, res) => {
+    try {
+      const { photo } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!photo) {
+        return res.status(400).json({ message: "Nenhuma imagem fornecida" });
+      }
+      
+      // Validar a imagem (base64)
+      if (!photo.startsWith('data:image/')) {
+        return res.status(400).json({ message: "Formato de imagem inválido" });
+      }
+      
+      // Atualizar a foto do perfil
+      const [updatedUser] = await db
+        .update(users)
+        .set({ photo })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      res.json({
+        message: "Foto de perfil atualizada com sucesso",
+        photo: updatedUser.photo
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar foto do perfil:", error);
+      res.status(500).json({ message: "Erro ao atualizar foto do perfil" });
+    }
+  });
+  
+  // Rota para alterar a senha do cliente
+  app.post("/api/client/profile/password", isUserType("client"), async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Senha atual e nova senha são obrigatórias" });
+      }
+      
+      // Obter o usuário
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user.id));
+        
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar a senha atual
+      const passwordMatch = await storage.comparePasswords(currentPassword, user.password);
+      if (!passwordMatch) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+      
+      // Atualizar a senha
+      const hashedPassword = await storage.hashPassword(newPassword);
+      await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, req.user.id));
+        
+      res.json({ message: "Senha atualizada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      res.status(500).json({ message: "Erro ao atualizar senha" });
+    }
+  });
+  
+  // Lista de lojas para clientes
   app.get("/api/client/stores", async (req: Request, res: Response) => {
     try {
       if (!req.user) {
@@ -1277,6 +1658,287 @@ export function addClientRoutes(app: Express) {
 
 // Rotas do lojista
 export function addMerchantRoutes(app: Express) {
+  // Rota para obter o perfil do lojista
+  app.get("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantId = req.user.id;
+      
+      // Obter dados do usuário lojista
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, merchantId));
+      
+      if (!user) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      // Obter dados da loja do lojista
+      const [merchantData] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantId));
+        
+      // Retornar perfil formatado
+      res.json({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        username: user.username,
+        phone: user.phone,
+        photo: user.photo,
+        type: user.type,
+        status: user.status,
+        created_at: user.created_at,
+        last_login: user.last_login,
+        merchant: merchantData ? {
+          id: merchantData.id,
+          store_name: merchantData.store_name,
+          logo: merchantData.logo,
+          category: merchantData.category,
+          address: merchantData.address,
+          city: merchantData.city,
+          state: merchantData.state,
+          country: merchantData.country,
+          company_logo: merchantData.company_logo,
+          commission_rate: merchantData.commission_rate,
+          approved: merchantData.approved
+        } : null
+      });
+    } catch (error) {
+      console.error("Erro ao obter perfil do lojista:", error);
+      res.status(500).json({ message: "Erro ao obter perfil do lojista" });
+    }
+  });
+  
+  // Rota para atualizar o perfil do lojista
+  app.patch("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
+    try {
+      const { name, email, phone, store_name, address, city, state, category } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      // Validação simples
+      if (!name && !email && !phone && !store_name && !address && !city && !state && !category) {
+        return res.status(400).json({ message: "Nenhum dado fornecido para atualização" });
+      }
+      
+      // Verificar se o email já está em uso por outro usuário
+      if (email) {
+        const [existingUser] = await db
+          .select()
+          .from(users)
+          .where(and(
+            eq(users.email, email),
+            ne(users.id, req.user.id)
+          ));
+          
+        if (existingUser) {
+          return res.status(400).json({ message: "Este e-mail já está sendo usado por outro usuário" });
+        }
+      }
+      
+      // Atualizar o usuário
+      const [updatedUser] = await db
+        .update(users)
+        .set({
+          name: name || undefined,
+          email: email || undefined,
+          phone: phone || undefined,
+        })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      // Atualizar dados da loja se necessário
+      if (store_name || address || city || state || category) {
+        const [merchant] = await db
+          .select()
+          .from(merchants)
+          .where(eq(merchants.user_id, req.user.id));
+          
+        if (merchant) {
+          const [updatedMerchant] = await db
+            .update(merchants)
+            .set({
+              store_name: store_name || undefined,
+              address: address || undefined,
+              city: city || undefined,
+              state: state || undefined,
+              category: category || undefined
+            })
+            .where(eq(merchants.id, merchant.id))
+            .returning();
+            
+          res.json({
+            message: "Perfil atualizado com sucesso",
+            user: {
+              id: updatedUser.id,
+              name: updatedUser.name,
+              email: updatedUser.email,
+              phone: updatedUser.phone,
+              photo: updatedUser.photo
+            },
+            merchant: updatedMerchant
+          });
+        } else {
+          res.json({
+            message: "Perfil do usuário atualizado, mas não foi possível encontrar os dados da loja",
+            user: {
+              id: updatedUser.id,
+              name: updatedUser.name,
+              email: updatedUser.email,
+              phone: updatedUser.phone,
+              photo: updatedUser.photo
+            }
+          });
+        }
+      } else {
+        res.json({
+          message: "Perfil atualizado com sucesso",
+          user: {
+            id: updatedUser.id,
+            name: updatedUser.name,
+            email: updatedUser.email,
+            phone: updatedUser.phone,
+            photo: updatedUser.photo
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao atualizar perfil do lojista:", error);
+      res.status(500).json({ message: "Erro ao atualizar perfil do lojista" });
+    }
+  });
+  
+  // Rota para atualizar a foto do perfil do lojista
+  app.post("/api/merchant/profile/photo", isUserType("merchant"), async (req, res) => {
+    try {
+      const { photo } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!photo) {
+        return res.status(400).json({ message: "Nenhuma imagem fornecida" });
+      }
+      
+      // Validar a imagem (base64)
+      if (!photo.startsWith('data:image/')) {
+        return res.status(400).json({ message: "Formato de imagem inválido" });
+      }
+      
+      // Atualizar a foto do perfil
+      const [updatedUser] = await db
+        .update(users)
+        .set({ photo })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      res.json({
+        message: "Foto de perfil atualizada com sucesso",
+        photo: updatedUser.photo
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar foto do perfil:", error);
+      res.status(500).json({ message: "Erro ao atualizar foto do perfil" });
+    }
+  });
+  
+  // Rota para atualizar o logo da loja
+  app.post("/api/merchant/profile/logo", isUserType("merchant"), async (req, res) => {
+    try {
+      const { logo } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!logo) {
+        return res.status(400).json({ message: "Nenhuma imagem fornecida" });
+      }
+      
+      // Validar a imagem (base64)
+      if (!logo.startsWith('data:image/')) {
+        return res.status(400).json({ message: "Formato de imagem inválido" });
+      }
+      
+      // Buscar o merchant usando o user_id
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, req.user.id));
+        
+      if (!merchant) {
+        return res.status(404).json({ message: "Loja não encontrada" });
+      }
+      
+      // Atualizar o logo da loja
+      const [updatedMerchant] = await db
+        .update(merchants)
+        .set({ logo })
+        .where(eq(merchants.id, merchant.id))
+        .returning();
+        
+      res.json({
+        message: "Logo da loja atualizado com sucesso",
+        logo: updatedMerchant.logo
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar logo da loja:", error);
+      res.status(500).json({ message: "Erro ao atualizar logo da loja" });
+    }
+  });
+  
+  // Rota para alterar a senha do lojista
+  app.post("/api/merchant/profile/password", isUserType("merchant"), async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Senha atual e nova senha são obrigatórias" });
+      }
+      
+      // Obter o usuário
+      const [user] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, req.user.id));
+        
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      // Verificar a senha atual
+      const passwordMatch = await storage.comparePasswords(currentPassword, user.password);
+      if (!passwordMatch) {
+        return res.status(400).json({ message: "Senha atual incorreta" });
+      }
+      
+      // Atualizar a senha
+      const hashedPassword = await storage.hashPassword(newPassword);
+      await db
+        .update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.id, req.user.id));
+        
+      res.json({ message: "Senha atualizada com sucesso" });
+    } catch (error) {
+      console.error("Erro ao atualizar senha:", error);
+      res.status(500).json({ message: "Erro ao atualizar senha" });
+    }
+  });
+  
   // API para listar lojas na visão do lojista
   app.get("/api/merchant/stores", async (req, res) => {
     try {
