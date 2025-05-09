@@ -72,10 +72,27 @@ export function addWithdrawalRoutes(app: Express) {
       const amount = parseFloat(data.amount);
       const currentBalance = parseFloat(merchantBalance.balance);
       
-      if (amount > currentBalance) {
+      // Verificar se existem solicitações de saque pendentes
+      const pendingWithdrawals = await db
+        .select({
+          total: sql`SUM(CAST(amount as DECIMAL(10,2)))`.as("total")
+        })
+        .from(withdrawalRequests)
+        .where(
+          and(
+            eq(withdrawalRequests.user_id, userId),
+            eq(withdrawalRequests.status, "pending")
+          )
+        );
+      
+      const pendingAmount = parseFloat(pendingWithdrawals[0]?.total || "0");
+      const availableBalance = currentBalance - pendingAmount;
+      
+      // Verificar se o saldo disponível é suficiente
+      if (amount > availableBalance) {
         return res.status(400).json({ 
           success: false, 
-          message: "Saldo insuficiente para realizar este saque" 
+          message: `Saldo insuficiente para este saque. Saldo disponível: $${availableBalance.toFixed(2)}` 
         });
       }
       
