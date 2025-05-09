@@ -809,6 +809,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Obter saldo da carteira do lojista
+  app.get("/api/merchant/wallet", isUserType("merchant"), async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Buscar saldo atual
+      const [walletData] = await db
+        .select()
+        .from(cashbacks)
+        .where(eq(cashbacks.user_id, userId));
+      
+      if (!walletData) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Carteira não encontrada" 
+        });
+      }
+      
+      // Buscar solicitações de saque pendentes
+      const pendingWithdrawals = await db
+        .select({
+          total: sql`COALESCE(SUM(CAST(amount as DECIMAL(10,2))), 0)`.as("total"),
+          count: sql`COUNT(*)`.as("count")
+        })
+        .from(withdrawalRequests)
+        .where(
+          and(
+            eq(withdrawalRequests.user_id, userId),
+            eq(withdrawalRequests.status, "pending")
+          )
+        );
+      
+      const currentBalance = parseFloat(walletData.balance);
+      const pendingAmount = parseFloat(pendingWithdrawals[0]?.total?.toString() || "0");
+      const pendingCount = parseInt(pendingWithdrawals[0]?.count?.toString() || "0");
+      
+      res.json({
+        success: true,
+        walletData: {
+          currentBalance,
+          pendingAmount,
+          pendingCount,
+          availableBalance: Math.max(0, currentBalance - pendingAmount)
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar saldo do lojista:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao buscar dados da carteira" 
+      });
+    }
+  });
+  
   // Listar produtos do lojista
   app.get("/api/merchant/products", isUserType("merchant"), async (req, res) => {
     try {

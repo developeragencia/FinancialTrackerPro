@@ -1,6 +1,6 @@
 import { Request, Response, Express } from "express";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { isUserType } from "./routes";
 import { 
   withdrawalRequests, 
@@ -40,6 +40,72 @@ function validateWithdrawalData(data: any) {
 }
 
 export function addWithdrawalRoutes(app: Express) {
+  // Rota para obter dados da carteira do lojista (saldo atual, pendente e disponível)
+  app.get("/api/merchant/wallet", isUserType("merchant"), async (req: Request, res: Response) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Verificar se o usuário é um lojista
+      const merchantResult = await db.select().from(merchants).where(eq(merchants.user_id, userId)).limit(1);
+      if (merchantResult.length === 0) {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Acesso restrito a lojistas" 
+        });
+      }
+      
+      const merchant = merchantResult[0];
+      
+      // Buscar o saldo atual do lojista na tabela de cashbacks
+      const cashbackResult = await db
+        .select()
+        .from(cashbacks)
+        .where(eq(cashbacks.user_id, userId));
+      
+      // Calcular saldo atual (usando o valor da tabela de cashbacks)
+      let currentBalance = 0;
+      if (cashbackResult.length > 0) {
+        currentBalance = parseFloat(cashbackResult[0].balance);
+      }
+      
+      // Buscar saques pendentes
+      const pendingWithdrawals = await db
+        .select({
+          total: sql`SUM(CAST(amount as DECIMAL(10,2)))`.as("total"),
+          count: sql`COUNT(*)`.as("count")
+        })
+        .from(withdrawalRequests)
+        .where(
+          and(
+            eq(withdrawalRequests.user_id, userId),
+            eq(withdrawalRequests.status, "pending")
+          )
+        );
+      
+      // Calcular valores
+      const pendingAmount = parseFloat(pendingWithdrawals[0]?.total || "0");
+      const pendingCount = parseInt(pendingWithdrawals[0]?.count || "0");
+      const availableBalance = currentBalance - pendingAmount;
+      
+      // Retornar dados da carteira
+      res.json({
+        success: true,
+        walletData: {
+          currentBalance,
+          pendingAmount,
+          pendingCount,
+          availableBalance
+        }
+      });
+    } catch (error) {
+      console.error("Erro ao buscar dados da carteira:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Erro ao buscar dados da carteira" 
+      });
+    }
+  });
+  
   // Rota para lojista criar uma solicitação de saque
   app.post("/api/merchant/withdrawal-requests", isUserType("merchant"), async (req: Request, res: Response) => {
     try {

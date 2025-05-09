@@ -42,6 +42,22 @@ const WithdrawalRequestForm = () => {
     account: "",
     payment_method: "bank",
   });
+
+  // Consultar dados da carteira do lojista
+  const { data: walletData, isLoading: isLoadingWallet } = useQuery({
+    queryKey: ['/api/merchant/wallet'],
+    refetchOnWindowFocus: false,
+    staleTime: 30000,
+    retry: 1,
+  });
+
+  // Dados da carteira
+  const wallet = walletData?.walletData || {
+    currentBalance: 0,
+    pendingAmount: 0,
+    pendingCount: 0,
+    availableBalance: 0
+  };
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -86,13 +102,14 @@ const WithdrawalRequestForm = () => {
         payment_method: "bank",
       });
       
-      // Atualizar a lista de solicitações
+      // Atualizar a lista de solicitações e o saldo disponível
       queryClient.invalidateQueries({ queryKey: ["/api/merchant/withdrawal-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/merchant/wallet"] });
     },
-    onError: (error: Error) => {
+    onError: (error: any) => {
       toast({
         title: "Erro ao enviar solicitação",
-        description: error.message || "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.",
+        description: error.message || (error.data && error.data.message) || "Ocorreu um erro ao processar sua solicitação. Por favor, tente novamente.",
         variant: "destructive",
       });
     },
@@ -106,6 +123,27 @@ const WithdrawalRequestForm = () => {
       toast({
         title: "Valor inválido",
         description: "Por favor, informe um valor válido para o saque.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verificar se o valor solicitado é maior que o saldo disponível
+    const requestAmount = parseFloat(formData.amount);
+    if (requestAmount > wallet.availableBalance) {
+      toast({
+        title: "Saldo insuficiente",
+        description: `Você não possui saldo suficiente para esta solicitação. Saldo disponível: ${formatCurrency(wallet.availableBalance)}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Valor mínimo para saque
+    if (requestAmount < 50) {
+      toast({
+        title: "Valor mínimo não atingido",
+        description: "O valor mínimo para saque é de $50,00.",
         variant: "destructive",
       });
       return;
@@ -134,6 +172,49 @@ const WithdrawalRequestForm = () => {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Mostrar informações do saldo */}
+        <div className="mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="flex flex-col p-4 bg-muted/50 rounded-lg">
+            <span className="text-sm text-muted-foreground">Saldo Atual</span>
+            <span className="text-2xl font-semibold">
+              {isLoadingWallet ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                formatCurrency(wallet.currentBalance)
+              )}
+            </span>
+          </div>
+          
+          <div className="flex flex-col p-4 bg-muted/50 rounded-lg">
+            <span className="text-sm text-muted-foreground">Saldo Disponível</span>
+            <span className="text-2xl font-semibold text-primary">
+              {isLoadingWallet ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                formatCurrency(wallet.availableBalance)
+              )}
+            </span>
+          </div>
+          
+          <div className="flex flex-col p-4 bg-muted/50 rounded-lg">
+            <span className="text-sm text-muted-foreground">Saques Pendentes</span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-semibold">
+                {isLoadingWallet ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  formatCurrency(wallet.pendingAmount)
+                )}
+              </span>
+              {wallet.pendingCount > 0 && (
+                <Badge variant="outline" className="ml-2">
+                  {wallet.pendingCount} {wallet.pendingCount === 1 ? 'solicitação' : 'solicitações'}
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+        
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
