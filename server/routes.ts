@@ -1160,6 +1160,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para upload de logo do lojista
+  app.post("/api/merchant/profile/logo", isUserType("merchant"), async (req, res) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
+      const merchantId = req.user.id;
+      
+      // Em vez de usar logo como uma string, vamos tratar como base64
+      // No FormData, o campo 'logo' contém um arquivo, mas quando enviado via JSON,
+      // esperamos que seja uma string base64 da imagem
+      let logoData = null;
+      
+      // Verificar formato do corpo da requisição (FormData ou JSON)
+      if (req.headers['content-type']?.includes('application/json')) {
+        // Request é JSON
+        logoData = req.body.logo;
+      } else {
+        // Assumimos que é FormData
+        logoData = req.body.logo;
+      }
+      
+      if (!logoData) {
+        return res.status(400).json({ message: "Nenhuma imagem foi fornecida" });
+      }
+      
+      // Buscar registro do lojista
+      const [merchant] = await db
+        .select()
+        .from(merchants)
+        .where(eq(merchants.user_id, merchantId));
+      
+      if (!merchant) {
+        return res.status(404).json({ message: "Lojista não encontrado" });
+      }
+      
+      console.log("Atualizando logo do lojista:", { merchantId });
+      
+      // Atualizar logo do lojista
+      const [updatedMerchant] = await db
+        .update(merchants)
+        .set({
+          logo: logoData,
+          updated_at: new Date()
+        })
+        .where(eq(merchants.id, merchant.id))
+        .returning();
+      
+      // Registrar a atualização no log de auditoria
+      await db.insert(auditLogs).values({
+        action: "merchant_logo_updated",
+        entity_type: "merchant",
+        entity_id: merchant.id,
+        user_id: merchantId,
+        details: JSON.stringify({
+          timestamp: new Date()
+        }),
+        created_at: new Date()
+      });
+      
+      res.json({
+        success: true,
+        logo: updatedMerchant.logo
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar logo do lojista:", error);
+      res.status(500).json({ message: "Erro ao atualizar logo" });
+    }
+  });
+  
   // Atualizar configurações de cashback do lojista
   app.patch("/api/merchant/settings/cashback", isUserType("merchant"), async (req, res) => {
     try {
