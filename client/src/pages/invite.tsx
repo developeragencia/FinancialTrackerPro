@@ -71,26 +71,80 @@ export default function InvitePage() {
   useEffect(() => {
     // Procurando por código de referência em qualquer parte da URL
     // Exemplos: /convite/CL0005, /como/te/CL0005, ou qualquer outra variação
-    const pathParts = location.split('/');
+    const pathParts = location.split('/').filter(part => part.trim() !== '');
     
-    // Verifica cada parte do caminho para encontrar um código de referência válido
+    console.log("Checking URL parts for referral code:", pathParts);
+    
+    // Primeiro método: verificar cada parte do caminho para encontrar um código de referência válido
     for (const part of pathParts) {
       // Verifica se é um código de referência de cliente
-      if (part.match(/^CL[0-9]+$/)) {
+      if (part.match(/^CL[0-9]+$/i)) {
+        console.log("Found client referral code:", part);
         setReferralType("client");
         setReferralCode(part);
-        break;
+        setLoading(false);
+        return;
       } 
       // Verifica se é um código de referência de lojista
-      else if (part.match(/^LJ[0-9]+$/)) {
+      else if (part.match(/^LJ[0-9]+$/i)) {
+        console.log("Found merchant referral code:", part);
         setReferralType("merchant");
         setReferralCode(part);
-        break;
+        setLoading(false);
+        return;
+      }
+    }
+    
+    // Segundo método: verificar padrões de URL específicos
+    // Formato: /como/te/CL0005
+    if (pathParts.length >= 3 && pathParts[0] === "como" && pathParts[1] === "te") {
+      const code = pathParts[2];
+      if (code.match(/^CL[0-9]+$/i)) {
+        console.log("Found client referral code in '/como/te/' format:", code);
+        setReferralType("client");
+        setReferralCode(code);
+      } else if (code.match(/^LJ[0-9]+$/i)) {
+        console.log("Found merchant referral code in '/como/te/' format:", code);
+        setReferralType("merchant");
+        setReferralCode(code);
+      }
+    }
+    
+    // Terceiro método: verificar o último segmento da URL para códigos curtos (sem prefixo)
+    // Por exemplo: /como/te/1234 (onde 1234 é o ID do usuário)
+    if (!referralCode && pathParts.length > 0) {
+      const lastPart = pathParts[pathParts.length - 1];
+      if (lastPart.match(/^[0-9]+$/)) {
+        console.log("Found numeric ID in URL:", lastPart);
+        // Vamos buscar o tipo de usuário e código de convite com base no ID
+        fetch(`/api/user/${lastPart}/invitecode`)
+          .then(res => {
+            if (res.ok) return res.json();
+            throw new Error("Failed to fetch user invitation code");
+          })
+          .then(data => {
+            if (data && data.invitationCode) {
+              console.log("Retrieved invitation code:", data.invitationCode);
+              if (data.invitationCode.startsWith("CL")) {
+                setReferralType("client");
+              } else if (data.invitationCode.startsWith("LJ")) {
+                setReferralType("merchant");
+              }
+              setReferralCode(data.invitationCode);
+            }
+          })
+          .catch(err => {
+            console.error("Error fetching invitation code:", err);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+        return;
       }
     }
     
     setLoading(false);
-  }, [location]);
+  }, [location, referralCode]);
   
   // Formulário para cliente
   const clientForm = useForm<z.infer<typeof clientSchema>>({
