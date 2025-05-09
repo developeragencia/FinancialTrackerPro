@@ -393,7 +393,14 @@ export default function InvitePage() {
           const errorData = await res.json();
           throw new Error(errorData.message || 'Código de convite inválido');
         }
-        return await res.json();
+        const data = await res.json();
+        
+        // Armazena o nome do referenciador quando os dados são carregados
+        if (data && data.referrerName) {
+          setReferrerName(data.referrerName);
+        }
+        
+        return data;
       } catch (error) {
         console.error('Erro ao verificar convite:', error);
         throw error;
@@ -477,10 +484,28 @@ export default function InvitePage() {
                   ? "Cadastre-se usando código de indicação" 
                   : "Torne-se um parceiro Vale Cashback"}
               </CardTitle>
-              <CardDescription>
-                {referralType === "client"
-                  ? `Você foi convidado(a) com o código ${referralCode}. Complete seu cadastro abaixo.`
-                  : `Você foi convidado(a) a ser parceiro com o código ${referralCode}. Complete seu cadastro abaixo.`}
+              <CardDescription className="text-lg">
+                {referrerName ? (
+                  <span className="flex flex-col items-center space-y-2">
+                    <strong className="text-primary font-medium">
+                      Você foi convidado(a) por {referrerName}
+                    </strong>
+                    <span className="text-sm">
+                      {referralType === "client"
+                        ? `Código de indicação: ${referralCode}`
+                        : `Código de parceiro: ${referralCode}`}
+                    </span>
+                    <div className="w-full max-w-md h-1 bg-primary/10 rounded-full mt-2">
+                      <div className="h-1 bg-primary rounded-full" style={{ width: '100%' }}></div>
+                    </div>
+                  </span>
+                ) : (
+                  <span>
+                    {referralType === "client"
+                      ? `Você foi convidado(a) com o código ${referralCode}. Complete seu cadastro abaixo.`
+                      : `Você foi convidado(a) a ser parceiro com o código ${referralCode}. Complete seu cadastro abaixo.`}
+                  </span>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -572,11 +597,11 @@ export default function InvitePage() {
                       />
                     </div>
                     
-                    <Alert>
-                      <UserPlus className="h-4 w-4" />
-                      <AlertTitle>Programa de Indicação</AlertTitle>
-                      <AlertDescription>
-                        Ao se cadastrar usando um código de indicação, você poderá receber cashback adicional em suas compras.
+                    <Alert className="bg-primary/5 border-primary/20">
+                      <UserPlus className="h-5 w-5 text-primary" />
+                      <AlertTitle className="text-primary font-semibold">Programa de Indicação</AlertTitle>
+                      <AlertDescription className="text-slate-700">
+                        Ao se cadastrar usando um código de indicação, você recebe <span className="font-medium text-primary">$10.00</span> em cashback para usar em sua primeira compra. Além disso, poderá receber até <span className="font-medium text-primary">2%</span> de cashback adicional em todas as compras.
                       </AlertDescription>
                     </Alert>
                     
@@ -732,19 +757,19 @@ export default function InvitePage() {
                       />
                     </div>
                     
-                    <Alert>
-                      <Store className="h-4 w-4" />
-                      <AlertTitle>Programa de Parceria</AlertTitle>
-                      <AlertDescription>
-                        Ao se cadastrar como parceiro, você poderá oferecer cashback aos seus clientes e aumentar suas vendas.
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <Store className="h-5 w-5 text-blue-600" />
+                      <AlertTitle className="text-blue-600 font-semibold">Programa de Parceria</AlertTitle>
+                      <AlertDescription className="text-slate-700">
+                        Ao se cadastrar como parceiro, você poderá oferecer cashback aos seus clientes e aumentar suas vendas. Receba <span className="font-medium text-blue-600">$25.00</span> de bônus para utilizar na plataforma e atraia mais clientes para seu negócio.
                       </AlertDescription>
                     </Alert>
                     
-                    <Alert variant="destructive">
-                      <AlertCircle className="h-4 w-4" />
-                      <AlertTitle>Aprovação necessária</AlertTitle>
-                      <AlertDescription>
-                        Seu cadastro passará por uma análise antes de ser aprovado. Você receberá um email com mais informações em breve.
+                    <Alert variant="destructive" className="bg-red-50 border-red-200">
+                      <AlertCircle className="h-5 w-5 text-red-600" />
+                      <AlertTitle className="text-red-600 font-semibold">Aprovação imediata</AlertTitle>
+                      <AlertDescription className="text-slate-700">
+                        Seu cadastro será aprovado automaticamente. Você receberá um email com instruções de acesso e poderá começar a usar a plataforma imediatamente após o cadastro.
                       </AlertDescription>
                     </Alert>
                     
@@ -758,7 +783,7 @@ export default function InvitePage() {
                           <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                           Processando...
                         </>
-                      ) : "Solicitar Cadastro"}
+                      ) : "Criar Conta de Parceiro"}
                     </Button>
                   </form>
                 </Form>
