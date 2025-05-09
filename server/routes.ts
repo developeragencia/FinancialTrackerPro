@@ -1818,35 +1818,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
       
-      // Calcular totais (independente da paginação)
+      // Calcular totais (independente da paginação) - apenas para transações válidas
       const totalAmount = await db
         .select({ sum: sql`SUM(${transactions.amount})` })
         .from(transactions)
-        .where(eq(transactions.merchant_id, merchant.id));
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending', 'cancelled'])
+          )
+        );
       
       const totalCashback = await db
         .select({ sum: sql`SUM(${transactions.cashback_amount})` })
         .from(transactions)
-        .where(eq(transactions.merchant_id, merchant.id));
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending', 'cancelled'])
+          )
+        );
       
-      // Agrupar por status
+      // Agrupar por status - apenas transações válidas
       const statusCounts = await db
         .select({
           status: transactions.status,
           count: sql`COUNT(*)`.as("count")
         })
         .from(transactions)
-        .where(eq(transactions.merchant_id, merchant.id))
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending', 'cancelled'])
+          )
+        )
         .groupBy(transactions.status);
       
-      // Agrupar por método de pagamento
+      // Agrupar por método de pagamento - apenas transações válidas
       const paymentMethodSummary = await db
         .select({
           method: transactions.payment_method,
           sum: sql`SUM(${transactions.amount})`.as("sum")
         })
         .from(transactions)
-        .where(eq(transactions.merchant_id, merchant.id))
+        .where(
+          and(
+            eq(transactions.merchant_id, merchant.id),
+            inArray(transactions.status, ['completed', 'pending', 'cancelled'])
+          )
+        )
         .groupBy(transactions.payment_method);
       
       // Aplicar paginação sem usar orderBy(desc())
