@@ -43,7 +43,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
 // Tipos e componentes
@@ -156,16 +156,9 @@ export default function AdminTransfers() {
   
   // Visualizar detalhes da transferência
   const handleViewTransfer = (transfer: Transfer) => {
-    const amount = typeof transfer.amount === 'string' 
-      ? parseFloat(transfer.amount) 
-      : transfer.amount;
-    
-    // Garantir que o valor é um número válido antes de chamar toFixed
-    const formattedAmount = !isNaN(amount) ? amount.toFixed(2) : "0.00";
-    
     toast({
       title: `Transferência #${transfer.id}`,
-      description: `Usuário: ${transfer.userName}, Valor: $ ${formattedAmount}`,
+      description: `Usuário: ${transfer.userName}, Valor: ${formatCurrency(transfer.amount)}`,
     });
   };
   
@@ -214,20 +207,11 @@ export default function AdminTransfers() {
     {
       header: "Valor",
       accessorKey: "amount" as keyof Transfer,
-      cell: (transfer: Transfer) => {
-        const amount = typeof transfer.amount === 'string' 
-          ? parseFloat(transfer.amount) 
-          : transfer.amount;
-          
-        // Garantir que o valor é um número válido antes de chamar toFixed
-        const formattedAmount = !isNaN(amount) ? amount.toFixed(2) : "0.00";
-          
-        return (
-          <span className="font-medium">
-            $ {formattedAmount}
-          </span>
-        );
-      },
+      cell: (transfer: Transfer) => (
+        <span className="font-medium">
+          {formatCurrency(transfer.amount)}
+        </span>
+      ),
     },
     {
       header: "Tipo",

@@ -19,6 +19,12 @@ import { formatCurrency } from "../client/src/lib/utils";
 
 // Função para determinar o tipo de transferência
 function getTransferType(transfer: any) {
+  // Se a transferência já tem um tipo definido, retornar esse tipo
+  if (transfer.type) {
+    return transfer.type;
+  }
+  
+  // Caso contrário, determinar o tipo com base no tipo de usuário
   if (transfer.user_type === 'merchant') {
     return 'merchant_withdrawal';
   } else if (transfer.user_type === 'client') {
@@ -554,6 +560,7 @@ export function addAdminRoutes(app: Express) {
           amount: transfers.amount,
           status: transfers.status,
           created_at: transfers.created_at,
+          type: transfers.type,
           user_name: users.name,
           user_email: users.email,
           user_type: users.type
