@@ -34,7 +34,8 @@ import {
   DollarSign,
   CreditCard,
   Banknote,
-  ArrowUp
+  ArrowUp,
+  Mail
 } from "lucide-react";
 import { DataTable } from "@/components/ui/data-table";
 import { Calendar } from "@/components/ui/calendar";
