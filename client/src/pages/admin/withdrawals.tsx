@@ -416,7 +416,7 @@ const AdminWithdrawals = () => {
   const cancelledCount = data?.withdrawals?.filter((w: any) => w.status === "cancelled")?.length || 0;
   
   return (
-    <DashboardLayout type="admin">
+    <DashboardLayout type="admin" title="Solicitações de Saque">
       <div className="flex flex-col gap-4">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
           <div>
