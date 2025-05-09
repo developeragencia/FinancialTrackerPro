@@ -106,19 +106,37 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
 
   useEffect(() => {
     // Determina qual menu usar com base no tipo de usuário
-    const userType = user?.type || 'client';
-    const defaultMenu = Array(5).fill({
-      path: '/login',
-      icon: <User className="h-5 w-5" />,
-      label: 'Login'
-    });
+    if (!user) {
+      // Se não houver usuário, não tente carregar menu específico
+      const defaultMenu = Array(5).fill({
+        path: '/login',
+        icon: <User className="h-5 w-5" />,
+        label: 'Login'
+      });
+      setMenuOptions(defaultMenu);
+      return;
+    }
     
-    // Usa o menu específico para o tipo de usuário ou o menu padrão
-    const userMenu = menuItems[userType as keyof typeof menuItems] || defaultMenu;
+    // Pega o tipo de usuário e certifica-se que seja uma chave válida
+    const userType = user.type;
+    if (!userType || !menuItems[userType as keyof typeof menuItems]) {
+      console.error(`Tipo de usuário inválido: ${userType}`);
+      const defaultMenu = Array(5).fill({
+        path: '/login',
+        icon: <User className="h-5 w-5" />,
+        label: 'Login'
+      });
+      setMenuOptions(defaultMenu);
+      return;
+    }
     
-    // Garante que sempre temos 5 itens de menu
+    // Clona as opções de menu para evitar mutações acidentais
+    const userMenu = [...menuItems[userType as keyof typeof menuItems]];
+    
+    // Garante que sempre temos exatamente 5 itens de menu
     if (userMenu.length !== 5) {
       console.warn(`Menu para ${userType} não tem 5 itens. Ajustando...`);
+      // Se tiver menos de 5, adiciona itens perfil até completar
       while (userMenu.length < 5) {
         userMenu.push({
           path: `/${userType}/profile`,
@@ -126,11 +144,16 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
           label: 'Perfil'
         });
       }
+      // Se tiver mais de 5, remove os excedentes
+      if (userMenu.length > 5) {
+        userMenu.splice(5);
+      }
     }
     
+    // Debug para verificar os menus
+    console.log(`Menu para tipo ${userType} carregado:`, userMenu);
     setMenuOptions(userMenu);
-    console.log('Número de itens no menu:', userMenu.length);
-  }, [user?.type]);
+  }, [user]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -164,24 +187,38 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
         {children}
       </main>
 
-      {/* Bottom Navigation com grid fixo de 5 colunas */}
-      <nav className="sticky bottom-0 border-t bg-background shadow-[0_-2px_10px_rgba(0,0,0,0.1)] w-full">
+      {/* Bottom Navigation com grid fixo de 5 colunas e feedback visual melhorado */}
+      <nav className="sticky bottom-0 border-t bg-background shadow-[0_-2px_10px_rgba(0,0,0,0.1)] w-full z-50">
         <div className="grid grid-cols-5 w-full py-2">
-          {menuOptions.slice(0, 5).map((item, index) => (
-            <Link
-              key={index}
-              href={item.path}
-              className={cn(
-                "flex flex-col items-center justify-center py-1 px-1 rounded-md text-xs font-medium transition-colors",
-                location === item.path 
-                  ? "text-primary" 
-                  : "text-muted-foreground hover:text-primary"
-              )}
-            >
-              {item.icon}
-              <span className="mt-1 truncate text-[0.65rem]">{item.label}</span>
-            </Link>
-          ))}
+          {menuOptions.slice(0, 5).map((item, index) => {
+            const isActive = location === item.path;
+            return (
+              <Link
+                key={index}
+                href={item.path}
+                className={cn(
+                  "flex flex-col items-center justify-center py-1 px-1 rounded-md text-xs font-medium transition-colors",
+                  isActive 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-primary"
+                )}
+              >
+                <div className={cn(
+                  "relative flex items-center justify-center",
+                  isActive && "after:absolute after:content-[''] after:w-2 after:h-2 after:rounded-full after:-top-1 after:bg-primary"
+                )}>
+                  {item.icon}
+                  {isActive && <div className="absolute inset-0 bg-primary/10 rounded-full animate-pulse-slow scale-150" />}
+                </div>
+                <span className={cn(
+                  "mt-1 truncate text-[0.65rem]",
+                  isActive && "font-bold"
+                )}>
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
