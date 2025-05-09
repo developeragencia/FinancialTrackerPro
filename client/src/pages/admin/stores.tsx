@@ -208,13 +208,13 @@ export default function AdminStores() {
     
     try {
       // API call para atualizar o status da loja
-      const newStatus = selectedStore.approved === false ? "active" : "inactive";
+      const newApprovedStatus = !selectedStore.approved;
       const response = await apiRequest("PATCH", `/api/admin/stores/${selectedStore.id}/status`, {
-        status: newStatus
+        approved: newApprovedStatus
       });
       
       if (response.ok) {
-        const action = newStatus === "active" ? "ativada" : "desativada";
+        const action = newApprovedStatus ? "ativada" : "desativada";
         
         toast({
           title: `Loja ${action}`,

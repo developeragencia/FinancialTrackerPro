@@ -183,36 +183,35 @@ export function addAdminRoutes(app: Express) {
     }
     
     const storeId = parseInt(req.params.id);
-    const { status } = req.body;
+    const { approved } = req.body;
     
     if (isNaN(storeId)) {
       return res.status(400).json({ message: "ID de loja inválido" });
     }
     
     try {
-      // Atualizar o status da loja
+      // Atualizar o status de aprovação da loja
       await db
         .update(merchants)
         .set({ 
-          status: status 
+          approved: approved 
         })
         .where(eq(merchants.id, storeId));
       
       // Registrar no log de auditoria
       await db.insert(auditLogs).values({
-        entity_type: "merchant",
-        entity_id: storeId,
-        user_id: req.user.id,
+        action: approved ? "store_activated" : "store_deactivated",
         details: JSON.stringify({
           storeId,
-          status
+          approved
         }),
+        user_id: req.user.id,
         created_at: new Date()
       });
       
       res.json({ 
         success: true, 
-        message: status === "active" ? "Loja ativada com sucesso" : "Loja desativada com sucesso"
+        message: approved ? "Loja ativada com sucesso" : "Loja desativada com sucesso"
       });
     } catch (error) {
       console.error("Erro ao atualizar status da loja:", error);
