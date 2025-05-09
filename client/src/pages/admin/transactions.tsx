@@ -59,14 +59,21 @@ const TransactionStatusIcons: Record<string, React.ReactNode> = {
 
 interface Transaction {
   id: number;
-  customer: string;
-  merchant: string;
-  date: string;
-  amount: number;
-  cashback: number;
+  customer: {
+    id: number;
+    name: string;
+  };
+  merchant: {
+    id: number;
+    name: string;
+    logo: string;
+  };
+  totalAmount: number;
+  cashbackAmount: number;
   paymentMethod: string;
-  items: string;
+  items: number;
   status: string;
+  createdAt: string;
 }
 
 export default function AdminTransactions() {
@@ -128,7 +135,7 @@ export default function AdminTransactions() {
   const handleViewTransaction = (transaction: Transaction) => {
     toast({
       title: `Transação #${transaction.id}`,
-      description: `Cliente: ${transaction.customer}, Loja: ${transaction.merchant}, Valor: R$ ${transaction.amount.toFixed(2)}`,
+      description: `Cliente: ${transaction.customer.name}, Loja: ${transaction.merchant.name}, Valor: R$ ${transaction.totalAmount.toFixed(2)}`,
     });
   };
   
@@ -152,7 +159,7 @@ export default function AdminTransactions() {
       cell: (transaction: Transaction) => (
         <div className="flex items-center">
           <User className="h-4 w-4 text-muted-foreground mr-2" />
-          <span>{transaction.customer}</span>
+          <span>{transaction.customer.name}</span>
         </div>
       ),
     },
@@ -162,7 +169,7 @@ export default function AdminTransactions() {
       cell: (transaction: Transaction) => (
         <div className="flex items-center">
           <Store className="h-4 w-4 text-muted-foreground mr-2" />
-          <span>{transaction.merchant}</span>
+          <span>{transaction.merchant.name}</span>
         </div>
       ),
     },

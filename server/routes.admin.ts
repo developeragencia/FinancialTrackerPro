@@ -328,11 +328,11 @@ export function addAdminRoutes(app: Express) {
           .from(transactionItems)
           .where(eq(transactionItems.transaction_id, tx.id));
         
-        // Obter cashbacks relacionados
+        // Procurar cashback pelo user_id da transação
         const cashbackEntry = await db
           .select()
           .from(cashbacks)
-          .where(eq(cashbacks.transaction_id, tx.id));
+          .where(eq(cashbacks.user_id, tx.user_id));
         
         return {
           id: tx.id,
@@ -345,17 +345,58 @@ export function addAdminRoutes(app: Express) {
             id: tx.user_id,
             name: tx.user_name
           },
-          totalAmount: tx.total_amount,
+          totalAmount: tx.amount,
           status: tx.status,
           paymentMethod: tx.payment_method,
           items: items.length,
           createdAt: tx.created_at,
-          cashbackAmount: cashbackEntry.length > 0 ? cashbackEntry[0].amount : 0
+          cashbackAmount: tx.cashback_amount
         };
       }));
       
+      // Calcular totais para exibição no dashboard
+      const totalAmount = transactionsWithDetails.reduce((sum, tx) => sum + parseFloat(tx.totalAmount.toString()), 0);
+      const totalCashback = transactionsWithDetails.reduce((sum, tx) => sum + parseFloat(tx.cashbackAmount.toString()), 0);
+      
+      // Contar status para exibição no dashboard
+      const statusCounts = [];
+      const statusMap: Record<string, number> = {};
+      
+      transactionsWithDetails.forEach(tx => {
+        if (statusMap[tx.status]) {
+          statusMap[tx.status]++;
+        } else {
+          statusMap[tx.status] = 1;
+        }
+      });
+      
+      Object.keys(statusMap).forEach(status => {
+        statusCounts.push({ status, count: statusMap[status] });
+      });
+      
+      // Somar valores por método de pagamento
+      const paymentMethodSummary = [];
+      const paymentMap: Record<string, number> = {};
+      
+      transactionsWithDetails.forEach(tx => {
+        if (paymentMap[tx.paymentMethod]) {
+          paymentMap[tx.paymentMethod] += parseFloat(tx.totalAmount.toString());
+        } else {
+          paymentMap[tx.paymentMethod] = parseFloat(tx.totalAmount.toString());
+        }
+      });
+      
+      const paymentSummary = [];
+      Object.keys(paymentMap).forEach(method => {
+        paymentSummary.push({ method, sum: paymentMap[method] });
+      });
+      
       res.json({
         transactions: transactionsWithDetails,
+        totalAmount,
+        totalCashback,
+        statusCounts,
+        paymentMethodSummary: paymentSummary,
         pagination: {
           total: totalCount?.count || 0,
           page,
@@ -411,10 +452,12 @@ export function addAdminRoutes(app: Express) {
         .where(eq(transactionItems.transaction_id, transactionId));
       
       // Obter cashback relacionado
-      const [cashbackEntry] = await db
+      const cashbackRecs = await db
         .select()
         .from(cashbacks)
-        .where(eq(cashbacks.transaction_id, transactionId));
+        .where(eq(cashbacks.user_id, transaction.user_id));
+        
+      const cashbackEntry = cashbackRecs.length > 0 ? cashbackRecs[0] : null;
       
       // Obter taxas e comissões ativas - sem usar orderBy(desc()) que causa problemas
       const allCommissionSettings = await db
@@ -431,7 +474,7 @@ export function addAdminRoutes(app: Express) {
       // Montar objeto de resposta detalhado
       const response = {
         id: transaction.id,
-        reference: transaction.reference || `TX-${transaction.id}`,
+        reference: `TX-${transaction.id}`,
         merchant: {
           id: merchant?.id,
           name: merchant?.store_name,
@@ -443,16 +486,16 @@ export function addAdminRoutes(app: Express) {
           email: user?.email
         },
         amount: {
-          total: transaction.total_amount,
-          subtotal: transaction.subtotal || transaction.total_amount,
-          tax: transaction.tax || 0,
-          discount: transaction.discount || 0,
-          cashback: cashbackEntry?.amount || 0
+          total: parseFloat(transaction.amount.toString()),
+          subtotal: parseFloat(transaction.amount.toString()),
+          tax: 0,
+          discount: 0,
+          cashback: parseFloat(transaction.cashback_amount.toString())
         },
         fees: {
           platform: commissionSettingsEntry?.platform_fee || "2.0",
           merchant: commissionSettingsEntry?.merchant_commission || "2.0",
-          cashback: commissionSettingsEntry?.cashback_rate || "2.0",
+          cashback: commissionSettingsEntry?.client_cashback || "2.0",
           referral: commissionSettingsEntry?.referral_bonus || "1.0"
         },
         payment: {
@@ -463,12 +506,12 @@ export function addAdminRoutes(app: Express) {
           id: item.id,
           name: item.product_name,
           quantity: item.quantity,
-          price: item.price,
-          total: (item.price || 0) * (item.quantity || 1)
+          price: parseFloat(item.price.toString()),
+          total: parseFloat(item.price.toString()) * item.quantity
         })),
         timestamps: {
           created: transaction.created_at,
-          updated: transaction.updated_at
+          updated: transaction.created_at
         }
       };
       
