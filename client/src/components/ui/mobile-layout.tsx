@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
 import { useLocation, Link } from 'wouter';
-import { Home, ShoppingBag, QrCode, Users, User, Settings, LogOut } from 'lucide-react';
+import { Home, ShoppingBag, QrCode, Users, User, Settings, LogOut, Wallet, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +36,16 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
       icon: <ShoppingBag className="h-6 w-6" />,
       label: 'Lojas'
     },
+    user?.type === 'client' && {
+      path: '/client/transfers',
+      icon: <Wallet className="h-6 w-6" />,
+      label: 'Transferir'
+    },
+    user?.type === 'client' && {
+      path: '/client/cashbacks',
+      icon: <CreditCard className="h-6 w-6" />,
+      label: 'Cashback'
+    },
     user?.type === 'merchant' && {
       path: '/merchant/sales',
       icon: <ShoppingBag className="h-6 w-6" />,
@@ -45,6 +55,16 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
       path: '/merchant/scanner',
       icon: <QrCode className="h-6 w-6" />,
       label: 'Scanner'
+    },
+    user?.type === 'merchant' && {
+      path: '/merchant/transactions',
+      icon: <CreditCard className="h-6 w-6" />,
+      label: 'Transações'
+    },
+    user?.type === 'merchant' && {
+      path: '/merchant/referrals',
+      icon: <Users className="h-6 w-6" />,
+      label: 'Indicações'
     },
     (user?.type === 'merchant' || user?.type === 'admin') && {
       path: `/${userTypePrefix}/customers`,
