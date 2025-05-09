@@ -3574,7 +3574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           password, // Em produção, usaríamos hashPassword(password)
           phone,
           type: "merchant",
-          status: "pending", // Lojistas começam como pendentes até aprovação
+          status: "active", // Lojistas são aprovados automaticamente
           invitation_code: `LJ${nextId.toString().padStart(4, '0')}`, // Gerar código de convite para o novo lojista
           created_at: new Date()
         })
@@ -3587,7 +3587,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user_id: newUser.id,
           name: storeName,
           category: storeType,
-          status: "pending",
+          status: "active",
+          approved: true,
           created_at: new Date()
         });
       
@@ -3625,7 +3626,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: newUser.name,
         email: newUser.email,
         type: newUser.type,
-        message: "Cadastro realizado com sucesso! Seu pedido será analisado."
+        message: "Cadastro realizado com sucesso! Sua loja foi aprovada automaticamente."
       });
     } catch (error) {
       console.error("Erro ao cadastrar lojista:", error);
