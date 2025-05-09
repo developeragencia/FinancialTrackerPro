@@ -1099,13 +1099,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const [updatedMerchant] = await db
         .update(merchants)
         .set({
-          store_name: name || merchant.storeName,
-          description: description,
+          store_name: name || merchant.store_name,
           address: address,
           city: city,
           state: state,
-          category: category || merchant.category,
-          business_hours: businessHours
+          category: category || merchant.category
         })
         .where(eq(merchants.user_id, merchantId))
         .returning();
@@ -1123,7 +1121,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Excluir dados sensíveis
-      const { userId, ...merchantData } = updatedMerchant;
+      const { user_id, ...merchantData } = updatedMerchant;
       
       // Adicionar atributos extras para o frontend
       const enrichedData = {
@@ -1132,7 +1130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         phone,
         website,
         owner,
-        name: merchantData.storeName // Mandar nome como storeName para compatibilidade
+        name: merchantData.store_name // Mandar nome como store_name para compatibilidade
       };
       
       res.json(enrichedData);
