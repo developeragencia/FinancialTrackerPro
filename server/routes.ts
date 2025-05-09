@@ -80,8 +80,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           user_id: merchants.user_id,
         })
         .from(merchants)
-        .where(eq(merchants.approved, true))
-        .orderBy(merchants.store_name);
+        .where(eq(merchants.approved, true));
+        
+      // Ordenar manualmente por nome da loja
+      allStores.sort((a, b) => a.name.localeCompare(b.name));
       
       // Adicionar informações adicionais como avaliações e número de clientes
       const storesWithDetails = await Promise.all(
@@ -689,11 +691,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const merchant = merchantList[0];
         
       // Listar produtos do lojista
-      const productsList = await db
+      const allProductsList = await db
         .select()
         .from(products)
-        .where(eq(products.merchant_id, merchant.id))
-        .orderBy(products.name);
+        .where(eq(products.merchant_id, merchant.id));
+        
+      // Ordenar manualmente por nome do produto
+      const productsList = allProductsList.sort((a, b) => 
+        a.name.localeCompare(b.name));
         
       res.json(productsList);
     } catch (error) {
