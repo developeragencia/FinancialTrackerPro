@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { notifications, NotificationType, users } from "@shared/schema";
+import { notifications, NotificationType, users, UserType, WithdrawalStatus, WithdrawalStatusValues } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 /**
@@ -209,5 +209,71 @@ export async function createSystemNotificationForUserType(
   } catch (error) {
     console.error("Erro ao criar notificações para usuários:", error);
     return [];
+  }
+}
+
+/**
+ * Cria uma notificação para solicitação de saque
+ */
+export async function createWithdrawalRequestNotification(
+  userId: number,
+  withdrawalId: number,
+  status: WithdrawalStatusValues,
+  amount: string
+) {
+  try {
+    let title = '';
+    let message = '';
+    
+    switch (status) {
+      case WithdrawalStatus.PENDING:
+        title = "Solicitação de Saque Enviada";
+        message = `Sua solicitação de saque no valor de $${amount} foi recebida e está em processamento.`;
+        break;
+      case WithdrawalStatus.COMPLETED:
+        title = "Solicitação de Saque Aprovada";
+        message = `Sua solicitação de saque no valor de $${amount} foi aprovada e processada.`;
+        break;
+      case WithdrawalStatus.REJECTED:
+        title = "Solicitação de Saque Recusada";
+        message = `Sua solicitação de saque no valor de $${amount} foi recusada. Entre em contato com o suporte para mais informações.`;
+        break;
+    }
+    
+    await createNotification({
+      userId,
+      type: NotificationType.WITHDRAWAL,
+      title,
+      message,
+      data: { withdrawalId, status, amount }
+    });
+    
+  } catch (error) {
+    console.error("Erro ao criar notificação de saque:", error);
+  }
+}
+
+/**
+ * Cria uma notificação para administradores sobre nova solicitação de saque
+ */
+export async function createAdminWithdrawalNotification(
+  merchantId: number, 
+  merchantName: string,
+  withdrawalId: number,
+  amount: string
+) {
+  try {
+    const title = "Nova Solicitação de Saque";
+    const message = `O lojista ${merchantName} solicitou um saque de $${amount}.`;
+    
+    await createSystemNotificationForUserType(
+      UserType.ADMIN,
+      title,
+      message,
+      { withdrawalId, merchantId, amount }
+    );
+    
+  } catch (error) {
+    console.error("Erro ao criar notificação para administradores:", error);
   }
 }
