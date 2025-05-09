@@ -12,6 +12,23 @@ export function isMobileDevice() {
   );
 }
 
+// Detectar o sistema operacional do dispositivo
+export function getDeviceOS() {
+  const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+  
+  // iOS detection
+  if (/iPad|iPhone|iPod/.test(userAgent) && !(window as any).MSStream) {
+    return 'ios';
+  }
+  
+  // Android detection
+  if (/android/i.test(userAgent)) {
+    return 'android';
+  }
+  
+  return 'other';
+}
+
 // Função para registrar o service worker
 export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
@@ -34,6 +51,15 @@ export function isAppInstalled() {
          (window.navigator as any).standalone === true;
 }
 
+// Função para obter links de download direto para as lojas
+export function getAppStoreLinks() {
+  return {
+    // Links de exemplo para app stores - substitua pelos links reais quando disponíveis
+    android: 'https://play.google.com/store/apps/details?id=com.valecashback.app',
+    ios: 'https://apps.apple.com/app/vale-cashback/id0000000000'
+  };
+}
+
 // Interface para eventos de instalação do PWA
 export function usePWAInstall() {
   let deferredPrompt: any = null;
@@ -48,6 +74,18 @@ export function usePWAInstall() {
 
   const promptInstall = async () => {
     if (!deferredPrompt) {
+      // Se não tiver o prompt nativo, tenta direcionar para a loja apropriada
+      const os = getDeviceOS();
+      const storeLinks = getAppStoreLinks();
+      
+      if (os === 'android') {
+        window.location.href = storeLinks.android;
+        return true;
+      } else if (os === 'ios') {
+        window.location.href = storeLinks.ios;
+        return true;
+      }
+      
       return false;
     }
 
