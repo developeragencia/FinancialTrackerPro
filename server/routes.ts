@@ -4828,6 +4828,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rotas de notificações
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Buscar notificações do usuário
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.user_id, userId))
+        .orderBy(desc(notifications.created_at))
+        .limit(50);
+      
+      // Contar notificações não lidas
+      const [result] = await db
+        .select({ count: count() })
+        .from(notifications)
+        .where(and(
+          eq(notifications.user_id, userId),
+          eq(notifications.read, false)
+        ));
+      
+      const unreadCount = result ? Number(result.count) : 0;
+      
+      res.json({
+        notifications: userNotifications,
+        unreadCount
+      });
+    } catch (error) {
+      console.error("Erro ao buscar notificações:", error);
+      res.status(500).json({ message: "Erro ao buscar notificações" });
+    }
+  });
+  
+  // Marcar notificação como lida
+  app.patch("/api/notifications/:id/read", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const notificationId = parseInt(req.params.id);
+      
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "ID de notificação inválido" });
+      }
+      
+      // Verificar se a notificação pertence ao usuário
+      const [notification] = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.user_id, userId)
+        ));
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notificação não encontrada" });
+      }
+      
+      // Marcar como lida
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, notificationId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar notificação como lida:", error);
+      res.status(500).json({ message: "Erro ao marcar notificação como lida" });
+    }
+  });
+  
+  // Marcar todas as notificações como lidas
+  app.patch("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Marcar todas as notificações do usuário como lidas
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.user_id, userId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar todas notificações como lidas:", error);
+      res.status(500).json({ message: "Erro ao marcar todas notificações como lidas" });
+    }
+  });
+  
+  // Excluir notificação
+  app.delete("/api/notifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const notificationId = parseInt(req.params.id);
+      
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "ID de notificação inválido" });
+      }
+      
+      // Verificar se a notificação pertence ao usuário
+      const [notification] = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.user_id, userId)
+        ));
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notificação não encontrada" });
+      }
+      
+      // Excluir a notificação
+      await db
+        .delete(notifications)
+        .where(eq(notifications.id, notificationId));
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Erro ao excluir notificação:", error);
+      res.status(500).json({ message: "Erro ao excluir notificação" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
