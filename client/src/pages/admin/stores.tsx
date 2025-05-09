@@ -356,12 +356,21 @@ export default function AdminStores() {
     try {
       // API call to delete the store
       const response = await apiRequest("DELETE", `/api/admin/stores/${selectedStore.id}`);
-      const data = await response.json();
+      
+      // Verificar se a resposta é válida antes de tentar analisá-la como JSON
+      let data;
+      try {
+        const text = await response.text();
+        data = text ? JSON.parse(text) : {};
+      } catch (e) {
+        console.error("Erro ao analisar resposta JSON:", e);
+        data = {};
+      }
       
       if (response.ok) {
         toast({
           title: "Loja excluída",
-          description: `${selectedStore.name} foi excluída com sucesso.`,
+          description: `${selectedStore.name || selectedStore.store_name} foi excluída com sucesso.`,
         });
         
         queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });

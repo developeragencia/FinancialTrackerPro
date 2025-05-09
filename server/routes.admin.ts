@@ -254,19 +254,17 @@ export function addAdminRoutes(app: Express) {
       
       // Registrar no log de auditoria
       await db.insert(auditLogs).values({
-        entity_type: "merchant",
-        entity_id: storeId,
+        action: "store_deleted",
         user_id: req.user.id,
         details: JSON.stringify({
           storeId,
           storeName: store.store_name,
-          email: store.email,
-          action: "delete"
+          email: store.email
         }),
         created_at: new Date()
       });
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: "Loja excluída com sucesso",
         details: {
@@ -603,8 +601,6 @@ export function addAdminRoutes(app: Express) {
       // Registrar no log de auditoria
       await db.insert(auditLogs).values({
         action: `transfer_${status}`,
-        entity_type: "transfer",
-        entity_id: transferId,
         user_id: req.user.id,
         details: JSON.stringify({
           transferId,
