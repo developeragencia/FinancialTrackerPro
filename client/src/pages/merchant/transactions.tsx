@@ -87,16 +87,26 @@ export default function MerchantTransactions() {
     statusCounts: { status: string, count: number }[],
     paymentMethodSummary: { method: string, sum: number }[]
   }>({
-    queryKey: ['api/merchant/transactions'],
+    queryKey: ['/api/merchant/transactions'],
     refetchOnWindowFocus: false,
     retry: 1,
-    // Adicionando fallback para evitar tela branca
-    placeholderData: {
-      transactions: [],
-      totalAmount: 0,
-      totalCashback: 0,
-      statusCounts: [],
-      paymentMethodSummary: []
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/merchant/transactions');
+        if (!res.ok) {
+          throw new Error('Falha ao buscar transações');
+        }
+        return await res.json();
+      } catch (err) {
+        console.error('Erro na busca de transações:', err);
+        return {
+          transactions: [],
+          totalAmount: 0,
+          totalCashback: 0,
+          statusCounts: [],
+          paymentMethodSummary: []
+        };
+      }
     }
   });
   
