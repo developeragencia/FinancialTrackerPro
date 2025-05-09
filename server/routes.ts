@@ -2788,7 +2788,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .update(users)
         .set({
           password: hashedPassword,
-          updatedAt: new Date()
+          updated_at: new Date()
         })
         .where(eq(users.id, merchantId));
       
