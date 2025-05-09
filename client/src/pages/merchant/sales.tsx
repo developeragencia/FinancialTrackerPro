@@ -443,7 +443,7 @@ export default function MerchantSales() {
                           <TableRow key={item.id}>
                             <TableCell>{item.name}</TableCell>
                             <TableCell className="text-center">{item.quantity}</TableCell>
-                            <TableCell className="text-right">R$ {(item.price * item.quantity).toFixed(2)}</TableCell>
+                            <TableCell className="text-right">$ {(item.price * item.quantity).toFixed(2)}</TableCell>
                             <TableCell className="text-center">
                               <Button
                                 variant="ghost"
@@ -474,7 +474,7 @@ export default function MerchantSales() {
               {/* Opção para venda manual sem produtos */}
               {cartItems.length === 0 && (
                 <div className="space-y-2">
-                  <Label htmlFor="manualAmount">Valor Manual (R$)</Label>
+                  <Label htmlFor="manualAmount">Valor Manual ($)</Label>
                   <Input
                     id="manualAmount"
                     type="number"
@@ -495,7 +495,7 @@ export default function MerchantSales() {
               {/* Resumo dos Valores */}
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="subtotal">Subtotal (R$)</Label>
+                  <Label htmlFor="subtotal">Subtotal ($)</Label>
                   <Input
                     id="subtotal"
                     value={cartItems.length > 0 ? subtotal.toFixed(2) : manualAmount.toFixed(2)}
@@ -504,7 +504,7 @@ export default function MerchantSales() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="discount">Desconto (R$)</Label>
+                  <Label htmlFor="discount">Desconto ($)</Label>
                   <Input
                     id="discount"
                     type="number"
@@ -520,7 +520,7 @@ export default function MerchantSales() {
               
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="total">Total (R$)</Label>
+                  <Label htmlFor="total">Total ($)</Label>
                   <Input
                     id="total"
                     value={cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}
@@ -607,29 +607,29 @@ export default function MerchantSales() {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Valor da Venda:</span>
-                  <span className="font-medium">R$ {cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}</span>
+                  <span className="font-medium">$ {cartItems.length > 0 ? total.toFixed(2) : (manualAmount - discountValue).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Cashback do Cliente ({SYSTEM_SETTINGS.cashbackRate * 100}%):</span>
-                  <span className="text-green-600">R$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
+                  <span className="text-green-600">$ {cartItems.length > 0 ? cashbackAmount.toFixed(2) : (manualAmount * SYSTEM_SETTINGS.cashbackRate).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa da Plataforma (2%):</span>
-                  <span className="text-blue-600">R$ {cartItems.length > 0 
+                  <span className="text-blue-600">$ {cartItems.length > 0 
                     ? (total * 0.02).toFixed(2) 
                     : (manualAmount * 0.02).toFixed(2)}</span>
                 </div>
                 {selectedCustomer?.referredBy && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Bônus para Referenciador ({SYSTEM_SETTINGS.referralRate * 100}%):</span>
-                    <span className="text-blue-600">R$ {cartItems.length > 0 
+                    <span className="text-blue-600">$ {cartItems.length > 0 
                       ? referralBonus.toFixed(2) 
                       : (manualAmount * SYSTEM_SETTINGS.referralRate).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Taxa do Lojista ({SYSTEM_SETTINGS.merchantCommission * 100}%):</span>
-                  <span className="text-orange-600">R$ {cartItems.length > 0 
+                  <span className="text-orange-600">$ {cartItems.length > 0 
                     ? merchantCommission.toFixed(2) 
                     : (manualAmount * SYSTEM_SETTINGS.merchantCommission).toFixed(2)}</span>
                 </div>
