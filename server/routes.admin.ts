@@ -44,7 +44,7 @@ export function addAdminRoutes(app: Express) {
       // Valor total de transações
       const [transactionTotal] = await db
         .select({ 
-          total: sql`COALESCE(SUM(${transactions.total_amount}), 0)` 
+          total: sql`COALESCE(sum(${transactions.total_amount}), 0)` 
         })
         .from(transactions);
         

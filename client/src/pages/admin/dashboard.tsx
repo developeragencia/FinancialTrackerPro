@@ -124,24 +124,24 @@ export default function AdminDashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Lojas Pendentes de Aprovação</CardTitle>
+            <CardTitle>Lojas Recentes</CardTitle>
             <CardDescription>
-              Lojas aguardando aprovação para início das operações
+              Lojas recentemente registradas no sistema
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {pendingStores.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  Não há lojas pendentes de aprovação.
+                  Não há lojas recentemente registradas.
                 </div>
               ) : (
                 pendingStores.map((store) => (
                   <div key={store.id} className="p-4 border rounded-lg">
                     <div className="flex justify-between mb-2">
                       <h3 className="font-medium">{store.name}</h3>
-                      <Badge variant="outline" className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
-                        Pendente
+                      <Badge variant="outline" className="bg-green-100 text-green-800 hover:bg-green-200">
+                        Ativa
                       </Badge>
                     </div>
                     <div className="flex flex-wrap justify-between text-sm text-muted-foreground mb-3">
@@ -150,11 +150,8 @@ export default function AdminDashboard() {
                       <span>Data: {store.date}</span>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" className="bg-green-100 text-green-800 hover:bg-green-200 border-green-200">
-                        <CheckCircle className="mr-1 h-4 w-4" /> Aprovar
-                      </Button>
                       <Button variant="outline" size="sm" className="bg-red-100 text-red-800 hover:bg-red-200 border-red-200">
-                        <XCircle className="mr-1 h-4 w-4" /> Rejeitar
+                        <XCircle className="mr-1 h-4 w-4" /> Desativar
                       </Button>
                       <Button variant="outline" size="sm">
                         <Eye className="mr-1 h-4 w-4" /> Detalhes
