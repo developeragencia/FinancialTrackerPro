@@ -124,9 +124,30 @@ export default function AdminSettings() {
   
   const { toast } = useToast();
   
+  // Define o tipo das configurações de taxas
+  interface RatesSettings {
+    platformFee: string;
+    merchantCommission: string;
+    clientCashback: string;
+    referralCommission: string;
+    minimumWithdrawal: string;
+    maximumCashback: string;
+  }
+
+  // Valores padrão para as configurações de taxas
+  const defaultRatesSettings: RatesSettings = {
+    platformFee: "2.0",
+    merchantCommission: "2.0",
+    clientCashback: "2.0",
+    referralCommission: "1.0",
+    minimumWithdrawal: "50.0",
+    maximumCashback: "10.0"
+  };
+  
   // Query para buscar configurações de taxas
-  const { data: ratesSettings, isLoading: isRatesLoading } = useQuery({
+  const { data: ratesSettings, isLoading: isRatesLoading } = useQuery<RatesSettings>({
     queryKey: ['/api/admin/settings/rates'],
+    placeholderData: defaultRatesSettings
   });
   
   // Query para buscar outras configurações do sistema
@@ -164,25 +185,22 @@ export default function AdminSettings() {
     }
   });
   
+  // Função para converter string para número com segurança
+  const safeParseFloat = (value: string | undefined, defaultValue: number): number => {
+    if (!value) return defaultValue;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? defaultValue : parsed;
+  };
+
   // Formulário para configurações de taxas
   const ratesForm = useForm<z.infer<typeof ratesFormSchema>>({
     resolver: zodResolver(ratesFormSchema),
     defaultValues: {
-      cashbackRate: ratesSettings?.clientCashback ? 
-        (typeof ratesSettings.clientCashback === 'string' ? 
-          parseFloat(ratesSettings.clientCashback) : ratesSettings.clientCashback) : 2.0,
-      referralRate: ratesSettings?.referralCommission ? 
-        (typeof ratesSettings.referralCommission === 'string' ? 
-          parseFloat(ratesSettings.referralCommission) : ratesSettings.referralCommission) : 1.0,
-      merchantCommission: ratesSettings?.merchantCommission ? 
-        (typeof ratesSettings.merchantCommission === 'string' ? 
-          parseFloat(ratesSettings.merchantCommission) : ratesSettings.merchantCommission) : 2.0,
-      minWithdrawal: ratesSettings?.minimumWithdrawal ? 
-        (typeof ratesSettings.minimumWithdrawal === 'string' ? 
-          parseFloat(ratesSettings.minimumWithdrawal) : ratesSettings.minimumWithdrawal) : 50.0,
-      maxCashbackBonus: ratesSettings?.maximumCashback ? 
-        (typeof ratesSettings.maximumCashback === 'string' ? 
-          parseFloat(ratesSettings.maximumCashback) : ratesSettings.maximumCashback) : 10.0,
+      cashbackRate: safeParseFloat(ratesSettings?.clientCashback, 2.0),
+      referralRate: safeParseFloat(ratesSettings?.referralCommission, 1.0),
+      merchantCommission: safeParseFloat(ratesSettings?.merchantCommission, 2.0),
+      minWithdrawal: safeParseFloat(ratesSettings?.minimumWithdrawal, 50.0),
+      maxCashbackBonus: safeParseFloat(ratesSettings?.maximumCashback, 10.0),
     }
   });
   
