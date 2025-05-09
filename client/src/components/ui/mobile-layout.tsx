@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { useLocation, Link } from 'wouter';
-import { Home, ShoppingBag, QrCode, Users, User, Settings, LogOut, Wallet, CreditCard } from 'lucide-react';
+import { Home, ShoppingBag, QrCode, Users, User, Settings, LogOut, Wallet, CreditCard, Info } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
 
@@ -20,68 +20,109 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
 
   const userTypePrefix = user?.type || '';
 
-  const menuItems = [
-    {
-      path: `/${userTypePrefix}/dashboard`,
-      icon: <Home className="h-6 w-6" />,
-      label: 'Home'
-    },
-    user?.type === 'client' && {
-      path: '/client/qr-code',
-      icon: <QrCode className="h-6 w-6" />,
-      label: 'QR Code'
-    },
-    user?.type === 'client' && {
-      path: '/client/stores',
-      icon: <ShoppingBag className="h-6 w-6" />,
-      label: 'Lojas'
-    },
-    user?.type === 'client' && {
-      path: '/client/transfers',
-      icon: <Wallet className="h-6 w-6" />,
-      label: 'Transferir'
-    },
-    user?.type === 'client' && {
-      path: '/client/cashbacks',
-      icon: <CreditCard className="h-6 w-6" />,
-      label: 'Cashback'
-    },
-    user?.type === 'merchant' && {
-      path: '/merchant/sales',
-      icon: <ShoppingBag className="h-6 w-6" />,
-      label: 'Vendas'
-    },
-    user?.type === 'merchant' && {
-      path: '/merchant/scanner',
-      icon: <QrCode className="h-6 w-6" />,
-      label: 'Scanner'
-    },
-    user?.type === 'merchant' && {
-      path: '/merchant/transactions',
-      icon: <CreditCard className="h-6 w-6" />,
-      label: 'Transações'
-    },
-    user?.type === 'merchant' && {
-      path: '/merchant/referrals',
-      icon: <Users className="h-6 w-6" />,
-      label: 'Indicações'
-    },
-    (user?.type === 'merchant' || user?.type === 'admin') && {
-      path: `/${userTypePrefix}/customers`,
-      icon: <Users className="h-6 w-6" />,
-      label: 'Clientes'
-    },
-    {
+  // Definir os itens de menu com base no tipo de usuário
+  let visibleMenuItems = [];
+  
+  if (user?.type === 'client') {
+    visibleMenuItems = [
+      {
+        path: '/client/dashboard',
+        icon: <Home className="h-6 w-6" />,
+        label: 'Home'
+      },
+      {
+        path: '/client/qr-code',
+        icon: <QrCode className="h-6 w-6" />,
+        label: 'QR Code'
+      },
+      {
+        path: '/client/stores',
+        icon: <ShoppingBag className="h-6 w-6" />,
+        label: 'Lojas'
+      },
+      {
+        path: '/client/transfers',
+        icon: <Wallet className="h-6 w-6" />,
+        label: 'Transferir'
+      },
+      {
+        path: '/client/cashbacks',
+        icon: <CreditCard className="h-6 w-6" />,
+        label: 'Cashback'
+      }
+    ];
+  } else if (user?.type === 'merchant') {
+    visibleMenuItems = [
+      {
+        path: '/merchant/dashboard',
+        icon: <Home className="h-6 w-6" />,
+        label: 'Home'
+      },
+      {
+        path: '/merchant/sales',
+        icon: <ShoppingBag className="h-6 w-6" />,
+        label: 'Vendas'
+      },
+      {
+        path: '/merchant/scanner',
+        icon: <QrCode className="h-6 w-6" />,
+        label: 'Scanner'
+      },
+      {
+        path: '/merchant/transactions',
+        icon: <CreditCard className="h-6 w-6" />,
+        label: 'Transações'
+      },
+      {
+        path: '/merchant/referrals',
+        icon: <Users className="h-6 w-6" />,
+        label: 'Indicações'
+      }
+    ];
+  } else if (user?.type === 'admin') {
+    visibleMenuItems = [
+      {
+        path: '/admin/dashboard',
+        icon: <Home className="h-6 w-6" />,
+        label: 'Home'
+      },
+      {
+        path: '/admin/merchants',
+        icon: <ShoppingBag className="h-6 w-6" />,
+        label: 'Lojistas'
+      },
+      {
+        path: '/admin/customers',
+        icon: <Users className="h-6 w-6" />,
+        label: 'Clientes'
+      },
+      {
+        path: '/admin/settings',
+        icon: <Settings className="h-6 w-6" />,
+        label: 'Config'
+      },
+      {
+        path: '/admin/profile',
+        icon: <User className="h-6 w-6" />,
+        label: 'Perfil'
+      }
+    ];
+  }
+
+  // Garantir que sempre temos 5 itens de menu
+  while (visibleMenuItems.length < 5) {
+    visibleMenuItems.push({
       path: `/${userTypePrefix}/profile`,
       icon: <User className="h-6 w-6" />,
       label: 'Perfil'
-    },
-    user?.type === 'admin' && {
-      path: '/admin/settings',
-      icon: <Settings className="h-6 w-6" />,
-      label: 'Config'
-    }
-  ].filter(Boolean); // Remove itens falsely
+    });
+  }
+
+  // Debug para verificar se estamos renderizando todos os 5 itens
+  useEffect(() => {
+    console.log('Número de itens no menu:', visibleMenuItems.length);
+    console.log('Itens do menu:', visibleMenuItems);
+  }, [visibleMenuItems.length]);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -108,10 +149,10 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
         {children}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation - Garantindo exatamente 5 itens */}
       <nav className="sticky bottom-0 border-t bg-background shadow-[0_-2px_10px_rgba(0,0,0,0.1)] w-full">
         <div className="container grid grid-cols-5 gap-1 py-2">
-          {menuItems.slice(0, 5).map((item, index) => (
+          {visibleMenuItems.map((item, index) => (
             <Link
               key={index}
               href={item.path}
