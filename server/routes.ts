@@ -2717,6 +2717,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       currentMonth.setDate(1);
       currentMonth.setHours(0, 0, 0, 0);
       
+      console.log(`Calculando estatísticas do mês (${currentMonth.toISOString()}) para o cliente ID ${clientId}`);
+      
       // Total de cashback ganho este mês
       const monthlyEarnedResult = await db.execute(
         sql`SELECT COALESCE(SUM(cashback_amount), 0) as sum
@@ -2726,6 +2728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               AND status = 'completed'`
       );
       const monthlyEarned = parseFloat(monthlyEarnedResult.rows[0]?.sum || '0');
+      console.log(`Total de cashback ganho este mês: ${monthlyEarned} (SQL retornou: ${JSON.stringify(monthlyEarnedResult.rows[0])})`);
       
       // Total transferido este mês
       const monthlyTransferredResult = await db.execute(
@@ -2735,6 +2738,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               AND created_at >= ${currentMonth}`
       );
       const monthlyTransferred = parseFloat(monthlyTransferredResult.rows[0]?.sum || '0');
+      console.log(`Total transferido este mês: ${monthlyTransferred} (SQL retornou: ${JSON.stringify(monthlyTransferredResult.rows[0])})`);
       
       // Total recebido este mês
       const monthlyReceivedResult = await db.execute(
@@ -2744,6 +2748,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               AND created_at >= ${currentMonth}`
       );
       const monthlyReceived = parseFloat(monthlyReceivedResult.rows[0]?.sum || '0');
+      console.log(`Total recebido este mês: ${monthlyReceived} (SQL retornou: ${JSON.stringify(monthlyReceivedResult.rows[0])})`);
+      
+      // Converter valores NaN para 0
+      const safeMonthlyEarned = isNaN(monthlyEarned) ? 0 : monthlyEarned;
+      const safeMonthlyTransferred = isNaN(monthlyTransferred) ? 0 : monthlyTransferred;
+      const safeMonthlyReceived = isNaN(monthlyReceived) ? 0 : monthlyReceived;
       
       // Histórico de saldos nos últimos 6 meses
       const balanceHistoryResult = await db.execute(
@@ -2773,18 +2783,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         value: parseFloat(row.monthly_sum)
       }));
       
-      res.json({
+      // Montar resposta final
+      const response = {
         cashbackBalance,
         referralBalance,
         transactionsCount,
         recentTransactions,
         monthStats: {
-          earned: monthlyEarned,
-          transferred: monthlyTransferred,
-          received: monthlyReceived
+          earned: safeMonthlyEarned,
+          transferred: safeMonthlyTransferred,
+          received: safeMonthlyReceived
         },
         balanceHistory
-      });
+      };
+      
+      console.log("Resposta final do dashboard cliente:", JSON.stringify(response.monthStats));
+      res.json(response);
     } catch (error) {
       console.error("Erro ao buscar dados do dashboard cliente:", error);
       res.status(500).json({ message: "Erro ao buscar dados do dashboard" });
