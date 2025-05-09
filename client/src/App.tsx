@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "./lib/protected-route";
+import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
 
 // Auth Pages
 import Login from "@/pages/auth/login";
