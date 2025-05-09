@@ -69,59 +69,47 @@ export default function InvitePage() {
   
   // Extrai o código de referência da URL
   useEffect(() => {
+    if (loading === false) return; // Previne múltiplas execuções se o estado de loading já foi definido
+    
     // Procurando por código de referência em qualquer parte da URL
     // Exemplos: /convite/CL0005, /como/te/CL0005, ou qualquer outra variação
     const pathParts = location.split('/').filter(part => part.trim() !== '');
     
     console.log("Checking URL parts for referral code:", pathParts);
     
-    // Primeiro método: verificar cada parte do caminho para encontrar um código de referência válido
-    for (const part of pathParts) {
-      // Verifica se é um código de referência de cliente
-      if (part.match(/^CL[0-9]+$/i)) {
-        console.log("Found client referral code:", part);
-        setReferralType("client");
-        setReferralCode(part);
-        setLoading(false);
-        return;
-      } 
-      // Verifica se é um código de referência de lojista
-      else if (part.match(/^LJ[0-9]+$/i)) {
-        console.log("Found merchant referral code:", part);
-        setReferralType("merchant");
-        setReferralCode(part);
-        setLoading(false);
-        return;
-      }
-    }
-    
-    // Segundo método: verificar padrões de URL específicos
-    // Formato: /como/te/CL0005
+    // Verifica se a URL é explicitamente de formato "/como/te/CL0005"
+    // Tratamos isto como prioridade máxima
     if (pathParts.length >= 3 && pathParts[0] === "como" && pathParts[1] === "te") {
       const code = pathParts[2];
+      console.log("Checking code in /como/te/ format:", code);
+      
       if (code.match(/^CL[0-9]+$/i)) {
         console.log("Found client referral code in '/como/te/' format:", code);
         setReferralType("client");
         setReferralCode(code);
+        setLoading(false);
+        return;
       } else if (code.match(/^LJ[0-9]+$/i)) {
         console.log("Found merchant referral code in '/como/te/' format:", code);
         setReferralType("merchant");
         setReferralCode(code);
+        setLoading(false);
+        return;
       }
     }
     
-    // Terceiro método: verificar URL específicos do sistema de referência
-    // Formato: /merchant/referrals ou /client/referrals
+    // Verifica se é uma URL de rota específica: /client/referrals ou /merchant/referrals
     if (pathParts.length >= 2) {
-      // Usuário veio da página de referrals de lojista
+      // Rota de lojistas
       if (pathParts[0] === "merchant" && pathParts[1] === "referrals") {
         console.log("User came from merchant referrals page");
-        // Buscar o código de referência do lojista que convidou
         setReferralType("merchant");
         
         // Se tiver um código específico na URL como /merchant/referrals/LJ0001
         if (pathParts.length >= 3 && pathParts[2].match(/^LJ[0-9]+$/i)) {
           setReferralCode(pathParts[2]);
+          setLoading(false);
+          return;
         } else {
           // Caso contrário, buscar o primeiro lojista do sistema como referência padrão
           fetch("/api/merchants/first")
@@ -142,14 +130,17 @@ export default function InvitePage() {
                   referralCode: data.referralCode
                 });
               }
+              setLoading(false);
             })
             .catch(err => {
               console.error("Error fetching default merchant:", err);
+              setLoading(false);
             });
+          return;
         }
       }
       
-      // Usuário veio da página de referrals de cliente
+      // Rota de clientes
       else if (pathParts[0] === "client" && pathParts[1] === "referrals") {
         console.log("User came from client referrals page");
         setReferralType("client");
@@ -157,6 +148,8 @@ export default function InvitePage() {
         // Se tiver um código específico na URL
         if (pathParts.length >= 3 && pathParts[2].match(/^CL[0-9]+$/i)) {
           setReferralCode(pathParts[2]);
+          setLoading(false);
+          return;
         } else {
           // Buscar o primeiro cliente como referência padrão
           fetch("/api/clients/first")
@@ -177,17 +170,39 @@ export default function InvitePage() {
                   referralCode: data.referralCode
                 });
               }
+              setLoading(false);
             })
             .catch(err => {
               console.error("Error fetching default client:", err);
+              setLoading(false);
             });
+          return;
         }
       }
     }
     
-    // Terceiro método: verificar o último segmento da URL para códigos curtos (sem prefixo)
-    // Por exemplo: /como/te/1234 (onde 1234 é o ID do usuário)
-    if (!referralCode && pathParts.length > 0) {
+    // Procura por códigos de referência em qualquer segmento da URL
+    for (const part of pathParts) {
+      // Verifica se é um código de referência de cliente
+      if (part.match(/^CL[0-9]+$/i)) {
+        console.log("Found client referral code:", part);
+        setReferralType("client");
+        setReferralCode(part);
+        setLoading(false);
+        return;
+      } 
+      // Verifica se é um código de referência de lojista
+      else if (part.match(/^LJ[0-9]+$/i)) {
+        console.log("Found merchant referral code:", part);
+        setReferralType("merchant");
+        setReferralCode(part);
+        setLoading(false);
+        return;
+      }
+    }
+    
+    // Se chegarmos aqui, finalmente verificamos se há um ID numérico na URL
+    if (pathParts.length > 0) {
       const lastPart = pathParts[pathParts.length - 1];
       if (lastPart.match(/^[0-9]+$/)) {
         console.log("Found numeric ID in URL:", lastPart);
@@ -207,19 +222,20 @@ export default function InvitePage() {
               }
               setReferralCode(data.invitationCode);
             }
+            setLoading(false);
           })
           .catch(err => {
             console.error("Error fetching invitation code:", err);
-          })
-          .finally(() => {
             setLoading(false);
           });
         return;
       }
     }
     
+    // Se não detectou nenhum código, define um padrão
+    setReferralType("client"); // Define cliente como tipo padrão
     setLoading(false);
-  }, [location, referralCode]);
+  }, [location, loading]);
   
   // Formulário para cliente
   const clientForm = useForm<z.infer<typeof clientSchema>>({
@@ -388,6 +404,11 @@ export default function InvitePage() {
 
   // Funções para submissão dos formulários
   const onClientSubmit = (data: z.infer<typeof clientSchema>) => {
+    console.log("Cliente se cadastrando com dados:", data);
+    console.log("Código de referência:", data.referralCode);
+    console.log("Dados de convite:", inviteData);
+    
+    // Garantimos que o formulário incluirá os dados corretos de referência
     const formData = {
       ...data,
       // Adicionamos os dados do referenciador como propriedades extras
@@ -395,22 +416,32 @@ export default function InvitePage() {
       referralInfo: inviteData ? {
         referrerId: inviteData.referrerId,
         referralCode: inviteData.referralCode
+      } : data.referralCode ? {
+        referralCode: data.referralCode
       } : undefined
     };
 
+    console.log("Enviando dados de cadastro:", formData);
     clientRegisterMutation.mutate(formData as any);
   };
   
   const onMerchantSubmit = (data: z.infer<typeof merchantSchema>) => {
+    console.log("Lojista se cadastrando com dados:", data);
+    console.log("Código de referência:", data.referralCode);
+    console.log("Dados de convite:", inviteData);
+    
     const formData = {
       ...data,
       // Adicionamos os dados do referenciador como propriedades extras
       referralInfo: inviteData ? {
         referrerId: inviteData.referrerId,
         referralCode: inviteData.referralCode
+      } : data.referralCode ? {
+        referralCode: data.referralCode
       } : undefined
     };
 
+    console.log("Enviando dados de cadastro:", formData);
     merchantRegisterMutation.mutate(formData as any);
   };
   
