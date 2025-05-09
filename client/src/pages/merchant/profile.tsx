@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useRef, ChangeEvent } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,13 +9,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
-import { Timer, Store, GanttChart, Clock, MapPin, Phone, Mail, Globe, User, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Timer, Store, GanttChart, Clock, MapPin, Phone, Mail, Globe, User, Loader2, Camera, ShieldAlert, CheckCircle, AlertCircle, Settings, Calendar, Ban, ChevronUp, ChevronDown, RefreshCw, DollarSign, PercentIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
+import { formatCurrency } from "@/lib/utils";
 
 export default function MerchantProfile() {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("general");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   // Query to get merchant profile data
@@ -23,8 +30,22 @@ export default function MerchantProfile() {
     queryKey: ['/api/merchant/profile'],
   });
 
+  // Query to get merchant statistics
+  const { data: stats, isLoading: statsLoading } = useQuery({
+    queryKey: ['/api/merchant/stats'],
+    enabled: !!merchant, // Only fetch stats when merchant data is available
+  });
+
   // Handle received merchant data and provide fallback values for missing fields
   const merchantData = merchant || {};
+  const merchantStats = stats || {
+    totalSales: 0,
+    totalCustomers: 0,
+    averageOrderValue: 0,
+    totalCashbackIssued: 0,
+    conversionRate: 0,
+    recentSales: []
+  };
 
   // Ensure cashbackPromotions object exists (this may be null from API)
   const cashbackPromotions = merchantData.cashbackPromotions || {
@@ -32,6 +53,119 @@ export default function MerchantProfile() {
     doubleOnWeekends: false,
     specialCategories: false,
     minimumPurchase: 0
+  };
+  
+  // Create mutation for logo upload
+  const logoMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await apiRequest("POST", "/api/merchant/profile/logo", formData);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao atualizar logo");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Logo atualizado",
+        description: "A imagem da loja foi atualizada com sucesso."
+      });
+      queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar a logo. Tente novamente.",
+        variant: "destructive"
+      });
+    },
+    onSettled: () => {
+      setUploadingLogo(false);
+    }
+  });
+
+  // Função para converter o status em formato legível
+  const getStatusBadge = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+      case 'ativo':
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Ativo</Badge>;
+      case 'pending':
+      case 'pendente':
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pendente</Badge>;
+      case 'suspended':
+      case 'suspenso':
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Suspenso</Badge>;
+      default:
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Desconhecido</Badge>;
+    }
+  };
+
+  // Função para lidar com o upload de logo
+  const handleLogoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const maxSize = 5 * 1024 * 1024; // 5MB
+
+      if (file.size > maxSize) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "A imagem não pode ter mais de 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        toast({
+          title: "Formato inválido",
+          description: "Por favor, envie uma imagem JPG, PNG, GIF ou WebP.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setUploadingLogo(true);
+      const formData = new FormData();
+      formData.append('logo', file);
+      logoMutation.mutate(formData);
+    }
+  };
+
+  // Função para abrir o seletor de arquivo
+  const triggerLogoFileInput = () => {
+    if (logoInputRef.current) {
+      logoInputRef.current.click();
+    }
+  };
+
+  // Função para atualizar o status de ativo/inativo da loja
+  const handleStoreStatusChange = async (checked: boolean) => {
+    try {
+      const response = await apiRequest("PATCH", "/api/merchant/profile/status", {
+        active: checked
+      });
+      
+      if (response.ok) {
+        toast({
+          title: checked ? "Loja ativada" : "Loja desativada",
+          description: checked 
+            ? "Sua loja está agora visível para os clientes." 
+            : "Sua loja está temporariamente invisível para os clientes."
+        });
+        queryClient.invalidateQueries({queryKey: ['/api/merchant/profile']});
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao atualizar status da loja");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar o status da loja.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
@@ -53,10 +187,8 @@ export default function MerchantProfile() {
         website: formData.get('website') as string,
         category: formData.get('category') as string,
         owner: formData.get('owner') as string,
-        businessHours: formData.get('businessHours') as string
+        business_hours: formData.get('business_hours') as string
       };
-      
-      console.log("Sending profile update:", data);
       
       // Make API call
       const response = await apiRequest("PATCH", "/api/merchant/profile", data);
@@ -115,6 +247,38 @@ export default function MerchantProfile() {
 
           {/* General Information */}
           <TabsContent value="general">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <DollarSign className="w-8 h-8 text-accent mb-2" />
+                    <p className="text-sm text-muted-foreground">Total em Vendas</p>
+                    <h3 className="text-2xl font-bold">{formatCurrency(merchantStats.totalSales)}</h3>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <User className="w-8 h-8 text-accent mb-2" />
+                    <p className="text-sm text-muted-foreground">Total de Clientes</p>
+                    <h3 className="text-2xl font-bold">{merchantStats.totalCustomers}</h3>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center space-y-2">
+                    <PercentIcon className="w-8 h-8 text-accent mb-2" />
+                    <p className="text-sm text-muted-foreground">Total em Cashback</p>
+                    <h3 className="text-2xl font-bold">{formatCurrency(merchantStats.totalCashbackIssued)}</h3>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          
             <Card>
               <CardHeader>
                 <CardTitle>Informações da Loja</CardTitle>
@@ -126,15 +290,44 @@ export default function MerchantProfile() {
                 <form onSubmit={handleUpdateProfile}>
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex-shrink-0 flex flex-col items-center space-y-3">
-                      <Avatar className="h-24 w-24">
-                        <AvatarImage src={merchantData.logo} alt={merchantData.name} />
-                        <AvatarFallback className="text-lg bg-accent text-white">
-                          {getInitials(merchantData.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <Button variant="outline" size="sm">
-                        Alterar logo
+                      <div className="relative group">
+                        <Avatar className="h-24 w-24 cursor-pointer group-hover:opacity-80 transition-opacity">
+                          <AvatarImage src={merchantData.logo} alt={merchantData.name} />
+                          <AvatarFallback className="text-lg bg-accent text-white">
+                            {getInitials(merchantData.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div 
+                          className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 flex items-center justify-center rounded-full transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                          onClick={triggerLogoFileInput}
+                        >
+                          <Camera className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                      <input 
+                        type="file" 
+                        ref={logoInputRef} 
+                        onChange={handleLogoUpload} 
+                        accept="image/jpeg, image/png, image/gif, image/webp" 
+                        className="hidden" 
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={triggerLogoFileInput}
+                        disabled={uploadingLogo}
+                      >
+                        {uploadingLogo ? (
+                          <>
+                            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : "Alterar logo"}
                       </Button>
+                      
+                      <div className="flex items-center mt-2">
+                        {getStatusBadge(merchantData.status || 'pending')}
+                      </div>
                     </div>
                     
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -167,32 +360,59 @@ export default function MerchantProfile() {
                           name="description"
                           defaultValue={merchantData.description}
                           rows={3} 
+                          placeholder="Descreva sua loja em poucas palavras"
                         />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="owner">Responsável</Label>
-                        <Input id="owner" name="owner" defaultValue={merchantData.owner} />
+                        <Input 
+                          id="owner" 
+                          name="owner" 
+                          defaultValue={merchantData.owner} 
+                          placeholder="Nome do proprietário/responsável"
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="email">E-mail</Label>
-                        <Input id="email" name="email" type="email" defaultValue={merchantData.email} />
+                        <Input 
+                          id="email" 
+                          name="email" 
+                          type="email" 
+                          defaultValue={merchantData.email}
+                          placeholder="contato@minhaloja.com" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
-                        <Input id="phone" name="phone" defaultValue={merchantData.phone} />
+                        <Input 
+                          id="phone" 
+                          name="phone" 
+                          defaultValue={merchantData.phone}
+                          placeholder="(00) 00000-0000" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="website">Website</Label>
-                        <Input id="website" name="website" defaultValue={merchantData.website} />
+                        <Input 
+                          id="website" 
+                          name="website" 
+                          defaultValue={merchantData.website}
+                          placeholder="www.minhaloja.com" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="address">Endereço</Label>
-                        <Input id="address" name="address" defaultValue={merchantData.address} />
+                        <Input 
+                          id="address" 
+                          name="address" 
+                          defaultValue={merchantData.address}
+                          placeholder="Rua, número" 
+                        />
                       </div>
                       
                       <div className="space-y-2">
@@ -202,12 +422,14 @@ export default function MerchantProfile() {
                             id="city" 
                             name="city"
                             defaultValue={merchantData.city}
+                            placeholder="Cidade"
                             className="flex-1" 
                           />
                           <Input 
                             id="state" 
                             name="state"
                             defaultValue={merchantData.state}
+                            placeholder="UF"
                             className="w-20" 
                           />
                         </div>
@@ -215,16 +437,29 @@ export default function MerchantProfile() {
                       
                       <div className="space-y-2">
                         <Label htmlFor="business-hours">Horário de Funcionamento</Label>
-                        <Input id="business-hours" name="business_hours" defaultValue={merchantData.business_hours} />
+                        <Input 
+                          id="business-hours" 
+                          name="business_hours" 
+                          defaultValue={merchantData.business_hours}
+                          placeholder="Seg-Sex: 9h às 18h, Sáb: 9h às 13h" 
+                        />
                       </div>
                       
                       <div className="space-y-2 flex items-center">
                         <Switch 
                           id="active-store"
                           checked={merchantData.active}
+                          onCheckedChange={handleStoreStatusChange}
                           className="mr-2"
                         />
-                        <Label htmlFor="active-store">Loja ativa</Label>
+                        <Label htmlFor="active-store">
+                          Loja ativa
+                          <span className="text-xs block text-muted-foreground">
+                            {merchantData.active 
+                              ? "Sua loja está visível para clientes" 
+                              : "Sua loja não está visível para clientes"}
+                          </span>
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -241,6 +476,18 @@ export default function MerchantProfile() {
                   </div>
                 </form>
               </CardContent>
+              {merchantData.invitationCode && (
+                <CardFooter className="bg-muted/50 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-sm">
+                  <div className="flex items-center">
+                    <Store className="h-4 w-4 mr-2 text-muted-foreground" />
+                    <span className="text-muted-foreground">Seu código convite: </span>
+                    <span className="font-medium ml-1">{merchantData.invitationCode}</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground sm:ml-auto">
+                    Indique novos lojistas e ganhe bônus de {formatCurrency(25)}
+                  </span>
+                </CardFooter>
+              )}
             </Card>
           </TabsContent>
 
