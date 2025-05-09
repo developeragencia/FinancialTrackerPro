@@ -3691,6 +3691,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API para listar referências de um usuário específico (apenas para testes)
+  app.get("/api/test/referrals/:id", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuário inválido" });
+      }
+      
+      // Buscar referências onde o usuário é o referenciador
+      const referralsResult = await db.execute(
+        sql`
+        SELECT 
+          r.id, 
+          r.referrer_id,
+          r.referred_id, 
+          r.bonus, 
+          r.status, 
+          r.created_at,
+          u.name as referred_name,
+          u.type as user_type,
+          u.email,
+          u.phone,
+          m.store_name as store_name
+        FROM referrals r
+        JOIN users u ON r.referred_id = u.id
+        LEFT JOIN merchants m ON m.user_id = u.id
+        WHERE r.referrer_id = ${userId}
+        ORDER BY r.created_at DESC
+        `
+      );
+      
+      // Formatar lista de referências para o frontend
+      const referrals_list = referralsResult.rows.map(ref => ({
+        id: ref.id,
+        name: ref.referred_name || 'Usuário desconhecido',
+        store_name: ref.store_name || (ref.user_type === 'merchant' ? 'Loja sem nome' : ''),
+        email: ref.email || '',
+        phone: ref.phone || '',
+        user_type: ref.user_type || 'unknown',
+        date: format(new Date(ref.created_at), 'dd/MM/yyyy'),
+        status: ref.status,
+        commission: parseFloat(ref.bonus || '0').toFixed(2)
+      }));
+      
+      res.json({
+        userId,
+        referralsCount: referralsResult.rows.length,
+        referrals: referrals_list
+      });
+    } catch (error) {
+      console.error("Erro ao buscar referências:", error);
+      res.status(500).json({ message: "Erro ao buscar referências" });
+    }
+  });
+  
+  // API para adicionar referência (apenas para testes)
+  app.post("/api/test/referrals", async (req, res) => {
+    try {
+      const { referrer_id, referred_id, bonus, status } = req.body;
+      
+      if (!referrer_id || !referred_id) {
+        return res.status(400).json({ message: "IDs de referenciador e referenciado são obrigatórios" });
+      }
+      
+      // Verificar se já existe este registro
+      const existingReferral = await db
+        .select()
+        .from(referrals)
+        .where(and(
+          eq(referrals.referrer_id, referrer_id),
+          eq(referrals.referred_id, referred_id)
+        ))
+        .limit(1);
+        
+      if (existingReferral.length > 0) {
+        return res.status(400).json({ message: "Esta referência já existe" });
+      }
+      
+      // Adicionar nova referência
+      const [newReferral] = await db.insert(referrals).values({
+        referrer_id,
+        referred_id,
+        bonus: bonus || "10.00",
+        status: status || "active",
+        created_at: new Date()
+      }).returning();
+      
+      console.log(`Referência de teste adicionada: ${referrer_id} -> ${referred_id} com bonus ${bonus || "10.00"}`);
+      res.status(201).json({ 
+        message: "Referência adicionada com sucesso",
+        referral: newReferral
+      });
+    } catch (error) {
+      console.error("Erro ao adicionar referência:", error);
+      res.status(500).json({ message: "Erro ao adicionar referência" });
+    }
+  });
+  
   // Endpoint para cadastro de lojista via convite
   app.post("/api/register/merchant", async (req, res) => {
     try {
