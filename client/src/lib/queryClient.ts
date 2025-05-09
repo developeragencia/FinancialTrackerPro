@@ -12,15 +12,21 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  return res;
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+    });
+    
+    // Para compatibilidade com o código atual, não lançamos erro aqui
+    // mas o cliente pode verificar res.ok e lidar com o erro
+    return res;
+  } catch (error) {
+    console.error("API Request failed:", error);
+    throw new Error("Falha na conexão com o servidor. Verifique sua conexão com a internet.");
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

@@ -138,6 +138,12 @@ export default function ClientTransfers() {
         amount: parseFloat(amount),
         description,
       });
+      
+      // Verificar se a resposta é OK
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Erro ao processar transferência");
+      }
 
       // Reset form
       setRecipient("");
@@ -154,6 +160,7 @@ export default function ClientTransfers() {
       });
     } catch (error) {
       const err = error as Error;
+      console.error("Erro detalhado:", err);
       toast({
         title: "Erro na transferência",
         description: err.message || "Ocorreu um erro ao processar a transferência. Tente novamente.",
@@ -374,6 +381,7 @@ export default function ClientTransfers() {
                   required
                   disabled={loading}
                 />
+                <p className="text-xs text-muted-foreground">Valor mínimo para transferência: $1.00</p>
               </div>
 
               <div className="space-y-2">
