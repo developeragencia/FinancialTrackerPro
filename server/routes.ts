@@ -1032,7 +1032,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(users.id, merchantId));
       
       // Combinar dados do merchant com dados do usuário
-      const { userId, ...merchantData } = merchant;
+      const { user_id, ...merchantData } = merchant;
       
       // Criar objeto enriquecido para o frontend
       const enrichedData = {
@@ -1040,9 +1040,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         phone: user.phone,
         owner: user.name,
-        name: merchantData.storeName, // Para compatibilidade com o frontend
-        // Dados fictícios para o campo businessHours se não existir
-        business_hours: merchantData.businessHours || "09:00 - 18:00",
+        name: merchantData.store_name, // Para compatibilidade com o frontend
+        // Dados padrão para o campo business_hours se não existir
+        business_hours: "09:00 - 18:00",
         // Status fictício de ativação da loja
         active: true,
         // Cashback promocional
@@ -1091,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("Atualizando perfil do lojista:", { 
         merchantId, 
-        name: name || merchant.storeName,
+        name: name || merchant.store_name,
         category: category || merchant.category
       });
       
@@ -1168,13 +1168,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Armazenar configurações na tabela settings como JSON
       // Verificar se já existe uma configuração para este lojista
+      // Importar settings da schema
+      const { settings } = await import("@shared/schema");
+      
       const existingSettings = await db
         .select()
         .from(settings)
         .where(
           and(
-            eq(settings.merchant_id, merchant.id),
-            eq(settings.key, "cashback_promotions")
+            eq(settings.key, `merchant_${merchant.id}_cashback_promotions`)
           )
         );
       
@@ -1188,8 +1190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           })
           .where(
             and(
-              eq(settings.merchant_id, merchant.id),
-              eq(settings.key, "cashback_promotions")
+              eq(settings.key, `merchant_${merchant.id}_cashback_promotions`)
             )
           );
       } else {
@@ -1197,10 +1198,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await db
           .insert(settings)
           .values({
-            merchant_id: merchant.id,
-            key: "cashback_promotions",
+            key: `merchant_${merchant.id}_cashback_promotions`,
             value: JSON.stringify(cashbackPromotions),
-            created_at: new Date(),
             updated_at: new Date()
           });
       }
