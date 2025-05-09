@@ -154,13 +154,10 @@ const stores = [
 export default function AdminStores() {
   const [selectedStore, setSelectedStore] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isApprovalDialogOpen, setIsApprovalDialogOpen] = useState(false);
-  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
   const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [commissionRate, setCommissionRate] = useState<string>("2.0");
-  const [rejectReason, setRejectReason] = useState("");
   const { toast } = useToast();
 
   // Query to get stores data
@@ -185,15 +182,7 @@ export default function AdminStores() {
     });
   };
 
-  const handleApprovalDialog = (store: any) => {
-    setSelectedStore(store);
-    setIsApprovalDialogOpen(true);
-  };
-
-  const handleRejectDialog = (store: any) => {
-    setSelectedStore(store);
-    setIsRejectDialogOpen(true);
-  };
+  // Lojas agora são aprovadas automaticamente, não é mais necessário os diálogos de aprovação e rejeição
 
   const handleBlockDialog = (store: any) => {
     setSelectedStore(store);
