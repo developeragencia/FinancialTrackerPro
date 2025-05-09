@@ -57,12 +57,16 @@ interface Transfer {
   createdAt: string | Date;
   updatedAt?: string | Date;
   description?: string | null;
+  type: "merchant_withdrawal" | "client_withdrawal" | "internal_transfer" | string;
 }
 
 const TransferTypeIcons: Record<string, React.ReactNode> = {
   "cashback": <CreditCard className="h-4 w-4" />,
   "referral": <User className="h-4 w-4" />,
   "withdrawal": <Banknote className="h-4 w-4" />,
+  "merchant_withdrawal": <Landmark className="h-4 w-4" />,
+  "client_withdrawal": <Banknote className="h-4 w-4" />,
+  "internal_transfer": <RefreshCw className="h-4 w-4" />,
 };
 
 const TransferStatusIcons: Record<string, React.ReactNode> = {
@@ -225,7 +229,10 @@ export default function AdminTransfers() {
         const typeLabels: Record<string, string> = {
           "withdrawal": "Saque",
           "cashback": "Cashback",
-          "referral": "Indicação"
+          "referral": "Indicação",
+          "merchant_withdrawal": "Saque Lojista",
+          "client_withdrawal": "Saque Cliente",
+          "internal_transfer": "Transferência Interna"
         };
         
         return (
@@ -454,27 +461,27 @@ export default function AdminTransfers() {
               </div>
               
               <div className="flex flex-1 gap-4">
-                <Select value={statusFilter || ""} onValueChange={(val) => setStatusFilter(val || null)}>
+                <Select value={statusFilter || "all"} onValueChange={(val) => setStatusFilter(val === "all" ? null : val)}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os status</SelectItem>
+                    <SelectItem value="all">Todos os status</SelectItem>
                     <SelectItem value="completed">Concluídas</SelectItem>
                     <SelectItem value="pending">Pendentes</SelectItem>
                     <SelectItem value="cancelled">Canceladas</SelectItem>
                   </SelectContent>
                 </Select>
                 
-                <Select value={typeFilter || ""} onValueChange={(val) => setTypeFilter(val || null)}>
+                <Select value={typeFilter || "all"} onValueChange={(val) => setTypeFilter(val === "all" ? null : val)}>
                   <SelectTrigger className="w-full md:w-[180px]">
                     <SelectValue placeholder="Tipo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todos os tipos</SelectItem>
-                    <SelectItem value="withdrawal">Saques</SelectItem>
-                    <SelectItem value="cashback">Cashback</SelectItem>
-                    <SelectItem value="referral">Indicações</SelectItem>
+                    <SelectItem value="all">Todos os tipos</SelectItem>
+                    <SelectItem value="merchant_withdrawal">Saque Lojista</SelectItem>
+                    <SelectItem value="client_withdrawal">Saque Cliente</SelectItem>
+                    <SelectItem value="internal_transfer">Transferência Interna</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
