@@ -1,6 +1,5 @@
 import React from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useMobile } from '@/hooks/use-mobile';
 import { Route, Redirect } from 'wouter';
 import { Loader2 } from 'lucide-react';
 import { MobileLayout } from '@/components/ui/mobile-layout';
@@ -19,7 +18,6 @@ export function ProtectedRouteMobile({
   title,
 }: ProtectedRouteMobileProps) {
   const { user, loading } = useAuth();
-  const { isMobile } = useMobile();
 
   // Se a autenticação estiver em andamento, mostrar carregamento
   if (loading) {
@@ -52,17 +50,12 @@ export function ProtectedRouteMobile({
     );
   }
 
-  // Se for dispositivo móvel, usar o layout móvel
-  if (isMobile) {
-    return (
-      <Route path={path}>
-        <MobileLayout title={title}>
-          <Component />
-        </MobileLayout>
-      </Route>
-    );
-  }
-
-  // Caso contrário, renderizar o componente normalmente (versão desktop)
-  return <Route path={path} component={Component} />;
+  // Usar sempre o layout móvel para esta rota
+  return (
+    <Route path={path}>
+      <MobileLayout title={title}>
+        <Component />
+      </MobileLayout>
+    </Route>
+  );
 }

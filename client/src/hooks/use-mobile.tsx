@@ -8,15 +8,16 @@ type MobileContextType = {
 const MobileContext = createContext<MobileContextType | null>(null);
 
 export function MobileProvider({ children }: { children: ReactNode }) {
-  const [isMobile, setIsMobile] = useState<boolean>(false);
+  // Força mobile para true para este caso específico, garantindo comportamento consistente
+  const [isMobile, setIsMobile] = useState<boolean>(true);
   
   useEffect(() => {
     // Detectar se é um dispositivo móvel na inicialização
-    setIsMobile(isMobileDevice());
+    setIsMobile(true);
     
     // Também monitorar mudanças no tamanho da janela
     const handleResize = () => {
-      setIsMobile(isMobileDevice());
+      setIsMobile(true);
     };
     
     window.addEventListener('resize', handleResize);
@@ -35,5 +36,10 @@ export function useMobile() {
   if (!context) {
     throw new Error("useMobile must be used within a MobileProvider");
   }
-  return context;
+  return context.isMobile;
+}
+
+// Alias para compatibilidade
+export function useIsMobile() {
+  return useMobile();
 }
