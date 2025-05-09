@@ -1990,13 +1990,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar configuração de comissão para referências (com tratamento de erro)
       let commissionRate = DEFAULT_SETTINGS.merchantCommission;
       try {
-        const commissionResult = await db.execute(
-          sql`SELECT value FROM commission_settings WHERE key = 'merchantCommission'`
-        );
+        const commissionResult = await db
+          .select()
+          .from(commissionSettings)
+          .limit(1);
         
         // Usar o valor padrão do sistema se não houver configuração
-        if (commissionResult.rows.length > 0) {
-          commissionRate = parseFloat(commissionResult.rows[0].value);
+        if (commissionResult.length > 0) {
+          commissionRate = parseFloat(commissionResult[0].merchant_commission);
         }
       } catch (error) {
         console.error("Erro ao buscar configuração de comissão:", error);
@@ -3014,13 +3015,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Buscar configuração de comissão para referências (com tratamento de erro)
       let commissionRate = DEFAULT_SETTINGS.referralBonus;
       try {
-        const commissionResult = await db.execute(
-          sql`SELECT value FROM commission_settings WHERE key = 'referralBonus'`
-        );
+        const commissionResult = await db
+          .select()
+          .from(commissionSettings)
+          .limit(1);
         
         // Usar o valor padrão do sistema se não houver configuração
-        if (commissionResult.rows.length > 0) {
-          commissionRate = parseFloat(commissionResult.rows[0].value);
+        if (commissionResult.length > 0) {
+          commissionRate = parseFloat(commissionResult[0].referral_bonus);
         }
       } catch (error) {
         console.error("Erro ao buscar configuração de comissão:", error);
