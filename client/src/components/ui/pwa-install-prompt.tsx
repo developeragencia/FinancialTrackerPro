@@ -5,10 +5,8 @@ import { Download, X, Smartphone } from 'lucide-react';
 
 // Variável global para armazenar o evento de instalação
 let deferredPrompt: any = null;
-// Quando a janela carrega, limpa variáveis de instalação do localStorage
-if (typeof window !== 'undefined') {
-  (window as any).deferredPrompt = null;
-}
+// Variável para forçar instalação em navegadores que não emitem beforeinstallprompt
+let forceInstallable = false;
 
 export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(true); // Sempre mostra o banner
@@ -16,12 +14,12 @@ export function PWAInstallPrompt() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Verificar se o banner já foi fechado antes
-    const wasDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
-    if (wasDismissed) {
-      setDismissed(true);
-      setShowPrompt(false);
-    }
+    // Limpa o status de dispensa do banner para garantir que funcione
+    localStorage.removeItem('pwa-install-dismissed');
+    
+    // Define como instalável por padrão
+    forceInstallable = true;
+    setInstallable(true);
     
     // Verificar se o app já está instalado
     const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
@@ -40,10 +38,8 @@ export function PWAInstallPrompt() {
       deferredPrompt = e;
       setInstallable(true);
       
-      // Mostra o banner se não estiver dispensado
-      if (!wasDismissed) {
-        setShowPrompt(true);
-      }
+      // Sempre mostra o banner
+      setShowPrompt(true);
     };
     
     // Detecta quando o app é instalado
@@ -66,6 +62,7 @@ export function PWAInstallPrompt() {
   const handleInstall = async () => {
     console.log('Tentando instalar com deferredPrompt:', deferredPrompt);
     
+    // Se temos um evento de instalação, usamos ele
     if (deferredPrompt) {
       try {
         // Mostra o prompt de instalação
@@ -85,7 +82,34 @@ export function PWAInstallPrompt() {
       
       // Limpa a referência ao prompt - só pode ser usado uma vez
       deferredPrompt = null;
-    } else {
+    } 
+    // Caso não tenha o prompt, tenta forçar a instalação por URL
+    else if (forceInstallable) {
+      // Para iOS, abre a página inicial em modo standalone
+      const os = getDeviceOS();
+      
+      if (os === 'ios') {
+        // Instruções para iOS - Não podemos instalar automaticamente
+        alert('Para instalar no iOS:\n\n1. Toque no ícone de compartilhamento (quadrado com seta para cima)\n2. Role para baixo e toque em "Adicionar à Tela de Início"');
+      } 
+      // Para Android, tentar abrir página de instalação de PWA
+      else if (os === 'android') {
+        // Verifica se é Chrome no Android
+        if (/chrome/i.test(navigator.userAgent)) {
+          // Força abertura da PWA na página inicial
+          window.location.href = `/?utm_source=pwa&install=true&t=${Date.now()}`;
+        } else {
+          alert('Para instalar o aplicativo, por favor abra esta página no Chrome');
+        }
+      } 
+      // Outros navegadores
+      else {
+        // Tentativa genérica de instalação
+        window.location.href = `/?utm_source=pwa&install=true&t=${Date.now()}`;
+      }
+    } 
+    // Nenhuma opção disponível
+    else {
       console.log('Nenhum evento de instalação disponível');
       alert('Este aplicativo já está instalado ou seu navegador não suporta instalação de PWAs.');
     }
