@@ -30,9 +30,11 @@ export function AuthLayout({
           
           <div className="relative z-10 max-w-xl mx-auto text-white">
             <div className="mb-8">
-              <h1 className="text-4xl font-bold mb-2">
-                Vale <span className="text-orange-400">Cashback</span>
-              </h1>
+              <img 
+                src="/valecashback-logo.svg" 
+                alt="Vale Cashback Logo" 
+                className="h-24 mb-4"
+              />
               <div className="h-1 w-20 bg-orange-400 rounded-full mb-6"></div>
             </div>
             

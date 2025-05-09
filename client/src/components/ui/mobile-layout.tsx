@@ -137,8 +137,15 @@ export function MobileLayout({ children, title, hideHeader = false }: MobileLayo
       {/* Header */}
       {!hideHeader && (
         <header className="sticky top-0 z-50 w-full border-b bg-primary text-white shadow-md">
-          <div className="container py-3 flex items-center justify-between">
-            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+          <div className="container py-2 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <img 
+                src="/favicon.svg" 
+                alt="Vale Cashback" 
+                className="h-8 w-8"
+              />
+              <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            </div>
             <button 
               onClick={handleLogout}
               className="p-2 rounded-full hover:bg-primary-foreground/10"
