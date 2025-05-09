@@ -162,6 +162,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Excluir notificação
   app.delete("/api/notifications/:id", isAuthenticated, async (req, res) => {
     try {
+      // Verificamos se o usuário está definido
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const notificationId = parseInt(req.params.id);
       
       // Verificar se a notificação existe e pertence ao usuário atual
