@@ -205,11 +205,38 @@ export default function MerchantProfile() {
       logoMutation.mutate(file);
     }
   };
+  
+  // Função para lidar com o upload de foto de perfil
+  const handlePhotoUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      
+      // Validações básicas sem interromper o fluxo com mensagens complexas
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Arquivo muito grande",
+          description: "A imagem deve ter no máximo 5MB.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Enviar o arquivo imediatamente
+      photoMutation.mutate(file);
+    }
+  };
 
   // Função simplificada para abrir o seletor de arquivo diretamente
   const triggerLogoFileInput = () => {
     if (logoInputRef.current) {
       logoInputRef.current.click();
+    }
+  };
+  
+  // Função para abrir o seletor de arquivo para foto de perfil
+  const triggerPhotoFileInput = () => {
+    if (photoInputRef.current) {
+      photoInputRef.current.click();
     }
   };
 
@@ -289,6 +316,75 @@ export default function MerchantProfile() {
       setIsUpdating(false);
     }
   };
+  
+  // Função para atualizar a senha do usuário
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    setIsChangingPassword(true);
+    
+    try {
+      const formData = new FormData(form);
+      const currentPassword = formData.get('current_password') as string;
+      const newPassword = formData.get('new_password') as string;
+      const confirmPassword = formData.get('confirm_password') as string;
+      
+      // Validação simples no cliente
+      if (!currentPassword || !newPassword || !confirmPassword) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Todos os campos são obrigatórios para alterar sua senha.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (newPassword !== confirmPassword) {
+        toast({
+          title: "Senhas não coincidem",
+          description: "A nova senha e a confirmação devem ser idênticas.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (newPassword.length < 6) {
+        toast({
+          title: "Senha muito curta",
+          description: "A nova senha deve ter pelo menos 6 caracteres.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Fazer chamada API
+      const response = await apiRequest("POST", "/api/merchant/change-password", {
+        currentPassword,
+        newPassword
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Senha alterada",
+          description: "Sua senha foi atualizada com sucesso."
+        });
+        
+        // Limpar o formulário
+        form.reset();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Falha ao alterar senha");
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao alterar sua senha. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
 
   const getInitials = (name: string = "") => {
     return name
@@ -307,7 +403,7 @@ export default function MerchantProfile() {
         </div>
       ) : (
         <Tabs defaultValue="general" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
             <TabsTrigger value="general" className="flex items-center">
               <Store className="mr-2 h-4 w-4" />
               <span>Informações Gerais</span>
@@ -315,6 +411,10 @@ export default function MerchantProfile() {
             <TabsTrigger value="cashback" className="flex items-center">
               <GanttChart className="mr-2 h-4 w-4" />
               <span>Cashback</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="flex items-center">
+              <ShieldAlert className="mr-2 h-4 w-4" />
+              <span>Segurança</span>
             </TabsTrigger>
           </TabsList>
 
@@ -363,6 +463,23 @@ export default function MerchantProfile() {
                 <form onSubmit={handleUpdateProfile}>
                   <div className="flex flex-col md:flex-row gap-6">
                     <div className="flex-shrink-0 flex flex-col items-center space-y-3">
+                      {/* Foto de perfil do usuário */}
+                      <div 
+                        className="relative group cursor-pointer hover:shadow-lg transition-all duration-300 rounded-full overflow-hidden ring-2 ring-offset-2 ring-primary/50"
+                        onClick={triggerPhotoFileInput}
+                      >
+                        <Avatar className="h-24 w-24 border-4 border-white shadow">
+                          <AvatarImage src={merchantData.photo} alt={merchantData.owner || merchantData.name} />
+                          <AvatarFallback className="text-xl bg-primary text-white">
+                            {getInitials(merchantData.owner || merchantData.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col items-center justify-end p-2 transition-all">
+                          <User className="w-5 h-5 text-white mb-1" />
+                          <span className="text-white text-xs font-medium">Foto Perfil</span>
+                        </div>
+                      </div>
+                      
                       {/* Logo com clique fácil para upload */}
                       <div 
                         className="relative group cursor-pointer hover:shadow-lg transition-all duration-300 rounded-full overflow-hidden ring-2 ring-offset-2 ring-accent/50"
@@ -376,15 +493,23 @@ export default function MerchantProfile() {
                         </Avatar>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col items-center justify-end p-2 transition-all">
                           <Camera className="w-6 h-6 text-white mb-1" />
-                          <span className="text-white text-xs font-medium">Clique para alterar</span>
+                          <span className="text-white text-xs font-medium">Logo da Loja</span>
                         </div>
                       </div>
                       
-                      {/* Input file escondido */}
+                      {/* Inputs file escondidos */}
                       <input 
                         type="file" 
                         ref={logoInputRef} 
                         onChange={handleLogoUpload} 
+                        accept="image/jpeg, image/png, image/gif, image/webp" 
+                        className="hidden" 
+                      />
+                      
+                      <input 
+                        type="file" 
+                        ref={photoInputRef} 
+                        onChange={handlePhotoUpload} 
                         accept="image/jpeg, image/png, image/gif, image/webp" 
                         className="hidden" 
                       />
