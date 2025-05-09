@@ -116,7 +116,7 @@ function Router() {
       <ProtectedRouteMobile path="/admin/transfers" component={AdminTransfers} userType="admin" title="Transferências" />
       <ProtectedRouteMobile path="/admin/withdrawals" component={AdminWithdrawals} userType="admin" title="Solicitações de Saque" />
       <ProtectedRouteMobile path="/admin/settings" component={AdminSettings} userType="admin" title="Configurações" />
-      <ProtectedRouteMobile path="/admin/logs" component={AdminLogs} userType="admin" title="Logs" />
+      <ProtectedRouteMobile path="/admin/logs" component={AdminLogs} userType="admin" title="Logs e Auditoria" />
       <ProtectedRouteMobile path="/admin/support" component={AdminSupport} userType="admin" title="Suporte" />
       
       {/* 404 */}
