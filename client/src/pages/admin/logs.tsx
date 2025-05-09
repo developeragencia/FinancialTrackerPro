@@ -45,13 +45,17 @@ import { useToast } from "@/hooks/use-toast";
 // Tipos e componentes
 interface LogEntry {
   id: number;
-  type: "info" | "warning" | "error" | "security";
-  message: string;
-  user: string | null;
-  timestamp: string;
-  ip: string;
-  module: string;
-  details: string;
+  action: string;
+  actionDescription: string;
+  entityType: string;
+  entityId: number;
+  user: {
+    id: number;
+    name: string;
+    email: string | null;
+  };
+  details: Record<string, any>;
+  createdAt: string;
 }
 
 interface AuditEntry {
@@ -89,49 +93,23 @@ export default function AdminLogs() {
   // Query para buscar logs do sistema
   const { data: logData, isLoading: logsLoading } = useQuery<{ 
     logs: LogEntry[], 
-    typeCounts: { type: string, count: number }[],
-    moduleCounts: { module: string, count: number }[],
-    pageCount: number
+    pagination: {
+      total: number;
+      page: number;
+      pageSize: number;
+      pageCount: number;
+    }
   }>({
     queryKey: ['/api/admin/logs', {
       page,
       pageSize,
-      type: typeFilter,
-      module: moduleFilter,
+      action: typeFilter,
+      entityType: moduleFilter,
       dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
       dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       search: searchTerm
     }],
-    enabled: activeTab === "logs",
-    placeholderData: {
-      logs: [
-        { id: 1001, type: "info", message: "Usuário fez login com sucesso", user: "admin@example.com", timestamp: "21/07/2023 15:45:22", ip: "192.168.1.1", module: "auth", details: "Navegador: Chrome, OS: Windows" },
-        { id: 1002, type: "warning", message: "Tentativa de acesso não autorizado", user: null, timestamp: "21/07/2023 15:40:12", ip: "192.168.1.100", module: "auth", details: "Múltiplas tentativas de login com credenciais inválidas" },
-        { id: 1003, type: "error", message: "Erro ao processar transação", user: "lojista@example.com", timestamp: "21/07/2023 15:30:05", ip: "192.168.1.2", module: "payment", details: "Timeout na conexão com gateway de pagamento" },
-        { id: 1004, type: "security", message: "Alteração de senha realizada", user: "cliente@example.com", timestamp: "21/07/2023 15:20:47", ip: "192.168.1.3", module: "user", details: "Alteração de senha realizada com sucesso" },
-        { id: 1005, type: "info", message: "Transação concluída com sucesso", user: "lojista@example.com", timestamp: "21/07/2023 15:10:33", ip: "192.168.1.2", module: "payment", details: "Transação #12345 processada com sucesso" },
-        { id: 1006, type: "info", message: "Novo usuário cadastrado", user: "novocliente@example.com", timestamp: "21/07/2023 15:00:18", ip: "192.168.1.4", module: "user", details: "Novo usuário do tipo cliente criado" },
-        { id: 1007, type: "error", message: "Falha na geração de QR Code", user: "cliente@example.com", timestamp: "21/07/2023 14:50:09", ip: "192.168.1.3", module: "qrcode", details: "Erro ao gerar QR Code para pagamento" },
-        { id: 1008, type: "warning", message: "Tentativa de acesso a recurso não autorizado", user: "lojista@example.com", timestamp: "21/07/2023 14:40:55", ip: "192.168.1.2", module: "access", details: "Tentativa de acesso a painel admin" },
-        { id: 1009, type: "security", message: "Bloqueio temporário de conta", user: "usuarioteste@example.com", timestamp: "21/07/2023 14:30:41", ip: "192.168.1.5", module: "auth", details: "Conta bloqueada por múltiplas tentativas de login" },
-        { id: 1010, type: "info", message: "Cashback creditado com sucesso", user: "cliente@example.com", timestamp: "21/07/2023 14:20:27", ip: "192.168.1.3", module: "cashback", details: "Cashback de R$ 15,00 creditado para o usuário" },
-      ],
-      typeCounts: [
-        { type: "info", count: 4 },
-        { type: "warning", count: 2 },
-        { type: "error", count: 2 },
-        { type: "security", count: 2 }
-      ],
-      moduleCounts: [
-        { module: "auth", count: 3 },
-        { module: "payment", count: 2 },
-        { module: "user", count: 2 },
-        { module: "qrcode", count: 1 },
-        { module: "access", count: 1 },
-        { module: "cashback", count: 1 }
-      ],
-      pageCount: 5
-    }
+    enabled: activeTab === "logs"
   });
   
   // Query para buscar auditoria
@@ -203,10 +181,19 @@ export default function AdminLogs() {
   
   // Visualizar detalhes do log
   const handleViewLog = (log: LogEntry) => {
-    toast({
-      title: `Log #${log.id}`,
-      description: `${log.message} | ${log.details}`,
-    });
+    try {
+      toast({
+        title: `Log #${log.id}`,
+        description: `${log.actionDescription} - ${log.entityType} #${log.entityId}`,
+      });
+    } catch (error) {
+      console.error("Erro ao exibir detalhes do log:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível exibir os detalhes do log",
+        variant: "destructive",
+      });
+    }
   };
   
   // Visualizar detalhes da auditoria
@@ -224,37 +211,68 @@ export default function AdminLogs() {
       accessorKey: "id" as keyof LogEntry,
     },
     {
-      header: "Tipo",
-      accessorKey: "type" as keyof LogEntry,
+      header: "Ação",
+      accessorKey: "action" as keyof LogEntry,
       cell: (log: LogEntry) => {
-        const typeLabels: Record<string, string> = {
-          "info": "Informação",
-          "warning": "Alerta",
-          "error": "Erro",
-          "security": "Segurança"
+        // Mapear cores com base no tipo de ação
+        const actionColors: Record<string, string> = {
+          "store_approved": "bg-green-100 text-green-800",
+          "store_rejected": "bg-red-100 text-red-800",
+          "user_created": "bg-blue-100 text-blue-800",
+          "user_updated": "bg-blue-100 text-blue-800",
+          "user_deleted": "bg-red-100 text-red-800",
+          "transfer_approved": "bg-green-100 text-green-800",
+          "transfer_rejected": "bg-red-100 text-red-800",
+          "transfer_processing": "bg-yellow-100 text-yellow-800",
+          "transfer_completed": "bg-green-100 text-green-800",
+          "transaction_created": "bg-blue-100 text-blue-800",
+          "transaction_updated": "bg-blue-100 text-blue-800",
+          "settings_updated": "bg-purple-100 text-purple-800",
+          "login_success": "bg-green-100 text-green-800",
+          "login_failed": "bg-red-100 text-red-800",
+          "password_reset": "bg-yellow-100 text-yellow-800"
         };
         
-        const typeColors: Record<string, string> = {
-          "info": "bg-blue-100 text-blue-800",
-          "warning": "bg-yellow-100 text-yellow-800",
-          "error": "bg-red-100 text-red-800",
-          "security": "bg-purple-100 text-purple-800"
+        // Cor padrão para ações não mapeadas
+        const color = actionColors[log.action] || "bg-gray-100 text-gray-800";
+        
+        // Ícones baseados nas ações
+        const actionIcons: Record<string, React.ReactNode> = {
+          "store_approved": <CheckCircle2 className="h-4 w-4" />,
+          "store_rejected": <AlertCircle className="h-4 w-4" />,
+          "user_created": <User className="h-4 w-4" />,
+          "user_updated": <User className="h-4 w-4" />,
+          "user_deleted": <Trash2 className="h-4 w-4" />,
+          "transfer_approved": <CheckCircle2 className="h-4 w-4" />,
+          "transfer_rejected": <AlertCircle className="h-4 w-4" />,
+          "transfer_processing": <Clock className="h-4 w-4" />,
+          "transfer_completed": <CheckCircle2 className="h-4 w-4" />,
+          "transaction_created": <Activity className="h-4 w-4" />,
+          "transaction_updated": <Activity className="h-4 w-4" />,
+          "settings_updated": <HardDrive className="h-4 w-4" />,
+          "login_success": <User className="h-4 w-4" />,
+          "login_failed": <AlertCircle className="h-4 w-4" />,
+          "password_reset": <Shield className="h-4 w-4" />
         };
+        
+        const icon = actionIcons[log.action] || <Info className="h-4 w-4" />;
         
         return (
-          <div className={`rounded-full px-2 py-1 text-xs font-medium inline-flex items-center ${typeColors[log.type]}`}>
-            {LogTypeIcons[log.type]}
-            <span className="ml-1">{typeLabels[log.type]}</span>
+          <div className={`rounded-full px-2 py-1 text-xs font-medium inline-flex items-center ${color}`}>
+            {icon}
+            <span className="ml-1">{log.actionDescription}</span>
           </div>
         );
       },
     },
     {
-      header: "Mensagem",
-      accessorKey: "message" as keyof LogEntry,
+      header: "Entidade",
+      accessorKey: "entityType" as keyof LogEntry,
       cell: (log: LogEntry) => (
-        <div className="max-w-md truncate">
-          {log.message}
+        <div className="flex items-center">
+          <HardDrive className="h-4 w-4 text-muted-foreground mr-2" />
+          <span className="capitalize">{log.entityType}</span>
+          <span className="ml-1 text-xs text-muted-foreground">#{log.entityId}</span>
         </div>
       ),
     },
@@ -264,26 +282,52 @@ export default function AdminLogs() {
       cell: (log: LogEntry) => (
         <div className="flex items-center">
           <User className="h-4 w-4 text-muted-foreground mr-2" />
-          <span>{log.user || "Anônimo"}</span>
+          <span>{log.user?.name || "Sistema"}</span>
+          {log.user?.email && <span className="ml-1 text-xs text-muted-foreground">({log.user.email})</span>}
         </div>
       ),
     },
     {
       header: "Data/Hora",
-      accessorKey: "timestamp" as keyof LogEntry,
+      accessorKey: "createdAt" as keyof LogEntry,
       cell: (log: LogEntry) => (
         <div className="flex items-center">
           <Clock className="h-4 w-4 text-muted-foreground mr-2" />
-          <span>{log.timestamp}</span>
+          <span>{new Date(log.createdAt).toLocaleString("pt-BR")}</span>
         </div>
       ),
     },
     {
-      header: "Módulo",
-      accessorKey: "module" as keyof LogEntry,
-      cell: (log: LogEntry) => (
-        <span className="capitalize">{log.module}</span>
-      ),
+      header: "Detalhes",
+      accessorKey: "details" as keyof LogEntry,
+      cell: (log: LogEntry) => {
+        // Converter detalhes para string legível
+        let detailsText = "Sem detalhes";
+        try {
+          if (typeof log.details === 'string') {
+            try {
+              const parsedDetails = JSON.parse(log.details);
+              detailsText = Object.entries(parsedDetails)
+                .map(([key, value]) => `${key}: ${value}`)
+                .join(', ');
+            } catch {
+              detailsText = log.details;
+            }
+          } else if (log.details && typeof log.details === 'object') {
+            detailsText = Object.entries(log.details)
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(', ');
+          }
+        } catch (e) {
+          console.error("Erro ao processar detalhes:", e);
+        }
+        
+        return (
+          <div className="max-w-md truncate">
+            {detailsText}
+          </div>
+        );
+      },
     },
   ];
   
