@@ -207,19 +207,27 @@ export default function AdminStores() {
     setIsProcessing(true);
     
     try {
-      // This would be an API call in a real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const action = selectedStore.status === "inactive" ? "ativada" : "desativada";
-      
-      toast({
-        title: `Loja ${action}`,
-        description: `${selectedStore.name} foi ${action} com sucesso.`,
+      // API call para atualizar o status da loja
+      const newStatus = selectedStore.approved === false ? "active" : "inactive";
+      const response = await apiRequest("PATCH", `/api/admin/stores/${selectedStore.id}/status`, {
+        status: newStatus
       });
       
-      queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
-      setIsBlockDialogOpen(false);
+      if (response.ok) {
+        const action = newStatus === "active" ? "ativada" : "desativada";
+        
+        toast({
+          title: `Loja ${action}`,
+          description: `${selectedStore.name || selectedStore.store_name} foi ${action} com sucesso.`,
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
+        setIsBlockDialogOpen(false);
+      } else {
+        throw new Error("Erro ao alterar status da loja");
+      }
     } catch (error) {
+      console.error("Erro ao alterar status:", error);
       toast({
         title: "Erro",
         description: "Ocorreu um erro ao alterar o status da loja.",
@@ -284,46 +292,54 @@ export default function AdminStores() {
     {
       header: "Nome",
       accessorKey: "name",
-    },
-    {
-      header: "CNPJ",
-      accessorKey: "cnpj",
+      cell: (row: any) => row.name || row.store_name || "",
     },
     {
       header: "Responsável",
-      accessorKey: "owner",
+      accessorKey: "ownerName",
+      cell: (row: any) => row.ownerName || "",
     },
     {
       header: "Categoria",
       accessorKey: "category",
+      cell: (row: any) => row.category || "Geral",
     },
     {
       header: "Status",
-      accessorKey: "status",
-      cell: (row: any) => (
-        <Badge 
-          variant="outline"
-          className={
-            row.status === "active" 
-              ? "bg-green-100 text-green-800 border-green-200" 
-              : row.status === "inactive"
-              ? "bg-gray-100 text-gray-800 border-gray-200"
-              : "bg-yellow-100 text-yellow-800 border-yellow-200"
-          }
-        >
-          {getStatusLabel(row.status)}
-        </Badge>
-      ),
+      accessorKey: "approved",
+      cell: (row: any) => {
+        // Utiliza approved como indicador de status já que não há campo status
+        const status = row.approved === false ? "inactive" : "active";
+        return (
+          <Badge 
+            variant="outline"
+            className={
+              status === "active" 
+                ? "bg-green-100 text-green-800 border-green-200" 
+                : status === "inactive"
+                ? "bg-gray-100 text-gray-800 border-gray-200"
+                : "bg-yellow-100 text-yellow-800 border-yellow-200"
+            }
+          >
+            {getStatusLabel(status)}
+          </Badge>
+        );
+      }
     },
     {
-      header: "Transações",
-      accessorKey: "transactions",
-      cell: (row: any) => row.transactions.toLocaleString(),
+      header: "Email",
+      accessorKey: "email",
+      cell: (row: any) => row.email || "",
     },
     {
-      header: "Volume (R$)",
-      accessorKey: "volume",
-      cell: (row: any) => row.volume.toFixed(2),
+      header: "Telefone",
+      accessorKey: "phone",
+      cell: (row: any) => row.phone || "",
+    },
+    {
+      header: "Comissão (%)",
+      accessorKey: "commissionRate",
+      cell: (row: any) => row.commissionRate || "2.0",
     },
   ];
 
@@ -509,11 +525,11 @@ export default function AdminStores() {
                   <div className="md:w-1/3 flex flex-col items-center">
                     <Avatar className="h-24 w-24 mb-4">
                       <AvatarImage 
-                        src={selectedStore.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedStore.name)}&background=random&color=fff&size=128`}
-                        alt={selectedStore.name} 
+                        src={selectedStore.logo || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedStore.name || selectedStore.store_name || "Loja")}&background=random&color=fff&size=128`}
+                        alt={selectedStore.name || selectedStore.store_name || "Loja"} 
                       />
                       <AvatarFallback className="text-lg bg-accent text-white">
-                        {getInitials(selectedStore.name)}
+                        {getInitials(selectedStore.name || selectedStore.store_name || "Loja")}
                       </AvatarFallback>
                     </Avatar>
                     
