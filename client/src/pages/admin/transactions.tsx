@@ -321,7 +321,7 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                $ {data?.totalAmount.toFixed(2) || "0.00"}
+                $ {data?.totalAmount ? (typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount).toFixed(2) : data.totalAmount.toFixed(2)) : "0.00"}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransactions.length} transações
@@ -335,10 +335,13 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                $ {data?.totalCashback.toFixed(2) || "0.00"}
+                $ {data?.totalCashback ? (typeof data.totalCashback === 'string' ? parseFloat(data.totalCashback).toFixed(2) : data.totalCashback.toFixed(2)) : "0.00"}
               </div>
               <p className="text-sm text-muted-foreground">
-                {data?.totalAmount ? ((data.totalCashback / data.totalAmount) * 100).toFixed(1) : "0"}% do total
+                {data?.totalAmount && data?.totalCashback ? 
+                  (((typeof data.totalCashback === 'string' ? parseFloat(data.totalCashback) : data.totalCashback) / 
+                    (typeof data.totalAmount === 'string' ? parseFloat(data.totalAmount) : data.totalAmount)) * 100).toFixed(1) 
+                  : "0"}% do total
               </p>
             </CardContent>
           </Card>
@@ -349,29 +352,35 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {data?.statusCounts.map((statusCount) => {
-                  const statusIcons: Record<string, JSX.Element> = {
-                    "completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />,
-                    "pending": <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />,
-                    "cancelled": <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
-                  };
-                  
-                  const statusLabels: Record<string, string> = {
-                    "completed": "Concluídas",
-                    "pending": "Pendentes",
-                    "cancelled": "Canceladas"
-                  };
-                  
-                  return (
-                    <div key={statusCount.status} className="flex items-center justify-between">
-                      <div className="flex items-center text-sm">
-                        {statusIcons[statusCount.status]}
-                        <span>{statusLabels[statusCount.status]}</span>
+                {data?.statusCounts && data.statusCounts.length > 0 ? (
+                  data.statusCounts.map((statusCount) => {
+                    const statusIcons: Record<string, JSX.Element> = {
+                      "completed": <CheckCircle2 className="h-3.5 w-3.5 text-green-500 mr-1.5" />,
+                      "pending": <Clock className="h-3.5 w-3.5 text-yellow-500 mr-1.5" />,
+                      "cancelled": <XCircle className="h-3.5 w-3.5 text-red-500 mr-1.5" />
+                    };
+                    
+                    const statusLabels: Record<string, string> = {
+                      "completed": "Concluídas",
+                      "pending": "Pendentes",
+                      "cancelled": "Canceladas"
+                    };
+                    
+                    return (
+                      <div key={statusCount.status} className="flex items-center justify-between">
+                        <div className="flex items-center text-sm">
+                          {statusIcons[statusCount.status] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
+                          <span>{statusLabels[statusCount.status] || statusCount.status}</span>
+                        </div>
+                        <span className="text-sm font-medium">{statusCount.count || 0}</span>
                       </div>
-                      <span className="text-sm font-medium">{statusCount.count}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-center text-muted-foreground py-2">
+                    Nenhum dado disponível
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -382,25 +391,35 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-1.5">
-                {data?.paymentMethodSummary.map((methodSummary) => {
-                  const paymentLabels: Record<string, string> = {
-                    "cash": "Dinheiro",
-                    "credit_card": "Crédito",
-                    "debit_card": "Débito",
-                    "pix": "Pix",
-                    "cashback": "Cashback"
-                  };
-                  
-                  return (
-                    <div key={methodSummary.method} className="flex items-center justify-between">
-                      <div className="flex items-center text-sm">
-                        {PaymentMethodIcons[methodSummary.method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
-                        <span className="ml-1">{paymentLabels[methodSummary.method] || methodSummary.method}</span>
+                {data?.paymentMethodSummary && data.paymentMethodSummary.length > 0 ? (
+                  data.paymentMethodSummary.map((methodSummary) => {
+                    const paymentLabels: Record<string, string> = {
+                      "cash": "Dinheiro",
+                      "credit_card": "Crédito",
+                      "debit_card": "Débito",
+                      "pix": "Pix",
+                      "cashback": "Cashback"
+                    };
+                    
+                    const sum = typeof methodSummary.sum === 'string' ? 
+                      parseFloat(methodSummary.sum) : 
+                      methodSummary.sum || 0;
+                    
+                    return (
+                      <div key={methodSummary.method} className="flex items-center justify-between">
+                        <div className="flex items-center text-sm">
+                          {PaymentMethodIcons[methodSummary.method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
+                          <span className="ml-1">{paymentLabels[methodSummary.method] || methodSummary.method}</span>
+                        </div>
+                        <span className="text-sm font-medium">$ {sum.toFixed(2)}</span>
                       </div>
-                      <span className="text-sm font-medium">$ {methodSummary.sum.toFixed(2)}</span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <div className="text-sm text-center text-muted-foreground py-2">
+                    Nenhum dado disponível
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
