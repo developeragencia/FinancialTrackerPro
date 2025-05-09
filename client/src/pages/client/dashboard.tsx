@@ -41,7 +41,9 @@ export default function ClientDashboard() {
   // Consulta para obter dados do dashboard do cliente
   const { data: dashboardData, isLoading } = useQuery<DashboardData>({
     queryKey: ['/api/client/dashboard'],
-    retry: false,
+    retry: 2, // Aumenta o número de tentativas
+    staleTime: 30000, // Dados são considerados atualizados por 30 segundos
+    refetchOnWindowFocus: false, // Evita requisições em excesso
   });
 
   // Estado de carregamento
@@ -55,19 +57,27 @@ export default function ClientDashboard() {
     );
   }
 
-  // Usar apenas dados da API
-  const data = dashboardData || {
-    cashbackBalance: 0,
-    referralBalance: 0,
-    transactionsCount: 0,
-    recentTransactions: [],
-    monthStats: {
+  // Log dos dados recebidos para debug
+  console.log("Dados do dashboard cliente:", dashboardData);
+  
+  // Garantir que os dados do mês estejam disponíveis
+  const data = {
+    cashbackBalance: dashboardData?.cashbackBalance || 0,
+    referralBalance: dashboardData?.referralBalance || 0,
+    transactionsCount: dashboardData?.transactionsCount || 0,
+    recentTransactions: dashboardData?.recentTransactions || [],
+    // Garantimos que monthStats sempre tenha um valor válido
+    monthStats: dashboardData?.monthStats || {
       earned: 0,
       transferred: 0,
       received: 0
     },
-    balanceHistory: []
+    // Garantimos que balanceHistory sempre tenha um valor válido
+    balanceHistory: dashboardData?.balanceHistory || []
   };
+  
+  // Log dos dados processados para debug
+  console.log("Dados processados do dashboard:", data);
 
   return (
     <DashboardLayout title="Dashboard" type="client">
