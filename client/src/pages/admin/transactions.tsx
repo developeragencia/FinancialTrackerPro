@@ -135,7 +135,7 @@ export default function AdminTransactions() {
   const handleViewTransaction = (transaction: Transaction) => {
     toast({
       title: `Transação #${transaction.id}`,
-      description: `Cliente: ${transaction.customer.name}, Loja: ${transaction.merchant.name}, Valor: R$ ${transaction.totalAmount.toFixed(2)}`,
+      description: `Cliente: ${transaction.customer.name}, Loja: ${transaction.merchant.name}, Valor: $ ${transaction.totalAmount.toFixed(2)}`,
     });
   };
   

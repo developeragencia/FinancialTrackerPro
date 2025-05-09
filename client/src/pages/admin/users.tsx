@@ -451,14 +451,14 @@ export default function AdminUsers() {
                           <div className="p-4 bg-muted/20 rounded-lg">
                             <h4 className="text-sm text-muted-foreground mb-1">Saldo de Cashback</h4>
                             <div className="text-2xl font-bold text-primary">
-                              R$ {selectedUser.cashbackBalance?.toFixed(2) || "0.00"}
+                              $ {selectedUser.cashbackBalance?.toFixed(2) || "0.00"}
                             </div>
                           </div>
                           
                           <div className="p-4 bg-muted/20 rounded-lg">
                             <h4 className="text-sm text-muted-foreground mb-1">Total Acumulado</h4>
                             <div className="text-2xl font-bold text-primary">
-                              R$ {selectedUser.totalCashbackEarned?.toFixed(2) || "0.00"}
+                              $ {selectedUser.totalCashbackEarned?.toFixed(2) || "0.00"}
                             </div>
                           </div>
                         </div>
@@ -488,7 +488,7 @@ export default function AdminUsers() {
                           <div className="p-4 bg-muted/20 rounded-lg">
                             <h4 className="text-sm text-muted-foreground mb-1">Total em Vendas</h4>
                             <div className="text-2xl font-bold text-accent">
-                              R$ {selectedUser.totalSales?.toFixed(2) || "0.00"}
+                              $ {selectedUser.totalSales?.toFixed(2) || "0.00"}
                             </div>
                           </div>
                           
