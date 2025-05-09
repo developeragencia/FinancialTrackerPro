@@ -47,12 +47,15 @@ import { useToast } from "@/hooks/use-toast";
 // Tipos e componentes
 interface Transfer {
   id: number;
-  user: string;
-  amount: number;
-  date: string;
-  type: "cashback" | "referral" | "withdrawal";
+  userId: number;
+  userName: string;
+  userEmail: string;
+  userType: string;
+  amount: string | number;
   status: "completed" | "pending" | "cancelled";
-  bankInfo: string;
+  createdAt: string | Date;
+  updatedAt?: string | Date;
+  description?: string | null;
 }
 
 const TransferTypeIcons: Record<string, React.ReactNode> = {
@@ -147,9 +150,13 @@ export default function AdminTransfers() {
   
   // Visualizar detalhes da transferência
   const handleViewTransfer = (transfer: Transfer) => {
+    const amount = typeof transfer.amount === 'string' 
+      ? parseFloat(transfer.amount) 
+      : transfer.amount;
+    
     toast({
       title: `Transferência #${transfer.id}`,
-      description: `Usuário: ${transfer.user}, Valor: R$ ${transfer.amount.toFixed(2)}, Destino: ${transfer.bankInfo}`,
+      description: `Usuário: ${transfer.userName}, Valor: $ ${amount.toFixed(2)}`,
     });
   };
   
