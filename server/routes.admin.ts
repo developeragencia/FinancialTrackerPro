@@ -44,7 +44,7 @@ export function addAdminRoutes(app: Express) {
       // Valor total de transações
       const [transactionTotal] = await db
         .select({ 
-          total: sql`SUM(${transactions.total_amount})` 
+          total: sql`COALESCE(SUM(${transactions.total_amount}), 0)` 
         })
         .from(transactions);
         
@@ -846,7 +846,7 @@ export function addAdminRoutes(app: Express) {
         if (user.type === 'client') {
           const [cashbackResult] = await db
             .select({ 
-              total: sql`SUM(${cashbacks.amount})` 
+              total: sql`COALESCE(SUM(${cashbacks.amount}), 0)` 
             })
             .from(cashbacks)
             .where(eq(cashbacks.user_id, user.id));
