@@ -85,6 +85,7 @@ function Router() {
       <ProtectedRouteMobile path="/client/referrals" component={ClientReferrals} userType="client" title="Indicações" />
       <ProtectedRouteMobile path="/client/profile" component={ClientProfile} userType="client" title="Meu Perfil" />
       <ProtectedRouteMobile path="/client/stores" component={ClientStores} userType="client" title="Lojas" />
+      <ProtectedRouteMobile path="/client/cashbacks" component={ClientCashbacks} userType="client" title="Cashback" />
       
       {/* Merchant Routes */}
       <ProtectedRouteMobile path="/merchant" component={MerchantDashboard} userType="merchant" title="Dashboard" />
