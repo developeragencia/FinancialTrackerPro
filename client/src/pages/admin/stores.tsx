@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { DataTable } from "@/components/ui/data-table";
@@ -154,8 +154,6 @@ const stores = [
 ];
 
 export default function AdminStores() {
-  // Importe useEffect do React
-  const { useEffect } = React;
   const [selectedStore, setSelectedStore] = useState<any | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
@@ -930,6 +928,110 @@ export default function AdminStores() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Store Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-destructive">
+              <AlertTriangle className="h-5 w-5 mr-2" /> Excluir Loja
+            </DialogTitle>
+            <DialogDescription>
+              Esta ação é irreversível. Tem certeza que deseja excluir esta loja permanentemente?
+              Todos os dados relacionados à loja serão perdidos.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedStore && (
+            <div className="flex items-center space-x-4 py-2 border rounded-md p-3 bg-muted/30">
+              <Avatar>
+                <AvatarImage src={selectedStore.logo} />
+                <AvatarFallback className="bg-accent text-white">
+                  {getInitials(selectedStore.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h4 className="text-sm font-semibold">{selectedStore.name}</h4>
+                <p className="text-sm text-muted-foreground">{selectedStore.category}</p>
+                <p className="text-xs text-muted-foreground mt-1">ID: {selectedStore.id}</p>
+                <p className="text-xs text-muted-foreground">Email: {selectedStore.email || "N/A"}</p>
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-destructive/10 p-3 rounded-md border border-destructive/20 text-sm">
+            <p className="font-medium text-destructive flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" /> Atenção
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              A exclusão afetará todas as transações e dados históricos relacionados a esta loja.
+              Considere desativar a loja em vez de excluí-la completamente.
+            </p>
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleDeleteStore}
+              disabled={isProcessing}
+              className="gap-2"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processando
+                </>
+              ) : (
+                <>
+                  <Trash className="h-4 w-4" />
+                  Excluir Permanentemente
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stores To Delete Info */}
+      {storesToDelete.length > 0 && (
+        <Card className="mt-4 border-yellow-300">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2 text-yellow-500" />
+              Lojas para exclusão
+            </CardTitle>
+            <CardDescription>
+              Foram encontradas {storesToDelete.length} lojas com emails marcados para exclusão
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-1 text-sm">
+              {storesToDelete.map((store, index) => (
+                <li key={index} className="flex items-center">
+                  <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+                  {store}
+                </li>
+              ))}
+            </ul>
+            <Button 
+              variant="outline" 
+              className="mt-4 text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+              onClick={() => {
+                toast({
+                  title: "Lojas marcadas para exclusão",
+                  description: "Você pode excluir cada loja individualmente usando o botão 'Excluir' na tabela.",
+                });
+              }}
+            >
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Ver detalhes
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </DashboardLayout>
   );
 }
