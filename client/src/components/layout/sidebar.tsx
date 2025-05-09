@@ -179,10 +179,10 @@ export function Sidebar({
               {links.map((link, index) => (
                 <li key={index}>
                   <Link href={link.href}>
-                    <a className={linkClass(location === link.href)}>
+                    <div className={linkClass(location === link.href)}>
                       {link.icon}
                       <span>{link.label}</span>
-                    </a>
+                    </div>
                   </Link>
                 </li>
               ))}
