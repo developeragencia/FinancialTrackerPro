@@ -7,9 +7,10 @@ import { cn } from '@/lib/utils';
 interface MobileLayoutProps {
   children: ReactNode;
   title: string;
+  hideHeader?: boolean;
 }
 
-export function MobileLayout({ children, title }: MobileLayoutProps) {
+export function MobileLayout({ children, title, hideHeader = false }: MobileLayoutProps) {
   const [location] = useLocation();
   const { user, logoutMutation } = useAuth();
 
@@ -65,20 +66,25 @@ export function MobileLayout({ children, title }: MobileLayoutProps) {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-primary text-white shadow-md">
-        <div className="container py-3 flex items-center justify-between">
-          <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
-          <button 
-            onClick={handleLogout}
-            className="p-2 rounded-full hover:bg-primary-foreground/10"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
+      {!hideHeader && (
+        <header className="sticky top-0 z-50 w-full border-b bg-primary text-white shadow-md">
+          <div className="container py-3 flex items-center justify-between">
+            <h1 className="text-xl font-semibold tracking-tight">{title}</h1>
+            <button 
+              onClick={handleLogout}
+              className="p-2 rounded-full hover:bg-primary-foreground/10"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
+          </div>
+        </header>
+      )}
 
       {/* Main Content */}
-      <main className="flex-1 container py-4 overflow-auto">
+      <main className={cn(
+        "flex-1 container overflow-auto px-2 max-w-full",
+        hideHeader ? "pt-2 pb-4" : "py-4"
+      )}>
         {children}
       </main>
 
@@ -97,7 +103,7 @@ export function MobileLayout({ children, title }: MobileLayoutProps) {
               )}
             >
               {item.icon}
-              <span className="mt-1 truncate">{item.label}</span>
+              <span className="mt-1 truncate text-[0.65rem]">{item.label}</span>
             </Link>
           ))}
         </div>

@@ -28,9 +28,9 @@ export function MobileCard({
   };
 
   const variantClasses = {
-    default: 'bg-white border shadow-sm hover:shadow-md',
-    outline: 'bg-transparent border border-border hover:border-primary/40',
-    ghost: 'bg-transparent border-none shadow-none hover:bg-accent',
+    default: 'bg-white border shadow-sm hover:shadow-md text-sm',
+    outline: 'bg-transparent border border-border hover:border-primary/40 text-sm',
+    ghost: 'bg-transparent border-none shadow-none hover:bg-accent text-sm',
   };
 
   return (
@@ -60,7 +60,7 @@ export function MobileCard({
 
 export function MobileCardGrid({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-3', className)}>
+    <div className={cn('grid grid-cols-2 sm:grid-cols-3 gap-2 w-full', className)}>
       {children}
     </div>
   );
@@ -68,7 +68,7 @@ export function MobileCardGrid({ children, className }: { children: ReactNode; c
 
 export function MobileCardList({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
+    <div className={cn('flex flex-col gap-2 w-full px-1', className)}>
       {children}
     </div>
   );
