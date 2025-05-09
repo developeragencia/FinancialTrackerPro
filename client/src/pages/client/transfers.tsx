@@ -123,7 +123,15 @@ export default function ClientTransfers() {
     setLoading(true);
 
     try {
-      await apiRequest("POST", "/api/client/transfers", {
+      console.log("Enviando transferência:", {
+        recipient,
+        recipientId: recipientInfo?.id,
+        searchMethod,
+        amount,
+        description
+      });
+      
+      const response = await apiRequest("POST", "/api/client/transfers", {
         recipient,
         recipientId: recipientInfo?.id,
         searchMethod,
@@ -382,7 +390,7 @@ export default function ClientTransfers() {
               <Button 
                 type="submit" 
                 className="w-full bg-secondary" 
-                disabled={loading || !recipientInfo}
+                disabled={loading || (!recipient || !amount)}
               >
                 {loading ? (
                   <>

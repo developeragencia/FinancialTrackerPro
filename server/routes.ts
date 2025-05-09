@@ -3674,18 +3674,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar saldo disponível do usuário enviador
-      const balanceResult = await db.execute(
-        sql`SELECT SUM(
-              CASE WHEN from_user_id = ${fromUserId} THEN -amount ELSE amount END
-            ) as balance
-            FROM transfers
-            WHERE from_user_id = ${fromUserId} OR to_user_id = ${fromUserId}`
+      // Obter o saldo do cashback
+      const cashbackResult = await db.execute(
+        sql`SELECT balance FROM cashbacks WHERE user_id = ${fromUserId}`
       );
       
-      const currentBalance = parseFloat(balanceResult.rows[0]?.balance || 0);
+      let cashbackBalance = parseFloat(cashbackResult.rows[0]?.balance || 0);
+      
+      // Obter o saldo de transferências
+      const transfersResult = await db.execute(
+        sql`SELECT SUM(
+              CASE WHEN from_user_id = ${fromUserId} THEN -amount::numeric ELSE amount::numeric END
+            ) as balance
+            FROM transfers
+            WHERE (from_user_id = ${fromUserId} OR to_user_id = ${fromUserId})
+              AND status = 'completed'`
+      );
+      
+      let transfersBalance = parseFloat(transfersResult.rows[0]?.balance || 0);
+      
+      // Calcular o saldo total disponível
+      const currentBalance = cashbackBalance + transfersBalance;
+      console.log("Saldo do cliente:", {
+        clientId: fromUserId,
+        cashbackBalance,
+        transfersBalance,
+        currentBalance
+      });
+      
       const transferAmount = parseFloat(amount);
       
-      if (currentBalance < transferAmount) {
+      if (isNaN(currentBalance) || isNaN(transferAmount) || currentBalance < transferAmount) {
         return res.status(400).json({ message: "Saldo insuficiente para esta transferência" });
       }
       
