@@ -176,7 +176,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .limit(10);
         
       // Obter transações recentes
-      const recentTransactions = await db
+      // Buscar transações sem usar orderBy(desc()) que está causando erros
+      const allRecentTransactions = await db
         .select({
           id: transactions.id,
           amount: transactions.amount,
@@ -185,8 +186,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
         .from(transactions)
         .where(eq(transactions.merchant_id, storeId))
-        .orderBy(desc(transactions.created_at))
-        .limit(5);
+        .limit(10);
+        
+      // Ordenar manualmente por data de criação (decrescente)
+      const recentTransactions = allRecentTransactions
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5);
         
       // Contar o número de transações
       const [transactionCount] = await db
@@ -478,7 +483,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const transactionCount = await db.select({ count: sql`COUNT(*)` }).from(transactions);
       const totalSales = await db.select({ sum: sql`SUM(amount)` }).from(transactions);
       
-      const recentTransactions = await db
+      // Buscar transações sem usar orderBy(desc()) que está causando erros
+      const allRecentTransactions = await db
         .select({
           id: transactions.id,
           amount: transactions.amount,
@@ -490,8 +496,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .from(transactions)
         .innerJoin(users, eq(transactions.user_id, users.id))
         .innerJoin(merchants, eq(transactions.merchant_id, merchants.id))
-        .orderBy(desc(transactions.created_at))
-        .limit(5);
+        .limit(10);
+        
+      // Ordenar manualmente por data de criação (decrescente)
+      const recentTransactions = allRecentTransactions
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5);
       
       res.json({
         userCount: userCount[0].count,
@@ -713,8 +723,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const merchant = merchantList[0];
         
-      // Listar transações
-      const transactions_list = await db
+      // Listar transações sem usar orderBy(desc())
+      const all_transactions_list = await db
         .select({
           id: transactions.id,
           user_id: transactions.user_id,
@@ -730,8 +740,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .innerJoin(users, eq(transactions.user_id, users.id))
         .leftJoin(transactionItems, eq(transactions.id, transactionItems.transaction_id))
         .where(eq(transactions.merchant_id, merchant.id))
-        .groupBy(transactions.id, users.name)
-        .orderBy(desc(transactions.created_at));
+        .groupBy(transactions.id, users.name);
+        
+      // Ordenar manualmente por data de criação (decrescente)
+      const transactions_list = all_transactions_list
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         
       res.json({ transactions: transactions_list });
     } catch (error) {
