@@ -185,26 +185,37 @@ export default function AdminTransfers() {
     },
     {
       header: "Usuário",
-      accessorKey: "user" as keyof Transfer,
+      accessorKey: "userName" as keyof Transfer,
       cell: (transfer: Transfer) => (
         <div className="flex items-center">
           <User className="h-4 w-4 text-muted-foreground mr-2" />
-          <span>{transfer.user}</span>
+          <span>{transfer.userName}</span>
         </div>
       ),
     },
     {
       header: "Data",
-      accessorKey: "date" as keyof Transfer,
+      accessorKey: "createdAt" as keyof Transfer,
+      cell: (transfer: Transfer) => (
+        <span>
+          {new Date(transfer.createdAt).toLocaleDateString('pt-BR')}
+        </span>
+      ),
     },
     {
       header: "Valor",
       accessorKey: "amount" as keyof Transfer,
-      cell: (transfer: Transfer) => (
-        <span className="font-medium">
-          R$ {transfer.amount.toFixed(2)}
-        </span>
-      ),
+      cell: (transfer: Transfer) => {
+        const amount = typeof transfer.amount === 'string' 
+          ? parseFloat(transfer.amount) 
+          : transfer.amount;
+          
+        return (
+          <span className="font-medium">
+            $ {amount.toFixed(2)}
+          </span>
+        );
+      },
     },
     {
       header: "Tipo",
@@ -249,12 +260,12 @@ export default function AdminTransfers() {
       },
     },
     {
-      header: "Destino",
-      accessorKey: "bankInfo" as keyof Transfer,
+      header: "Informações",
+      accessorKey: "userEmail" as keyof Transfer,
       cell: (transfer: Transfer) => (
         <div className="flex items-center">
-          <Landmark className="h-4 w-4 text-muted-foreground mr-2" />
-          <span className="truncate max-w-[200px]">{transfer.bankInfo}</span>
+          <Mail className="h-4 w-4 text-muted-foreground mr-2" />
+          <span className="truncate max-w-[200px]">{transfer.userEmail}</span>
         </div>
       ),
     },
@@ -339,7 +350,11 @@ export default function AdminTransfers() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {data?.totalAmount.toFixed(2) || "0.00"}
+                $ {data?.totalAmount ? 
+                    (typeof data.totalAmount === 'string' ? 
+                      parseFloat(data.totalAmount).toFixed(2) : 
+                      data.totalAmount.toFixed(2)) 
+                    : "0.00"}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransfers.length} transferências
@@ -405,7 +420,11 @@ export default function AdminTransfers() {
                         {typeIcons[typeCount.type] || <DollarSign className="h-3.5 w-3.5 mr-1.5" />}
                         <span>{typeLabels[typeCount.type] || typeCount.type}</span>
                       </div>
-                      <span className="text-sm font-medium">R$ {typeCount.sum.toFixed(2)}</span>
+                      <span className="text-sm font-medium">$ {
+                        typeof typeCount.sum === 'string' ? 
+                          parseFloat(typeCount.sum).toFixed(2) : 
+                          typeCount.sum.toFixed(2)
+                      }</span>
                     </div>
                   );
                 })}
