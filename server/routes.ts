@@ -2815,6 +2815,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const clientId = req.user.id;
       
       // Buscar as colunas relevantes diretamente, sem erro de colunas inexistentes
+      // Filtrando apenas transações válidas (status 'completed' ou 'pending')
       const result = await db.execute(
         sql`SELECT 
             t.id, 
@@ -2827,8 +2828,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             m.store_name as "merchantName"
           FROM transactions t
           JOIN merchants m ON t.merchant_id = m.id
-          WHERE t.user_id = ${clientId}`
+          WHERE t.user_id = ${clientId}
+          AND t.status IN ('completed', 'pending')`
       );
+      
+      console.log(`Buscando transações válidas para cliente ${clientId}: ${result.rows.length} encontradas`);
       
       // Ordenar manualmente por data de criação (decrescente)
       const sortedResults = [...result.rows].sort((a, b) => 
@@ -2862,7 +2866,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const clientId = req.user.id;
       
-      // Consulta SQL direta para obter cashbacks
+      // Consulta SQL direta para obter cashbacks (apenas ativos)
       const result = await db.execute(
         sql`SELECT 
             c.id, 
@@ -2874,8 +2878,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           FROM cashbacks c
           LEFT JOIN transactions t ON c.transaction_id = t.id
           LEFT JOIN merchants m ON t.merchant_id = m.id
-          WHERE c.user_id = ${clientId}`
+          WHERE c.user_id = ${clientId}
+          AND c.status = 'active'`
       );
+      
+      console.log(`Buscando cashbacks ativos para cliente ${clientId}: ${result.rows.length} encontrados`);
       
       // Ordenar manualmente por data de criação (decrescente)
       const sortedResults = [...result.rows].sort((a, b) => 
