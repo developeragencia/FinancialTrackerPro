@@ -92,7 +92,7 @@ export default function AdminTransactions() {
   const { toast } = useToast();
   
   // Query para buscar as transações
-  const { data, isLoading } = useQuery<{ 
+  const { data, isLoading, error } = useQuery<{ 
     transactions: Transaction[], 
     totalAmount: number,
     totalCashback: number,
@@ -109,7 +109,15 @@ export default function AdminTransactions() {
       dateFrom: dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
       dateTo: dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined,
       search: searchTerm
-    }]
+    }],
+    placeholderData: {
+      transactions: [],
+      totalAmount: 0,
+      totalCashback: 0,
+      statusCounts: [],
+      paymentMethodSummary: [],
+      pageCount: 1
+    }
   });
   
   // Filtrar transações
@@ -258,6 +266,40 @@ export default function AdminTransactions() {
     },
   ];
   
+  // Renderiza um estado de carregamento
+  if (isLoading) {
+    return (
+      <DashboardLayout title="Histórico de Transações" type="admin">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-2">
+            <RefreshCw className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Carregando transações...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // Renderiza um estado de erro
+  if (error) {
+    return (
+      <DashboardLayout title="Histórico de Transações" type="admin">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <XCircle className="h-12 w-12 text-destructive" />
+            <h2 className="text-xl font-semibold">Erro ao carregar transações</h2>
+            <p className="text-muted-foreground">
+              Ocorreu um erro ao carregar os dados das transações. Por favor, tente novamente mais tarde.
+            </p>
+            <Button onClick={() => window.location.reload()}>
+              Tentar novamente
+            </Button>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout title="Histórico de Transações" type="admin">
       <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
