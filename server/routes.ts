@@ -62,6 +62,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
   addMerchantRoutes(app);
   addClientRoutes(app);
   
+  // ======== ROTAS DE NOTIFICAÇÕES ========
+
+  // Obter notificações do usuário atual
+  app.get("/api/notifications", isAuthenticated, async (req, res) => {
+    try {
+      // Buscar todas as notificações do usuário, ordenadas por data de criação (mais recentes primeiro)
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(eq(notifications.user_id, req.user.id))
+        .orderBy(desc(notifications.created_at))
+        .limit(50);
+
+      // Contar notificações não lidas
+      const unreadCount = await db
+        .select({ count: sql`count(*)` })
+        .from(notifications)
+        .where(and(
+          eq(notifications.user_id, req.user.id),
+          eq(notifications.read, false)
+        ));
+
+      res.json({
+        notifications: userNotifications,
+        unreadCount: parseInt(unreadCount[0].count.toString())
+      });
+    } catch (error) {
+      console.error("Erro ao buscar notificações:", error);
+      res.status(500).json({ message: "Erro ao buscar notificações" });
+    }
+  });
+
+  // Marcar notificação como lida
+  app.patch("/api/notifications/:id/read", isAuthenticated, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      
+      // Verificar se a notificação existe e pertence ao usuário atual
+      const notification = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.user_id, req.user.id)
+        ))
+        .limit(1);
+      
+      if (notification.length === 0) {
+        return res.status(404).json({ message: "Notificação não encontrada" });
+      }
+      
+      // Marcar como lida
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(eq(notifications.id, notificationId));
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar notificação como lida:", error);
+      res.status(500).json({ message: "Erro ao atualizar notificação" });
+    }
+  });
+
+  // Marcar todas as notificações como lidas
+  app.patch("/api/notifications/mark-all-read", isAuthenticated, async (req, res) => {
+    try {
+      await db
+        .update(notifications)
+        .set({ read: true })
+        .where(and(
+          eq(notifications.user_id, req.user.id),
+          eq(notifications.read, false)
+        ));
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Erro ao marcar todas notificações como lidas:", error);
+      res.status(500).json({ message: "Erro ao atualizar notificações" });
+    }
+  });
+
+  // Excluir notificação
+  app.delete("/api/notifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      
+      // Verificar se a notificação existe e pertence ao usuário atual
+      const notification = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.id, notificationId),
+          eq(notifications.user_id, req.user.id)
+        ))
+        .limit(1);
+      
+      if (notification.length === 0) {
+        return res.status(404).json({ message: "Notificação não encontrada" });
+      }
+      
+      // Excluir notificação
+      await db
+        .delete(notifications)
+        .where(eq(notifications.id, notificationId));
+      
+      res.status(200).json({ success: true });
+    } catch (error) {
+      console.error("Erro ao excluir notificação:", error);
+      res.status(500).json({ message: "Erro ao excluir notificação" });
+    }
+  });
+  
   // Inicializa as configurações de comissão
   await initializeCommissionSettings();
   
@@ -3788,6 +3901,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Saldo insuficiente para esta transferência" });
       }
       
+      // Buscar informações dos usuários
+      const fromUserResult = await db.select({ name: users.name }).from(users).where(eq(users.id, fromUserId)).limit(1);
+      const toUserResult = await db.select({ name: users.name }).from(users).where(eq(users.id, toUserId)).limit(1);
+      
+      const fromUserName = fromUserResult[0]?.name || "Usuário";
+      const toUserName = toUserResult[0]?.name || "Usuário";
+      
       // Criar a transferência
       const [transfer] = await db
         .insert(transfers)
@@ -3801,6 +3921,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type: "transfer" // Adicionando o campo type
         })
         .returning();
+      
+      // Importar os helpers de notificação
+      const { createTransferSentNotification, createTransferReceivedNotification } = await import("./helpers/notification");
+      
+      // Criar notificações para remetente e destinatário
+      await createTransferSentNotification(
+        fromUserId,
+        toUserName,
+        transferAmount,
+        transfer.id
+      );
+      
+      await createTransferReceivedNotification(
+        toUserId,
+        fromUserName,
+        transferAmount,
+        transfer.id
+      );
       
       res.status(201).json({
         id: transfer.id,
