@@ -303,14 +303,33 @@ export default function InvitePage() {
       }
     },
     onSuccess: (data) => {
+      // Registra o sucesso no console para facilitar o debug
+      console.log("Cadastro cliente concluído com sucesso, preparando redirecionamento para /auth");
+      
+      // Mostra a mensagem de sucesso com um botão para ir para a página de login
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: data.message || "Você será redirecionado para a página de login.",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>Você será redirecionado para a página de login em alguns instantes.</p>
+            <Button 
+              variant="outline" 
+              className="mt-2" 
+              onClick={() => window.location.href = "/auth"}
+            >
+              Ir para página de login agora
+            </Button>
+          </div>
+        ),
         variant: "default",
+        duration: 5000 // Aumenta a duração para dar tempo de clicar no botão
       });
+      
+      // Redirecionamento automático para a página de login
       setTimeout(() => {
-        setLocation("/auth");
-      }, 2000);
+        console.log("Executando redirecionamento automatico para /auth");
+        window.location.href = "/auth"; // Usamos window.location em vez de setLocation
+      }, 3000);
     },
     onError: (error: any) => {
       toast({
@@ -351,14 +370,34 @@ export default function InvitePage() {
       }
     },
     onSuccess: (data) => {
+      // Registra o sucesso no console para facilitar o debug
+      console.log("Cadastro lojista concluído com sucesso, preparando redirecionamento para /auth");
+      
+      // Mostra a mensagem de sucesso com um botão para ir para a página de login
       toast({
         title: "Cadastro realizado com sucesso!",
-        description: data.message || "Seu cadastro será analisado e você receberá um email com as próximas instruções.",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>Seu cadastro será analisado e você receberá um email com as próximas instruções.</p>
+            <p>Você será redirecionado para a página de login em alguns instantes.</p>
+            <Button 
+              variant="outline" 
+              className="mt-2" 
+              onClick={() => window.location.href = "/auth"}
+            >
+              Ir para página de login agora
+            </Button>
+          </div>
+        ),
         variant: "default",
+        duration: 5000 // Aumenta a duração para dar tempo de clicar no botão
       });
+      
+      // Redirecionamento automático para a página de login
       setTimeout(() => {
-        setLocation("/auth");
-      }, 2000);
+        console.log("Executando redirecionamento automatico para /auth");
+        window.location.href = "/auth"; // Usamos window.location em vez de setLocation
+      }, 3000);
     },
     onError: (error: any) => {
       toast({
