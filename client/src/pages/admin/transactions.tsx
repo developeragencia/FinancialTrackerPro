@@ -175,23 +175,26 @@ export default function AdminTransactions() {
     },
     {
       header: "Data",
-      accessorKey: "date" as keyof Transaction,
+      accessorKey: "createdAt" as keyof Transaction,
+      cell: (transaction: Transaction) => (
+        <span>{format(new Date(transaction.createdAt), "dd/MM/yyyy HH:mm")}</span>
+      ),
     },
     {
       header: "Valor",
-      accessorKey: "amount" as keyof Transaction,
+      accessorKey: "totalAmount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="font-medium">
-          R$ {transaction.amount.toFixed(2)}
+          $ {transaction.totalAmount.toFixed(2)}
         </span>
       ),
     },
     {
       header: "Cashback",
-      accessorKey: "cashback" as keyof Transaction,
+      accessorKey: "cashbackAmount" as keyof Transaction,
       cell: (transaction: Transaction) => (
         <span className="text-green-600">
-          R$ {transaction.cashback.toFixed(2)}
+          $ {transaction.cashbackAmount.toFixed(2)}
         </span>
       ),
     },
@@ -318,7 +321,7 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                R$ {data?.totalAmount.toFixed(2) || "0.00"}
+                $ {data?.totalAmount.toFixed(2) || "0.00"}
               </div>
               <p className="text-sm text-muted-foreground">
                 {filteredTransactions.length} transações
@@ -332,7 +335,7 @@ export default function AdminTransactions() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                R$ {data?.totalCashback.toFixed(2) || "0.00"}
+                $ {data?.totalCashback.toFixed(2) || "0.00"}
               </div>
               <p className="text-sm text-muted-foreground">
                 {data?.totalAmount ? ((data.totalCashback / data.totalAmount) * 100).toFixed(1) : "0"}% do total
@@ -394,7 +397,7 @@ export default function AdminTransactions() {
                         {PaymentMethodIcons[methodSummary.method] || <CreditCard className="h-3.5 w-3.5 mr-1.5" />}
                         <span className="ml-1">{paymentLabels[methodSummary.method] || methodSummary.method}</span>
                       </div>
-                      <span className="text-sm font-medium">R$ {methodSummary.sum.toFixed(2)}</span>
+                      <span className="text-sm font-medium">$ {methodSummary.sum.toFixed(2)}</span>
                     </div>
                   );
                 })}
