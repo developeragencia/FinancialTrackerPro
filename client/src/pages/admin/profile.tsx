@@ -1,78 +1,75 @@
-import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useState, useRef, ChangeEvent } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
+import { Shield, User, Lock, Bell, Loader2, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, User, Lock, Bell, Shield, AlertTriangle, Camera } from "lucide-react";
-import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 
-export default function ClientProfile() {
+export default function AdminProfile() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const { user: authUser } = useAuth();
 
-  // Query to get user profile data - com tratamento de erro melhorado
+  // Query to get user profile data
   const { 
     data: user, 
     isLoading, 
-    isError, 
     refetch 
   } = useQuery({
-    queryKey: ['/api/client/profile'],
-    retry: 2, // Limitar tentativas de retry para evitar requisições infinitas
-    refetchOnWindowFocus: false, // Desabilitar refresh automático no foco
+    queryKey: ['/api/admin/profile'],
+    retry: 2,
+    refetchOnWindowFocus: false,
     onError: (error: any) => {
       console.error("Erro ao carregar perfil:", error);
       setError(error?.message || "Não foi possível carregar seus dados de perfil.");
     }
   });
 
-  // Referência para o input file
-  const photoInputRef = useRef<HTMLInputElement>(null);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  
   // Dados de usuário com fallback seguro
   const userData = user ? {
     ...user,
     notifications: user.notifications || {
       email: true,
       push: true,
-      marketing: false
+      security: true
     },
-    privacy: user.privacy || {
-      showBalance: true,
-      showActivity: true
+    security: user.security || {
+      twoFactor: false,
+      sessionTimeout: 30,
+      ipRestriction: false
     }
   } : {
     id: authUser?.id || 0,
-    name: authUser?.name || "Usuário",
+    name: authUser?.name || "Administrador",
     email: authUser?.email || "",
     photo: authUser?.photo || "",
     phone: "",
-    address: "",
-    city: "",
-    state: "",
+    role: "Administrador",
+    permissions: [],
     notifications: {
       email: true,
       push: true,
-      marketing: false
+      security: true
     },
-    privacy: {
-      showBalance: true,
-      showActivity: true
+    security: {
+      twoFactor: false,
+      sessionTimeout: 30,
+      ipRestriction: false
     }
   };
-  
+
   // Mutation para atualizar a foto de perfil
   const photoMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -80,7 +77,7 @@ export default function ClientProfile() {
       const tempUrl = URL.createObjectURL(file);
       
       // Atualiza temporariamente a imagem antes da resposta do servidor
-      queryClient.setQueryData(['/api/client/profile'], (old: any) => ({
+      queryClient.setQueryData(['/api/admin/profile'], (old: any) => ({
         ...old,
         photo: tempUrl
       }));
@@ -98,7 +95,7 @@ export default function ClientProfile() {
         };
       }).then(async (base64data) => {
         // Enviar a string base64 para o backend
-        const response = await apiRequest("POST", "/api/client/profile/photo", {
+        const response = await apiRequest("POST", "/api/admin/profile/photo", {
           photo: base64data
         });
         
@@ -114,19 +111,16 @@ export default function ClientProfile() {
         title: "Foto atualizada",
         description: "Sua foto de perfil foi atualizada com sucesso."
       });
-      queryClient.invalidateQueries({queryKey: ['/api/client/profile']});
+      queryClient.invalidateQueries({queryKey: ['/api/admin/profile']});
     },
     onError: (error) => {
       // Revalidar a query para reverter a alteração temporária em caso de erro
-      queryClient.invalidateQueries({queryKey: ['/api/client/profile']});
+      queryClient.invalidateQueries({queryKey: ['/api/admin/profile']});
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Ocorreu um erro ao atualizar a foto. Tente novamente.",
         variant: "destructive"
       });
-    },
-    onSettled: () => {
-      setUploadingPhoto(false);
     }
   });
 
@@ -146,7 +140,6 @@ export default function ClientProfile() {
       }
 
       // Enviar o arquivo
-      setUploadingPhoto(true);
       photoMutation.mutate(file);
     }
   };
@@ -168,20 +161,18 @@ export default function ClientProfile() {
       name: formData.get('name') as string,
       email: formData.get('email') as string,
       phone: formData.get('phone') as string,
-      address: formData.get('address') as string,
-      city: formData.get('city') as string,
-      state: formData.get('state') as string
+      role: formData.get('role') as string
     };
 
     try {
-      const response = await apiRequest("PATCH", "/api/client/profile", data);
+      const response = await apiRequest("PATCH", "/api/admin/profile", data);
       
       if (response.ok) {
         toast({
           title: "Perfil atualizado",
           description: "Suas informações foram atualizadas com sucesso."
         });
-        queryClient.invalidateQueries({queryKey: ['/api/client/profile']});
+        queryClient.invalidateQueries({queryKey: ['/api/admin/profile']});
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "Falha ao atualizar perfil");
@@ -219,7 +210,7 @@ export default function ClientProfile() {
     }
 
     try {
-      const response = await apiRequest("POST", "/api/client/profile/password", {
+      const response = await apiRequest("POST", "/api/admin/profile/password", {
         currentPassword,
         newPassword
       });
@@ -255,29 +246,10 @@ export default function ClientProfile() {
   };
 
   return (
-    <DashboardLayout title="Perfil" type="client">
+    <DashboardLayout title="Perfil do Administrador" type="admin">
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
-      ) : error ? (
-        <div className="flex flex-col justify-center items-center h-64 gap-4">
-          <div className="bg-destructive/10 p-3 rounded-full">
-            <AlertTriangle className="h-8 w-8 text-destructive" />
-          </div>
-          <div className="text-center">
-            <h3 className="text-lg font-semibold">Erro ao carregar perfil</h3>
-            <p className="text-muted-foreground mt-1">{error}</p>
-            <Button 
-              className="mt-4" 
-              onClick={() => {
-                setError(null);
-                refetch();
-              }}
-            >
-              Tentar novamente
-            </Button>
-          </div>
         </div>
       ) : (
         <Tabs defaultValue="personal" className="space-y-6">
@@ -314,14 +286,14 @@ export default function ClientProfile() {
                         className="relative group cursor-pointer hover:shadow-lg transition-all duration-300 rounded-full overflow-hidden ring-2 ring-offset-2 ring-primary/50"
                         onClick={triggerPhotoFileInput}
                       >
-                        <Avatar className="h-24 w-24 border-2 border-white shadow">
+                        <Avatar className="h-28 w-28 border-4 border-white shadow">
                           <AvatarImage src={userData.photo} alt={userData.name} />
-                          <AvatarFallback className="text-lg bg-secondary text-white">
+                          <AvatarFallback className="text-2xl bg-primary text-white">
                             {getInitials(userData.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col items-center justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Camera className="w-5 h-5 text-white mb-1" />
+                          <Camera className="w-6 h-6 text-white mb-1" />
                           <span className="text-white text-xs font-medium">Alterar foto</span>
                         </div>
                       </div>
@@ -334,44 +306,27 @@ export default function ClientProfile() {
                         accept="image/jpeg, image/png, image/gif, image/webp" 
                         className="hidden" 
                       />
-                      
-                      {uploadingPhoto && (
-                        <div className="flex items-center text-primary">
-                          <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-                          <span className="text-xs">Atualizando foto...</span>
-                        </div>
-                      )}
                     </div>
                     
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Nome completo</Label>
-                        <Input id="name" defaultValue={userData.name} />
+                        <Input id="name" name="name" defaultValue={userData.name} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="email">E-mail</Label>
-                        <Input id="email" type="email" defaultValue={userData.email} />
+                        <Input id="email" name="email" type="email" defaultValue={userData.email} />
                       </div>
                       
                       <div className="space-y-2">
                         <Label htmlFor="phone">Telefone</Label>
-                        <Input id="phone" defaultValue={userData.phone} />
+                        <Input id="phone" name="phone" defaultValue={userData.phone || ''} />
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="address">Endereço</Label>
-                        <Input id="address" defaultValue={userData.address} />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="city">Cidade</Label>
-                        <Input id="city" defaultValue={userData.city} />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="state">Estado</Label>
-                        <Input id="state" defaultValue={userData.state} />
+                        <Label htmlFor="role">Cargo/Função</Label>
+                        <Input id="role" name="role" defaultValue={userData.role || 'Administrador'} />
                       </div>
                     </div>
                   </div>
@@ -404,17 +359,17 @@ export default function ClientProfile() {
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Senha atual</Label>
-                    <Input id="current-password" type="password" required />
+                    <Input id="current-password" name="current-password" type="password" required />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="new-password">Nova senha</Label>
-                    <Input id="new-password" type="password" required />
+                    <Input id="new-password" name="new-password" type="password" required />
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirmar nova senha</Label>
-                    <Input id="confirm-password" type="password" required />
+                    <Input id="confirm-password" name="confirm-password" type="password" required />
                   </div>
 
                   <div className="flex justify-end">
@@ -435,7 +390,7 @@ export default function ClientProfile() {
               <CardHeader>
                 <CardTitle>Segurança da Conta</CardTitle>
                 <CardDescription>
-                  Configurações adicionais de segurança
+                  Configurações adicionais de segurança para administradores
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -446,17 +401,33 @@ export default function ClientProfile() {
                       Adicione uma camada extra de segurança à sua conta
                     </p>
                   </div>
-                  <Button>Configurar</Button>
+                  <Switch checked={userData.security.twoFactor} />
                 </div>
                 
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="space-y-0.5">
-                    <Label>Sessões ativas</Label>
+                    <Label>Restrição de IP</Label>
                     <p className="text-sm text-muted-foreground">
-                      Gerencie dispositivos conectados à sua conta
+                      Limite o acesso à conta apenas a endereços IP específicos
                     </p>
                   </div>
-                  <Button variant="outline">Visualizar</Button>
+                  <Switch checked={userData.security.ipRestriction} />
+                </div>
+                
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="space-y-0.5">
+                    <Label>Tempo limite da sessão (minutos)</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Defina o tempo até que a sessão expire por inatividade
+                    </p>
+                  </div>
+                  <Input 
+                    className="w-20 text-right" 
+                    type="number" 
+                    min="5" 
+                    max="60" 
+                    defaultValue={userData.security.sessionTimeout.toString()}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -468,7 +439,7 @@ export default function ClientProfile() {
               <CardHeader>
                 <CardTitle>Notificações</CardTitle>
                 <CardDescription>
-                  Configure como você deseja receber as notificações
+                  Configure como você deseja receber as notificações administrativas
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -494,42 +465,42 @@ export default function ClientProfile() {
                 
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="space-y-0.5">
-                    <Label>Marketing</Label>
+                    <Label>Alertas de segurança</Label>
                     <p className="text-sm text-muted-foreground">
-                      Receba ofertas e novidades sobre o Vale Cashback
+                      Receba alertas sobre eventos críticos de segurança
                     </p>
                   </div>
-                  <Switch checked={userData.notifications.marketing} />
+                  <Switch checked={userData.notifications.security} />
                 </div>
               </CardContent>
             </Card>
 
             <Card className="mt-6">
               <CardHeader>
-                <CardTitle>Privacidade</CardTitle>
+                <CardTitle>Interface administrativa</CardTitle>
                 <CardDescription>
-                  Gerencie quais informações são compartilhadas
+                  Personalize sua experiência no painel administrativo
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Mostrar saldo</Label>
+                    <Label>Modo escuro</Label>
                     <p className="text-sm text-muted-foreground">
-                      Exibir seu saldo de cashback para outros usuários
+                      Alterne entre o tema claro e escuro
                     </p>
                   </div>
-                  <Switch checked={userData.privacy.showBalance} />
+                  <Switch />
                 </div>
                 
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="space-y-0.5">
-                    <Label>Mostrar atividade</Label>
+                    <Label>Mensagens do sistema</Label>
                     <p className="text-sm text-muted-foreground">
-                      Permitir que outros usuários vejam suas atividades recentes
+                      Mostrar mensagens e alertas do sistema
                     </p>
                   </div>
-                  <Switch checked={userData.privacy.showActivity} />
+                  <Switch defaultChecked />
                 </div>
               </CardContent>
             </Card>
