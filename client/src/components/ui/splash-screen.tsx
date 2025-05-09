@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SplashScreenProps {
@@ -7,29 +7,24 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ onFinish, duration = 3000 }: SplashScreenProps) {
-  const [isVisible, setIsVisible] = useState(true);
+  console.log("SplashScreen renderizada");
 
   useEffect(() => {
+    console.log("SplashScreen montada, configurando temporizador");
     const timer = setTimeout(() => {
-      setIsVisible(false);
+      console.log("Temporizador terminado, chamando onFinish");
+      onFinish();
     }, duration);
 
-    return () => clearTimeout(timer);
-  }, [duration]);
-
-  useEffect(() => {
-    if (!isVisible) {
-      // Dá um tempo para a animação terminar antes de chamar onFinish
-      const finishTimer = setTimeout(() => {
-        onFinish();
-      }, 800);
-      return () => clearTimeout(finishTimer);
-    }
-  }, [isVisible, onFinish]);
+    return () => {
+      console.log("SplashScreen desmontada, limpando temporizador");
+      clearTimeout(timer);
+    };
+  }, [duration, onFinish]);
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {true && (
         <motion.div
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}

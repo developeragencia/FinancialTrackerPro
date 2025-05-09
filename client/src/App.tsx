@@ -130,8 +130,12 @@ function Router() {
 function App() {
   const [showSplash, setShowSplash] = useState(true);
   
-  // Verifica se deve mostrar o splash screen (apenas na primeira visita)
+  // Sempre mostra o splash screen para teste
   useEffect(() => {
+    // Forçar a exibição do splash sempre (temporariamente)
+    console.log("Exibindo splash screen");
+    // Para usar apenas na primeira visita, descomentar o código abaixo:
+    /*
     const hasSeenSplash = localStorage.getItem('has_seen_splash');
     if (hasSeenSplash) {
       setShowSplash(false);
@@ -139,6 +143,7 @@ function App() {
       // Marca como visto para sessões futuras
       localStorage.setItem('has_seen_splash', 'true');
     }
+    */
   }, []);
 
   const handleSplashFinish = () => {
