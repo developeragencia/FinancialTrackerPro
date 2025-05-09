@@ -110,6 +110,59 @@ export default function InvitePage() {
       }
     }
     
+    // Terceiro método: verificar URL específicos do sistema de referência
+    // Formato: /merchant/referrals ou /client/referrals
+    if (pathParts.length >= 2) {
+      // Usuário veio da página de referrals de lojista
+      if (pathParts[0] === "merchant" && pathParts[1] === "referrals") {
+        console.log("User came from merchant referrals page");
+        // Buscar o código de referência do lojista que convidou
+        setReferralType("merchant");
+        
+        // Se tiver um código específico na URL como /merchant/referrals/LJ0001
+        if (pathParts.length >= 3 && pathParts[2].match(/^LJ[0-9]+$/i)) {
+          setReferralCode(pathParts[2]);
+        } else {
+          // Caso contrário, buscar o primeiro lojista do sistema como referência padrão
+          fetch("/api/merchants/first")
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.referralCode) {
+                console.log("Setting default merchant referral code:", data.referralCode);
+                setReferralCode(data.referralCode);
+              }
+            })
+            .catch(err => {
+              console.error("Error fetching default merchant:", err);
+            });
+        }
+      }
+      
+      // Usuário veio da página de referrals de cliente
+      else if (pathParts[0] === "client" && pathParts[1] === "referrals") {
+        console.log("User came from client referrals page");
+        setReferralType("client");
+        
+        // Se tiver um código específico na URL
+        if (pathParts.length >= 3 && pathParts[2].match(/^CL[0-9]+$/i)) {
+          setReferralCode(pathParts[2]);
+        } else {
+          // Buscar o primeiro cliente como referência padrão
+          fetch("/api/clients/first")
+            .then(res => res.json())
+            .then(data => {
+              if (data && data.referralCode) {
+                console.log("Setting default client referral code:", data.referralCode);
+                setReferralCode(data.referralCode);
+              }
+            })
+            .catch(err => {
+              console.error("Error fetching default client:", err);
+            });
+        }
+      }
+    }
+    
     // Terceiro método: verificar o último segmento da URL para códigos curtos (sem prefixo)
     // Por exemplo: /como/te/1234 (onde 1234 é o ID do usuário)
     if (!referralCode && pathParts.length > 0) {
