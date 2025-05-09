@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, BellRing } from 'lucide-react';
+import { Bell, BellRing, MoreHorizontal } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +23,8 @@ import { Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { pt } from 'date-fns/locale';
+// Para garantir que não dê erro, vamos usar a formatação sem locale
+// import { pt } from 'date-fns/locale';
 
 export interface Notification {
   id: number;
@@ -158,7 +159,7 @@ export function NotificationBell() {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, "dd/MM/yyyy HH:mm", { locale: pt });
+      return format(date, "dd/MM/yyyy HH:mm");
     } catch (e) {
       return dateString;
     }
