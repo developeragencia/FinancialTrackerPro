@@ -190,12 +190,12 @@ export default function AdminSettings() {
   const securityForm = useForm<z.infer<typeof securityFormSchema>>({
     resolver: zodResolver(securityFormSchema),
     defaultValues: {
-      requireEmailVerification: settings?.security.requireEmailVerification,
-      maxLoginAttempts: settings?.security.maxLoginAttempts,
-      passwordExpiryDays: settings?.security.passwordExpiryDays,
-      sessionTimeoutMinutes: settings?.security.sessionTimeoutMinutes,
-      requireStrongPasswords: settings?.security.requireStrongPasswords,
-      twoFactorAuth: settings?.security.twoFactorAuth,
+      requireEmailVerification: settings?.security?.requireEmailVerification ?? true,
+      maxLoginAttempts: settings?.security?.maxLoginAttempts ?? 5,
+      passwordExpiryDays: settings?.security?.passwordExpiryDays ?? 90,
+      sessionTimeoutMinutes: settings?.security?.sessionTimeoutMinutes ?? 120,
+      requireStrongPasswords: settings?.security?.requireStrongPasswords ?? true,
+      twoFactorAuth: settings?.security?.twoFactorAuth ?? false,
     }
   });
   
@@ -203,15 +203,15 @@ export default function AdminSettings() {
   const notificationsForm = useForm<z.infer<typeof notificationsFormSchema>>({
     resolver: zodResolver(notificationsFormSchema),
     defaultValues: {
-      emailNotifications: settings?.notifications.emailNotifications,
-      smsNotifications: settings?.notifications.smsNotifications,
-      pushNotifications: settings?.notifications.pushNotifications,
-      notifyOnLogin: settings?.notifications.notifyOnLogin,
-      notifyOnTransactions: settings?.notifications.notifyOnTransactions,
-      notifyOnWithdrawals: settings?.notifications.notifyOnWithdrawals,
-      dailyReports: settings?.notifications.dailyReports,
-      weeklyReports: settings?.notifications.weeklyReports,
-      monthlyReports: settings?.notifications.monthlyReports,
+      emailNotifications: settings?.notifications?.emailNotifications ?? true,
+      smsNotifications: settings?.notifications?.smsNotifications ?? false,
+      pushNotifications: settings?.notifications?.pushNotifications ?? true,
+      notifyOnLogin: settings?.notifications?.notifyOnLogin ?? true,
+      notifyOnTransactions: settings?.notifications?.notifyOnTransactions ?? true,
+      notifyOnWithdrawals: settings?.notifications?.notifyOnWithdrawals ?? true,
+      dailyReports: settings?.notifications?.dailyReports ?? false,
+      weeklyReports: settings?.notifications?.weeklyReports ?? true,
+      monthlyReports: settings?.notifications?.monthlyReports ?? true,
     }
   });
   
@@ -219,13 +219,13 @@ export default function AdminSettings() {
   const systemForm = useForm<z.infer<typeof systemFormSchema>>({
     resolver: zodResolver(systemFormSchema),
     defaultValues: {
-      maintenanceMode: settings?.system.maintenanceMode,
-      debugMode: settings?.system.debugMode,
-      apiThrottleLimit: settings?.system.apiThrottleLimit,
-      enableReferrals: settings?.system.enableReferrals,
-      enableCashback: settings?.system.enableCashback,
-      enableQrCodes: settings?.system.enableQrCodes,
-      backupFrequencyHours: settings?.system.backupFrequencyHours,
+      maintenanceMode: settings?.system?.maintenanceMode ?? false,
+      debugMode: settings?.system?.debugMode ?? false,
+      apiThrottleLimit: settings?.system?.apiThrottleLimit ?? 100,
+      enableReferrals: settings?.system?.enableReferrals ?? true,
+      enableCashback: settings?.system?.enableCashback ?? true,
+      enableQrCodes: settings?.system?.enableQrCodes ?? true,
+      backupFrequencyHours: settings?.system?.backupFrequencyHours ?? 24,
     }
   });
   
