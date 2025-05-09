@@ -758,7 +758,7 @@ export default function AdminLogs() {
                 </div>
                 
                 <div className="flex flex-1 gap-4">
-                  <Select value={typeFilter || ""} onValueChange={(val) => setTypeFilter(val || null)}>
+                  <Select value={typeFilter} onValueChange={(val) => setTypeFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
                       <SelectValue placeholder="Ação" />
                     </SelectTrigger>
@@ -773,7 +773,7 @@ export default function AdminLogs() {
                     </SelectContent>
                   </Select>
                   
-                  <Select value={moduleFilter || ""} onValueChange={(val) => setModuleFilter(val || null)}>
+                  <Select value={moduleFilter} onValueChange={(val) => setModuleFilter(val)}>
                     <SelectTrigger className="w-full md:w-[180px]">
                       <SelectValue placeholder="Recurso" />
                     </SelectTrigger>

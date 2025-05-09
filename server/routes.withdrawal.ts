@@ -402,7 +402,9 @@ export function addWithdrawalRoutes(app: Express) {
         .set({
           status,
           notes: admin_notes || null,
-          processed_at: new Date()
+          processed_by: req.user.id,
+          processed_at: new Date(),
+          updated_at: new Date()
         })
         .where(eq(withdrawalRequests.id, requestId))
         .returning();
