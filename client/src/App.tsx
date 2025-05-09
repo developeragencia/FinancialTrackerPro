@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
@@ -9,6 +10,7 @@ import { ProtectedRoute } from "./lib/protected-route";
 import { ProtectedRouteMobile } from "./lib/protected-route-mobile";
 import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { MobileProvider } from "@/hooks/use-mobile";
+import { SplashScreen } from "@/components/ui/splash-screen";
 import ClientCashbacks from "@/pages/client/cashbacks";
 
 // Auth Pages
@@ -126,6 +128,23 @@ function Router() {
 }
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+  
+  // Verifica se deve mostrar o splash screen (apenas na primeira visita)
+  useEffect(() => {
+    const hasSeenSplash = localStorage.getItem('has_seen_splash');
+    if (hasSeenSplash) {
+      setShowSplash(false);
+    } else {
+      // Marca como visto para sessões futuras
+      localStorage.setItem('has_seen_splash', 'true');
+    }
+  }, []);
+
+  const handleSplashFinish = () => {
+    setShowSplash(false);
+  };
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light">
@@ -133,8 +152,14 @@ function App() {
           <MobileProvider>
             <TooltipProvider>
               <Toaster />
-              <Router />
-              <PWAInstallPrompt />
+              {showSplash ? (
+                <SplashScreen onFinish={handleSplashFinish} duration={3000} />
+              ) : (
+                <>
+                  <Router />
+                  <PWAInstallPrompt />
+                </>
+              )}
             </TooltipProvider>
           </MobileProvider>
         </AuthProvider>
