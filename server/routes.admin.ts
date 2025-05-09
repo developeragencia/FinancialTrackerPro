@@ -17,6 +17,17 @@ import {
 import { isUserType } from "./routes";
 import { formatCurrency } from "../client/src/lib/utils";
 
+// Função para determinar o tipo de transferência
+function getTransferType(transfer: any) {
+  if (transfer.user_type === 'merchant') {
+    return 'merchant_withdrawal';
+  } else if (transfer.user_type === 'client') {
+    return 'client_withdrawal';
+  } else {
+    return 'internal_transfer';
+  }
+}
+
 // Rotas administrativas
 export function addAdminRoutes(app: Express) {
   // Dashboard do admin - estatísticas
@@ -538,17 +549,17 @@ export function addAdminRoutes(app: Express) {
       let baseQuery = db
         .select({
           id: transfers.id,
-          user_id: transfers.user_id,
+          from_user_id: transfers.from_user_id,
+          to_user_id: transfers.to_user_id,
           amount: transfers.amount,
           status: transfers.status,
           created_at: transfers.created_at,
-          updated_at: transfers.updated_at,
           user_name: users.name,
           user_email: users.email,
           user_type: users.type
         })
         .from(transfers)
-        .leftJoin(users, eq(transfers.user_id, users.id));
+        .leftJoin(users, eq(transfers.from_user_id, users.id));
       
       // Filtrar por status, se fornecido
       let query = baseQuery;
@@ -578,14 +589,14 @@ export function addAdminRoutes(app: Express) {
       // Formatar resposta
       const transfersFormatted = transfersResult.map(transfer => ({
         id: transfer.id,
-        userId: transfer.user_id,
+        userId: transfer.from_user_id,
         userName: transfer.user_name,
         userEmail: transfer.user_email,
         userType: transfer.user_type,
         amount: transfer.amount,
         status: transfer.status,
         createdAt: transfer.created_at,
-        updatedAt: transfer.updated_at
+        type: getTransferType(transfer)
       }));
       
       res.json({
