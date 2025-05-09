@@ -215,7 +215,7 @@ export default function MerchantProfile() {
                       
                       <div className="space-y-2">
                         <Label htmlFor="business-hours">Horário de Funcionamento</Label>
-                        <Input id="business-hours" name="businessHours" defaultValue={merchantData.businessHours} />
+                        <Input id="business-hours" name="business_hours" defaultValue={merchantData.business_hours} />
                       </div>
                       
                       <div className="space-y-2 flex items-center">
@@ -460,7 +460,7 @@ export default function MerchantProfile() {
                         
                         <div className="flex items-center">
                           <Clock className="h-4 w-4 mr-2 text-muted-foreground" />
-                          <span>{merchantData.businessHours}</span>
+                          <span>{merchantData.business_hours}</span>
                         </div>
                         
                         <div className="flex items-center">

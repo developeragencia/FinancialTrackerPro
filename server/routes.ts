@@ -660,6 +660,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Listar produtos do lojista
   app.get("/api/merchant/products", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       
       // Obter dados do merchant
@@ -691,6 +695,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Listar vendas do lojista
   app.get("/api/merchant/sales", isUserType("merchant"), async (req, res) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuário não autenticado" });
+      }
+      
       const merchantId = req.user.id;
       
       // Obter dados do merchant
