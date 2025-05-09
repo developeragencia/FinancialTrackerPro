@@ -64,15 +64,19 @@ export function addAdminRoutes(app: Express) {
         .from(transfers)
         .where(eq(transfers.status, 'pending'));
         
-      // Último log do sistema
-      const [lastLog] = await db
+      // Último log do sistema - sem usar orderBy(desc()) que causa problemas
+      const allLogs = await db
         .select()
         .from(auditLogs)
-        .orderBy(desc(auditLogs.created_at))
-        .limit(1);
+        .limit(5);
+        
+      // Ordenar manualmente e pegar o mais recente
+      const lastLog = allLogs.length > 0 
+        ? allLogs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+        : undefined;
 
-      // Lojas recentes (substituindo lojas pendentes)
-      const recentStoresResult = await db
+      // Lojas recentes - sem usar orderBy(desc()) que causa problemas
+      const allRecentStoresResult = await db
         .select({
           id: merchants.id,
           store_name: merchants.store_name,
@@ -82,8 +86,12 @@ export function addAdminRoutes(app: Express) {
         })
         .from(merchants)
         .innerJoin(users, eq(merchants.user_id, users.id))
-        .orderBy(desc(merchants.created_at))
-        .limit(5);
+        .limit(10);
+        
+      // Ordenar manualmente por data de criação e pegar os 5 mais recentes
+      const recentStoresResult = allRecentStoresResult
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 5);
       
       // Formatar lojas recentes
       const recentStores = recentStoresResult.map(store => ({
@@ -285,8 +293,8 @@ export function addAdminRoutes(app: Express) {
       const pageSize = parseInt(req.query.pageSize as string) || 10;
       const offset = (page - 1) * pageSize;
       
-      // Obter transações com informações de loja e cliente
-      const transactionsResult = await db
+      // Obter transações com informações de loja e cliente - sem usar orderBy(desc())
+      const allTransactionsResult = await db
         .select({
           id: transactions.id,
           merchant_id: transactions.merchant_id,
@@ -302,9 +310,12 @@ export function addAdminRoutes(app: Express) {
         .from(transactions)
         .leftJoin(merchants, eq(transactions.merchant_id, merchants.id))
         .leftJoin(users, eq(transactions.user_id, users.id))
-        .orderBy(desc(transactions.created_at))
-        .limit(pageSize)
-        .offset(offset);
+        .limit(pageSize * 2); // Buscar mais registros para permitir ordenação
+        
+      // Ordenar manualmente por data de criação e aplicar paginação
+      const transactionsResult = allTransactionsResult
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(offset, offset + pageSize);
       
       // Contar total de transações para paginação
       const [totalCount] = await db
@@ -407,12 +418,17 @@ export function addAdminRoutes(app: Express) {
         .from(cashbacks)
         .where(eq(cashbacks.transaction_id, transactionId));
       
-      // Obter taxas e comissões ativas no momento da transação
-      const [commissionSettingsEntry] = await db
+      // Obter taxas e comissões ativas - sem usar orderBy(desc()) que causa problemas
+      const allCommissionSettings = await db
         .select()
         .from(commissionSettings)
-        .orderBy(desc(commissionSettings.created_at))
-        .limit(1);
+        .limit(5);
+        
+      // Ordenar manualmente para obter a comissão mais recente
+      const commissionSettingsEntry = allCommissionSettings.length > 0
+        ? allCommissionSettings.sort((a, b) => 
+            new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())[0]
+        : null;
       
       // Montar objeto de resposta detalhado
       const response = {
@@ -477,7 +493,8 @@ export function addAdminRoutes(app: Express) {
       const status = req.query.status as string || null;
       const offset = (page - 1) * pageSize;
       
-      let query = db
+      // Buscar transferências - sem usar orderBy(desc()) que causa problemas
+      let baseQuery = db
         .select({
           id: transfers.id,
           user_id: transfers.user_id,
@@ -490,17 +507,21 @@ export function addAdminRoutes(app: Express) {
           user_type: users.type
         })
         .from(transfers)
-        .leftJoin(users, eq(transfers.user_id, users.id))
-        .orderBy(desc(transfers.created_at));
+        .leftJoin(users, eq(transfers.user_id, users.id));
       
       // Filtrar por status, se fornecido
+      let query = baseQuery;
       if (status) {
         query = query.where(eq(transfers.status, status));
       }
       
-      const transfersResult = await query
-        .limit(pageSize)
-        .offset(offset);
+      // Buscar todos os resultados para fazer ordenação manual
+      const allTransfers = await query.limit(pageSize * 2);
+      
+      // Ordenar manualmente por data de criação e aplicar paginação
+      const transfersResult = allTransfers
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(offset, offset + pageSize);
       
       // Contar total de transferências para paginação
       let countQuery = db
@@ -621,7 +642,8 @@ export function addAdminRoutes(app: Express) {
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const offset = (page - 1) * pageSize;
       
-      const logsResult = await db
+      // Buscar logs de auditoria - sem usar orderBy(desc()) que causa problemas
+      const allLogsResult = await db
         .select({
           id: auditLogs.id,
           action: auditLogs.action,
@@ -635,9 +657,12 @@ export function addAdminRoutes(app: Express) {
         })
         .from(auditLogs)
         .leftJoin(users, eq(auditLogs.user_id, users.id))
-        .orderBy(desc(auditLogs.created_at))
-        .limit(pageSize)
-        .offset(offset);
+        .limit(pageSize * 2);
+        
+      // Ordenar manualmente por data de criação e aplicar paginação
+      const logsResult = allLogsResult
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(offset, offset + pageSize);
       
       // Contar total de logs para paginação
       const [totalCount] = await db
@@ -872,7 +897,8 @@ export function addAdminRoutes(app: Express) {
       const search = req.query.search as string;
       const offset = (page - 1) * pageSize;
       
-      let query = db
+      // Buscar usuários - sem usar orderBy(desc()) que causa problemas
+      let baseQuery = db
         .select({
           id: users.id,
           name: users.name,
@@ -884,10 +910,10 @@ export function addAdminRoutes(app: Express) {
           last_login: users.last_login,
           invitation_code: users.invitation_code
         })
-        .from(users)
-        .orderBy(desc(users.created_at));
+        .from(users);
       
       // Filtrar por tipo se especificado
+      let query = baseQuery;
       if (userType && ['client', 'merchant', 'admin'].includes(userType)) {
         query = query.where(eq(users.type, userType));
       }
@@ -903,9 +929,16 @@ export function addAdminRoutes(app: Express) {
         );
       }
       
-      const usersResult = await query
-        .limit(pageSize)
-        .offset(offset);
+      // Obter usuários com paginação
+      const allUsersResult = await query.limit(100);
+      
+      // Ordenar manualmente por data de criação do mais recente para o mais antigo
+      const sortedUsers = allUsersResult.sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      // Aplicar paginação no lado do JavaScript após ordenação
+      const usersResult = sortedUsers.slice(offset, offset + pageSize);
       
       // Contar total de usuários para paginação
       let countQuery = db
