@@ -3635,14 +3635,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const referrer = referrerQuery[0];
           console.log(`Cliente ${newUser.id} registrado com referência de ${referrer.id} (${referrer.name})`);
           
-          // Registrar a referência
-          await db.insert(referrals).values({
-            referrerId: referrer.id,
-            referredId: newUser.id,
-            bonus: "10.00", // Valor fixo de bônus para indicação de cliente
-            status: "active",
-            created_at: new Date()
-          });
+          // Verificar se já existe um registro para esta referência
+          const existingReferral = await db
+            .select()
+            .from(referrals)
+            .where(and(
+              eq(referrals.referrerId, referrer.id),
+              eq(referrals.referredId, newUser.id)
+            ))
+            .limit(1);
+            
+          if (existingReferral.length === 0) {
+            // Registrar a referência apenas se não existir
+            await db.insert(referrals).values({
+              referrerId: referrer.id,
+              referredId: newUser.id,
+              bonus: "10.00", // Valor fixo de bônus para indicação de cliente
+              status: "active",
+              created_at: new Date()
+            });
+            console.log(`Referência registrada com sucesso para o cliente ${newUser.id}`);
+          } else {
+            console.log(`Referência já existente para o cliente ${newUser.id}, ignorando duplicação`);
+          }
         } else {
           console.log(`Código de indicação ${code} não encontrado no banco de dados`);
         }
@@ -3729,14 +3744,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const referrer = referrerQuery[0];
           console.log(`Lojista ${newUser.id} registrado com referência de ${referrer.id} (${referrer.name})`);
           
-          // Registrar a referência com o bônus
-          await db.insert(referrals).values({
-            referrerId: referrer.id,
-            referredId: newUser.id,
-            bonus: "25.00", // Valor fixo maior para indicação de lojista
-            status: "active", 
-            created_at: new Date()
-          });
+          // Verificar se já existe um registro para esta referência
+          const existingReferral = await db
+            .select()
+            .from(referrals)
+            .where(and(
+              eq(referrals.referrerId, referrer.id),
+              eq(referrals.referredId, newUser.id)
+            ))
+            .limit(1);
+            
+          if (existingReferral.length === 0) {
+            // Registrar a referência com o bônus apenas se não existir
+            await db.insert(referrals).values({
+              referrerId: referrer.id,
+              referredId: newUser.id,
+              bonus: "25.00", // Valor fixo maior para indicação de lojista
+              status: "active", 
+              created_at: new Date()
+            });
+            console.log(`Referência registrada com sucesso para o lojista ${newUser.id}`);
+          } else {
+            console.log(`Referência já existente para o lojista ${newUser.id}, ignorando duplicação`);
+          }
         } else {
           console.log(`Código de indicação ${code} não encontrado no banco de dados`);
         }
