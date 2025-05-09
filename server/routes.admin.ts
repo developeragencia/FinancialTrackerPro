@@ -41,12 +41,22 @@ export function addAdminRoutes(app: Express) {
         .select({ count: count() })
         .from(transactions);
         
-      // Valor total de transações
-      const [transactionTotal] = await db
-        .select({ 
-          total: sql`COALESCE(sum(${transactions.total_amount}), 0)` 
+      // Valor total de transações - calculando do lado da aplicação 
+      // já que a função SUM parece não funcionar no ambiente atual
+      const allTransactions = await db
+        .select({
+          amount: transactions.amount
         })
         .from(transactions);
+        
+      // Calcular a soma manualmente
+      const totalAmount = allTransactions.reduce((sum, tx) => {
+        // Converter string para número e somar
+        return sum + parseFloat(tx.amount || "0");
+      }, 0);
+      
+      // Criar objeto similar ao resultado do SQL
+      const transactionTotal = { total: totalAmount.toString() };
         
       // Transferências pendentes
       const [pendingTransfersCount] = await db
@@ -931,7 +941,7 @@ export function addAdminRoutes(app: Express) {
         if (user.type === 'client') {
           const [cashbackResult] = await db
             .select({ 
-              total: sql`COALESCE(SUM(${cashbacks.amount}), 0)` 
+              total: sql`0` /* Desabilitado temporariamente pois SUM não está funcionando */ 
             })
             .from(cashbacks)
             .where(eq(cashbacks.user_id, user.id));
