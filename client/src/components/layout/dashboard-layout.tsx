@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Helmet } from "react-helmet";
 import { useAuth } from "@/hooks/use-auth.tsx";
 import { Sidebar, SidebarToggle } from "@/components/layout/sidebar";
-import { Bell, User, LogOut } from "lucide-react";
+import { Bell, User, LogOut as Logout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -97,7 +97,7 @@ export function DashboardLayout({
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => logout()}>
-                <LogOut className="mr-2 h-4 w-4" />
+                <Logout className="mr-2 h-4 w-4" />
                 <span>Sair</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
