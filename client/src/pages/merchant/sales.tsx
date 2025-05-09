@@ -636,7 +636,7 @@ export default function MerchantSales() {
                 <div className="pt-2 border-t">
                   <div className="flex justify-between font-medium">
                     <span>Valor Líquido:</span>
-                    <span>R$ {cartItems.length > 0 
+                    <span>$ {cartItems.length > 0 
                       ? (total - merchantCommission - (total * SYSTEM_SETTINGS.referralRate)).toFixed(2)
                       : (manualAmount - (manualAmount * SYSTEM_SETTINGS.merchantCommission) - (manualAmount * SYSTEM_SETTINGS.referralRate)).toFixed(2)}</span>
                   </div>
@@ -808,7 +808,7 @@ export default function MerchantSales() {
               <SelectContent>
                 {products.map((product) => (
                   <SelectItem key={product.id} value={product.id.toString()}>
-                    {product.name} - R$ {product.price.toFixed(2)}
+                    {product.name} - $ {product.price.toFixed(2)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -819,7 +819,7 @@ export default function MerchantSales() {
                 <div className="p-3 border rounded-md bg-muted">
                   <div className="font-medium">{selectedProduct.name}</div>
                   <div className="text-sm text-muted-foreground">
-                    Preço unitário: R$ {selectedProduct.price.toFixed(2)}
+                    Preço unitário: $ {selectedProduct.price.toFixed(2)}
                   </div>
                   {selectedProduct.category && (
                     <div className="text-xs text-muted-foreground">
@@ -861,7 +861,7 @@ export default function MerchantSales() {
                 <div className="pt-2">
                   <div className="flex justify-between font-medium">
                     <span>Total:</span>
-                    <span>R$ {(selectedProduct.price * quantity).toFixed(2)}</span>
+                    <span>$ {(selectedProduct.price * quantity).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
