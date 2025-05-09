@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { isMobileDevice, getDeviceOS, getAppStoreLinks } from '@/pwaHelpers';
-import { Download, X, Smartphone, Play, Apple } from 'lucide-react';
+import { isMobileDevice, getDeviceOS } from '@/pwaHelpers';
+import { Download, X, Smartphone } from 'lucide-react';
 
 // Variável global para armazenar o evento de instalação
 let deferredPrompt: any = null;
 
 export function PWAInstallPrompt() {
-  const [showPrompt, setShowPrompt] = useState(false); // Inicialmente não mostra o banner
+  const [showPrompt, setShowPrompt] = useState(true); // Sempre mostra o banner
   const [installable, setInstallable] = useState(false);
   const [dismissed, setDismissed] = useState(false);
-  const [deviceOS, setDeviceOS] = useState<'android' | 'ios' | 'other'>('other');
 
   useEffect(() => {
-    // Detecta o sistema operacional do dispositivo
-    setDeviceOS(getDeviceOS() as 'android' | 'ios' | 'other');
+    // Verificar se o banner já foi fechado antes
+    const wasDismissed = localStorage.getItem('pwa-install-dismissed') === 'true';
+    if (wasDismissed) {
+      setDismissed(true);
+      setShowPrompt(false);
+    }
     
-    // Configura para exibir o banner após um pequeno atraso
-    const showPromptTimer = setTimeout(() => {
-      // Verificar se o app já está instalado
-      const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
-                            (window.navigator as any).standalone === true;
-      
-      // Apenas mostra o prompt se não estiver instalado e não tiver sido dispensado
-      if (!isAppInstalled && !dismissed) {
-        setShowPrompt(true);
-      }
-    }, 2000);
+    // Verificar se o app já está instalado
+    const isAppInstalled = window.matchMedia('(display-mode: standalone)').matches || 
+                          (window.navigator as any).standalone === true;
+    
+    if (isAppInstalled) {
+      setShowPrompt(false);
+    }
     
     // Captura o evento beforeinstallprompt
     const handleBeforeInstallPrompt = (e: any) => {
@@ -36,6 +35,11 @@ export function PWAInstallPrompt() {
       console.log('BeforeInstallPrompt capturado!', e);
       deferredPrompt = e;
       setInstallable(true);
+      
+      // Mostra o banner se não estiver dispensado
+      if (!wasDismissed) {
+        setShowPrompt(true);
+      }
     };
     
     // Detecta quando o app é instalado
@@ -51,12 +55,13 @@ export function PWAInstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      clearTimeout(showPromptTimer);
     };
-  }, [dismissed]);
+  }, []);
   
-  // Função para instalar ou baixar o aplicativo
+  // Função para instalar o aplicativo
   const handleInstall = async () => {
+    console.log('Tentando instalar com deferredPrompt:', deferredPrompt);
+    
     if (deferredPrompt) {
       try {
         // Mostra o prompt de instalação
@@ -72,20 +77,19 @@ export function PWAInstallPrompt() {
         }
       } catch (error) {
         console.error('Erro no prompt de instalação:', error);
-        // Em caso de erro, redireciona para a loja apropriada
-        redirectToStore();
       }
       
       // Limpa a referência ao prompt - só pode ser usado uma vez
       deferredPrompt = null;
     } else {
-      // Caso contrário, redirecionamos para a loja apropriada
-      redirectToStore();
+      console.log('Nenhum evento de instalação disponível');
+      alert('Este aplicativo já está instalado ou seu navegador não suporta instalação de PWAs.');
     }
   };
   
-  // Força a instalação através de um botão presente em algum lugar da UI (não no banner)
+  // Força a instalação através de um botão presente em algum lugar da UI
   const forceShowInstallBanner = () => {
+    console.log('Forçando exibição do banner de instalação');
     setShowPrompt(true);
     setDismissed(false);
   };
@@ -93,24 +97,10 @@ export function PWAInstallPrompt() {
   // Expõe a função para o window para poder ser chamada de qualquer lugar
   useEffect(() => {
     (window as any).showInstallBanner = forceShowInstallBanner;
-  }, []);
-  
-  // Função para redirecionar para a loja apropriada
-  const redirectToStore = () => {
-    const storeLinks = getAppStoreLinks();
     
-    if (deviceOS === 'android') {
-      window.location.href = storeLinks.android;
-    } else if (deviceOS === 'ios') {
-      window.location.href = storeLinks.ios;
-    }
-  };
-  
-  // Função para download direto da app store
-  const handleAppStoreDownload = (platform: 'android' | 'ios') => {
-    const storeLinks = getAppStoreLinks();
-    window.location.href = platform === 'android' ? storeLinks.android : storeLinks.ios;
-  };
+    // Para testes - registrar manualmente a função na janela
+    console.log('Função de instalação registrada globalmente');
+  }, []);
   
   // Função para fechar o banner
   const handleDismiss = () => {
@@ -120,7 +110,7 @@ export function PWAInstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', 'true');
   };
   
-  if (!showPrompt) return null;
+  if (!showPrompt || dismissed) return null;
   
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 shadow-lg">
@@ -147,34 +137,13 @@ export function PWAInstallPrompt() {
         {/* Botão principal de instalação */}
         <Button 
           onClick={handleInstall}
-          className="w-full flex items-center justify-center gap-2 mb-3"
+          className="w-full flex items-center justify-center gap-2"
           variant="default"
           size="lg"
         >
           <Download size={20} />
           Instalar Aplicativo
         </Button>
-        
-        {/* Opções alternativas - lojas de aplicativos */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button 
-            onClick={() => handleAppStoreDownload('android')}
-            className="flex items-center justify-center gap-2"
-            variant="outline"
-          >
-            <Play size={16} />
-            Google Play
-          </Button>
-          
-          <Button 
-            onClick={() => handleAppStoreDownload('ios')}
-            className="flex items-center justify-center gap-2"
-            variant="outline"
-          >
-            <Apple size={16} />
-            App Store
-          </Button>
-        </div>
       </div>
     </div>
   );

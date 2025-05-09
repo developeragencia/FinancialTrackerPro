@@ -51,19 +51,19 @@ export function isAppInstalled() {
          (window.navigator as any).standalone === true;
 }
 
-// Função para obter links de download direto para as lojas
-export function getAppStoreLinks() {
-  // URL atual da aplicação para uso no modo PWA
-  const currentUrl = window.location.origin;
-  
-  return {
-    // Para download direto como app PWA, usamos a mesma URL
-    android: currentUrl,
-    ios: currentUrl,
-    // Links para lojas de aplicativos (quando disponíveis)
-    androidStore: 'https://play.google.com/store/apps/details?id=com.valecashback.app',
-    iosStore: 'https://apps.apple.com/app/vale-cashback/id0000000000'
-  };
+// Função para lidar com instalação direta do app
+export function handleDirectInstall() {
+  // Verificar se há um evento de instalação armazenado globalmente
+  if ((window as any).deferredPrompt) {
+    try {
+      (window as any).deferredPrompt.prompt();
+      return true;
+    } catch (error) {
+      console.error('Erro ao tentar instalar diretamente:', error);
+      return false;
+    }
+  }
+  return false;
 }
 
 // Interface para eventos de instalação do PWA
@@ -80,25 +80,33 @@ export function usePWAInstall() {
 
   const promptInstall = async () => {
     if (!deferredPrompt) {
-      // Se não tiver o prompt nativo, tenta direcionar para a loja apropriada
-      const os = getDeviceOS();
-      const storeLinks = getAppStoreLinks();
-      
-      if (os === 'android') {
-        window.location.href = storeLinks.android;
-        return true;
-      } else if (os === 'ios') {
-        window.location.href = storeLinks.ios;
-        return true;
+      console.log('Não há prompt de instalação disponível');
+      // Tentar acessar diretamente a variável global
+      if ((window as any).deferredPrompt) {
+        try {
+          (window as any).deferredPrompt.prompt();
+          return true;
+        } catch (error) {
+          console.error('Erro ao tentar instalação direta:', error);
+        }
       }
       
+      // Não há opções de instalação disponíveis
+      alert('O aplicativo já está instalado ou seu navegador não suporta instalação de PWAs');
       return false;
     }
 
+    // Temos um prompt local, vamos utilizá-lo
     deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    clearInstallPrompt();
-    return outcome === 'accepted';
+    try {
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`Usuário ${outcome === 'accepted' ? 'aceitou' : 'recusou'} a instalação`);
+      clearInstallPrompt();
+      return outcome === 'accepted';
+    } catch (error) {
+      console.error('Erro ao processar escolha de instalação:', error);
+      return false;
+    }
   };
 
   return {

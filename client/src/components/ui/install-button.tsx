@@ -8,15 +8,28 @@ import { Download } from 'lucide-react';
  */
 export function InstallButton() {
   const handleShowInstallPrompt = () => {
+    console.log('Botão de instalação clicado');
+    
     // Verifica se a função existe no window (adicionada pelo componente PWAInstallPrompt)
     if (typeof (window as any).showInstallBanner === 'function') {
+      console.log('Função de instalação encontrada, chamando showInstallBanner');
       // Chama a função para mostrar o banner de instalação
       (window as any).showInstallBanner();
     } else {
-      // Fallback caso a função não esteja disponível
       console.warn('Função de instalação não disponível. O componente PWAInstallPrompt não está carregado.');
-      // Redireciona para a página inicial como fallback
-      window.location.href = '/';
+      
+      // Tenta verificar se existe o evento de instalação para mostrar diretamente
+      if ((window as any).deferredPrompt) {
+        console.log('Evento de instalação encontrado, tentando mostrar diretamente');
+        try {
+          (window as any).deferredPrompt.prompt();
+        } catch (error) {
+          console.error('Erro ao mostrar prompt de instalação:', error);
+        }
+      } else {
+        console.warn('Não foi possível encontrar um mecanismo para instalação do app');
+        alert('O aplicativo pode já estar instalado ou seu navegador não suporta instalação de PWAs');
+      }
     }
   };
 
