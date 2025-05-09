@@ -47,6 +47,7 @@ import AdminUsers from "@/pages/admin/users";
 import AdminStores from "@/pages/admin/stores";
 import AdminTransactions from "@/pages/admin/transactions";
 import AdminTransfers from "@/pages/admin/transfers";
+import AdminWithdrawals from "@/pages/admin/withdrawals";
 import AdminSettings from "@/pages/admin/settings";
 import AdminLogs from "@/pages/admin/logs";
 import AdminSupport from "@/pages/admin/support";
@@ -113,6 +114,7 @@ function Router() {
       <ProtectedRouteMobile path="/admin/stores" component={AdminStores} userType="admin" title="Lojas" />
       <ProtectedRouteMobile path="/admin/transactions" component={AdminTransactions} userType="admin" title="Transações" />
       <ProtectedRouteMobile path="/admin/transfers" component={AdminTransfers} userType="admin" title="Transferências" />
+      <ProtectedRouteMobile path="/admin/withdrawals" component={AdminWithdrawals} userType="admin" title="Solicitações de Saque" />
       <ProtectedRouteMobile path="/admin/settings" component={AdminSettings} userType="admin" title="Configurações" />
       <ProtectedRouteMobile path="/admin/logs" component={AdminLogs} userType="admin" title="Logs" />
       <ProtectedRouteMobile path="/admin/support" component={AdminSupport} userType="admin" title="Suporte" />
