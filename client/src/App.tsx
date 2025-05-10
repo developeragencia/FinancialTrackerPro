@@ -54,6 +54,7 @@ import AdminSettings from "@/pages/admin/settings";
 import AdminLogs from "@/pages/admin/logs";
 import AdminSupport from "@/pages/admin/support";
 import AdminProfile from "@/pages/admin/profile";
+import AdminCustomers from "@/pages/admin/customers";
 
 // Invitation Pages
 import InvitePage from "@/pages/invite";
