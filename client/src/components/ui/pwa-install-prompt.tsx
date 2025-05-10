@@ -10,6 +10,9 @@ let deferredPrompt: any = null;
 // Variável para forçar instalação em navegadores que não emitem beforeinstallprompt
 let forceInstallable = true;
 
+// Disponibiliza a referência para uso global (necessário para iOS e alguns browsers Android)
+(window as any).deferredPromptGlobal = deferredPrompt;
+
 export function PWAInstallPrompt() {
   const [showPrompt, setShowPrompt] = useState(false);
   const [installable, setInstallable] = useState(true);
@@ -70,6 +73,8 @@ export function PWAInstallPrompt() {
       // Armazena o evento para uso posterior
       console.log('PWAInstallPrompt: BeforeInstallPrompt capturado!', e);
       deferredPrompt = e;
+      // Define a variável global para o evento
+      (window as any).deferredPromptGlobal = deferredPrompt;
       setInstallable(true);
       
       // Sempre mostra o banner quando o evento é capturado
