@@ -12,6 +12,7 @@ import { AppDownload } from "@/components/ui/app-download";
 import { MobileProvider } from "@/hooks/use-mobile";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import ClientCashbacks from "@/pages/client/cashbacks";
+import { MobileAppInstallPrompt } from "@/components/mobile-app-install-prompt";
 
 // Auth Pages
 import Login from "@/pages/auth/login";
@@ -171,6 +172,7 @@ function App() {
                 <>
                   <Router />
                   <AppDownload />
+                  <MobileAppInstallPrompt />
                 </>
               )}
             </TooltipProvider>
