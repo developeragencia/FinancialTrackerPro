@@ -170,8 +170,8 @@ export default function AdminStores() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
   
-  // Usa os dados da API ou dados fictícios enquanto carrega
-  const storesData = data || [];
+  // Usa os dados da API ou um array vazio enquanto carrega
+  const storesData = Array.isArray(data) ? data : [];
 
   const handleViewStore = (store: any) => {
     setSelectedStore(store);
@@ -354,13 +354,23 @@ export default function AdminStores() {
     setIsProcessing(true);
     
     try {
+      // Log para depuração
+      console.log("Tentando excluir loja:", selectedStore);
+      
+      // Garantir que temos um ID válido
+      const storeId = selectedStore.id;
+      if (!storeId) {
+        throw new Error("ID da loja não encontrado");
+      }
+      
       // API call to delete the store
-      const response = await apiRequest("DELETE", `/api/admin/stores/${selectedStore.id}`);
+      const response = await apiRequest("DELETE", `/api/admin/stores/${storeId}`);
       
       // Verificar se a resposta é válida antes de tentar analisá-la como JSON
       let data;
       try {
         const text = await response.text();
+        console.log("Resposta da API:", text);
         data = text ? JSON.parse(text) : {};
       } catch (e) {
         console.error("Erro ao analisar resposta JSON:", e);
@@ -373,6 +383,7 @@ export default function AdminStores() {
           description: `${selectedStore.name || selectedStore.store_name} foi excluída com sucesso.`,
         });
         
+        // Invalidar as consultas relacionadas
         queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
         queryClient.invalidateQueries({ queryKey: ['/api/admin/dashboard'] });
         setIsDeleteDialogOpen(false);

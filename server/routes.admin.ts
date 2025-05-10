@@ -419,14 +419,17 @@ export function addAdminRoutes(app: Express) {
     }
     
     const storeId = parseInt(req.params.id);
+    console.log(`Requisição para excluir loja ID: ${storeId}`);
     
     if (isNaN(storeId)) {
+      console.error(`ID de loja inválido: ${req.params.id}`);
       return res.status(400).json({ message: "ID de loja inválido" });
     }
     
     try {
       // Buscar o email do usuário associado à loja para fins de log
-      const [store] = await db
+      console.log(`Buscando informações da loja ID: ${storeId}`);
+      const storeQuery = await db
         .select({
           user_id: merchants.user_id,
           store_name: merchants.store_name,
@@ -435,17 +438,25 @@ export function addAdminRoutes(app: Express) {
         .from(merchants)
         .innerJoin(users, eq(merchants.user_id, users.id))
         .where(eq(merchants.id, storeId));
+      
+      console.log(`Resultado da busca:`, storeQuery);
+      const [store] = storeQuery;
 
       if (!store) {
+        console.error(`Loja ID: ${storeId} não encontrada`);
         return res.status(404).json({ message: "Loja não encontrada" });
       }
       
       // Excluir a loja
-      await db
+      console.log(`Excluindo loja ID: ${storeId}`);
+      const deleteResult = await db
         .delete(merchants)
         .where(eq(merchants.id, storeId));
       
+      console.log(`Resultado da exclusão:`, deleteResult);
+      
       // Registrar no log de auditoria
+      console.log(`Registrando log de auditoria para exclusão da loja ID: ${storeId}`);
       await db.insert(auditLogs).values({
         action: "store_deleted",
         user_id: req.user.id,
@@ -457,6 +468,7 @@ export function addAdminRoutes(app: Express) {
         created_at: new Date()
       });
       
+      console.log(`Exclusão da loja ID: ${storeId} concluída com sucesso`);
       return res.json({ 
         success: true, 
         message: "Loja excluída com sucesso",
