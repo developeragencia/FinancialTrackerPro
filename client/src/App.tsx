@@ -115,6 +115,7 @@ function Router() {
       <ProtectedRouteMobile path="/admin" component={AdminDashboard} userType="admin" title="Dashboard" />
       <ProtectedRouteMobile path="/admin/dashboard" component={AdminDashboard} userType="admin" title="Dashboard" />
       <ProtectedRouteMobile path="/admin/users" component={AdminUsers} userType="admin" title="Usuários" />
+      <ProtectedRouteMobile path="/admin/customers" component={AdminCustomers} userType="admin" title="Clientes" />
       <ProtectedRouteMobile path="/admin/stores" component={AdminStores} userType="admin" title="Lojas" />
       <ProtectedRouteMobile path="/admin/transactions" component={AdminTransactions} userType="admin" title="Transações" />
       <ProtectedRouteMobile path="/admin/transfers" component={AdminTransfers} userType="admin" title="Transferências" />

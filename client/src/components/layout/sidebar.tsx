@@ -79,6 +79,7 @@ export function Sidebar({
   const adminLinks = [
     { href: "/admin/dashboard", icon: <Home className="mr-2 h-5 w-5" />, label: "Dashboard" },
     { href: "/admin/users", icon: <Users className="mr-2 h-5 w-5" />, label: "Usuários" },
+    { href: "/admin/customers", icon: <User className="mr-2 h-5 w-5" />, label: "Clientes" },
     { href: "/admin/stores", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojas" },
     { href: "/admin/transactions", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Transações" },
     { href: "/admin/transfers", icon: <Landmark className="mr-2 h-5 w-5" />, label: "Transferências" },

@@ -5,24 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { User } from "@shared/schema";
 import { DataTable } from "@/components/ui/data-table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart, BarChart2, Calendar, Edit, Eye, Mail, MapPin, Phone, UserCheck, UserX, XCircle } from "lucide-react";
+import { BarChart, BarChart2, Calendar, Edit, Eye, Mail, MapPin, Phone, User, UserCheck, UserX, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Helmet } from "react-helmet";
 
 export default function AdminCustomers() {
   const [isSearching, setIsSearching] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
   // Query para buscar todos os clientes
-  const { data, isLoading, error } = useQuery({
+  const { data = [], isLoading, error } = useQuery<any[]>({
     queryKey: ['/api/admin/users', 'client'],
     retry: 1,
   });
@@ -44,6 +42,9 @@ export default function AdminCustomers() {
         phone: user.phone,
         country: user.country,
         referralCode: user.invitation_code,
+        // Adicionar campos calculados para a visualização
+        transaction_count: 0, // Temporariamente definido como 0
+        total_cashback: 0, // Temporariamente definido como 0
         ...user // preserve all other fields
       }));
   };
@@ -59,7 +60,7 @@ export default function AdminCustomers() {
   };
 
   // Lista de clientes formatada para a tabela
-  const customersData = !isLoading && data ? formatTableData(data) : [];
+  const customersData = formatTableData(data);
 
   // Definição das colunas da tabela
   const columns = [
