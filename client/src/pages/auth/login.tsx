@@ -76,25 +76,13 @@ const userTypeConfigs: Record<UserTypeOption, UserTypeConfig> = {
 export default function Login() {
   const [userType, setUserType] = useState<UserTypeOption>("client");
   const { login, loading } = useAuth();
-  const [credentials, setCredentials] = useState({
-    client: { email: "cliente@valecashback.com", password: "senha123" },
-    merchant: { email: "lojista@valecashback.com", password: "senha123" },
-    admin: { email: "admin@valecashback.com", password: "senha123" }
-  });
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      email: credentials[userType].email,
-      password: credentials[userType].password,
+      email: "",
+      password: "",
     },
   });
-
-  // Atualiza o formulário quando o tipo de usuário muda
-  useEffect(() => {
-    form.setValue("email", credentials[userType].email);
-    form.setValue("password", credentials[userType].password);
-  }, [userType, form, credentials]);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -154,7 +142,7 @@ export default function Login() {
                 <FormControl>
                   <Input
                     type="email"
-                    placeholder="seu@email.com"
+                    placeholder="Digite seu e-mail de acesso"
                     className="h-11 px-4"
                     {...field}
                     disabled={loading}
@@ -179,7 +167,7 @@ export default function Login() {
                 <FormControl>
                   <Input
                     type="password"
-                    placeholder="********"
+                    placeholder="Digite sua senha"
                     className="h-11 px-4"
                     {...field}
                     disabled={loading}
