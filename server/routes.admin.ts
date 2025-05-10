@@ -12,6 +12,7 @@ import {
   cashbacks,
   referrals,
   qrCodes,
+  withdrawalRequests,
   settings,
   withdrawalRequests,
   WithdrawalStatus
@@ -447,7 +448,22 @@ export function addAdminRoutes(app: Express) {
         return res.status(404).json({ message: "Loja não encontrada" });
       }
       
-      // Excluir a loja
+      // IMPORTANTE: Primeiro remover registros relacionados que têm restrições de chave estrangeira
+      
+      // 1. Excluir solicitações de saques relacionadas à loja
+      console.log(`Excluindo solicitações de saque relacionadas à loja ID: ${storeId}`);
+      await db
+        .delete(withdrawalRequests)
+        .where(eq(withdrawalRequests.merchant_id, storeId));
+      
+      // 2. Excluir transações relacionadas à loja
+      console.log(`Excluindo transações relacionadas à loja ID: ${storeId}`);
+      // Note: transactionItems têm cascade delete, então serão removidos automaticamente
+      await db
+        .delete(transactions)
+        .where(eq(transactions.merchant_id, storeId));
+      
+      // 3. Agora podemos excluir a loja com segurança
       console.log(`Excluindo loja ID: ${storeId}`);
       const deleteResult = await db
         .delete(merchants)
