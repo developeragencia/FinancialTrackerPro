@@ -84,7 +84,7 @@ export function DashboardLayout({
                 } else if (type === "merchant") {
                   window.location.href = "/merchant/profile";
                 } else {
-                  window.location.href = "/admin/settings";
+                  window.location.href = "/admin/profile";
                 }
               }}>
                 <User className="mr-2 h-4 w-4" />

@@ -53,6 +53,7 @@ import AdminWithdrawals from "@/pages/admin/withdrawals";
 import AdminSettings from "@/pages/admin/settings";
 import AdminLogs from "@/pages/admin/logs";
 import AdminSupport from "@/pages/admin/support";
+import AdminProfile from "@/pages/admin/profile";
 
 // Invitation Pages
 import InvitePage from "@/pages/invite";
@@ -120,6 +121,7 @@ function Router() {
       <ProtectedRouteMobile path="/admin/settings" component={AdminSettings} userType="admin" title="Configurações" />
       <ProtectedRouteMobile path="/admin/logs" component={AdminLogs} userType="admin" title="Logs e Auditoria" />
       <ProtectedRouteMobile path="/admin/support" component={AdminSupport} userType="admin" title="Suporte" />
+      <ProtectedRouteMobile path="/admin/profile" component={AdminProfile} userType="admin" title="Meu Perfil" />
       
       {/* 404 */}
       <Route component={NotFound} />
