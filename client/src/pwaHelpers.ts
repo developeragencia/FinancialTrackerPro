@@ -34,24 +34,64 @@ export function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
-        // Desregistrar qualquer Service Worker antigo primeiro
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        for (let registration of registrations) {
-          await registration.unregister();
-          console.log('Service Worker antigo desregistrado com sucesso');
-        }
-        
-        // Registrar o novo Service Worker com um timestamp para forçar atualização
+        // Registrar o Service Worker com um timestamp para forçar atualização
         const timestamp = new Date().getTime();
-        const registration = await navigator.serviceWorker.register(`/serviceWorker.js?v=${timestamp}`);
+        const registration = await navigator.serviceWorker.register(`/serviceWorker.js?v=${timestamp}`, { scope: '/' });
         console.log('Service Worker registrado com sucesso:', registration);
         
         // Verificar atualizações imediatamente
         registration.update();
         
-        // Enviar mensagem para atualizar imediatamente se já houver um controlador
-        if (navigator.serviceWorker.controller) {
-          navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+        // Configurar listener para atualizações
+        registration.addEventListener('updatefound', () => {
+          const newWorker = registration.installing;
+          if (newWorker) {
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // Nova versão do SW instalada e pronta para ativar
+                console.log('Nova versão do Service Worker instalada');
+                
+                // Opcionalmente, notificar o usuário sobre a atualização
+                // Por enquanto, ativamos automaticamente
+                newWorker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          }
+        });
+        
+        // Lidar com atualização de SW
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            console.log('Service Worker atualizado, recarregando a página...');
+            window.location.reload();
+          }
+        });
+        
+        // Eventos de online/offline
+        window.addEventListener('online', () => {
+          console.log('Aplicativo online - sincronizando dados...');
+          if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({
+              type: 'ONLINE',
+              timestamp: new Date().getTime()
+            });
+          }
+        });
+        
+        window.addEventListener('offline', () => {
+          console.log('Aplicativo offline - modo offline ativado');
+        });
+        
+        // Registrar para sincronização em segundo plano se disponível
+        if ('sync' in registration) {
+          try {
+            await registration.sync.register('sync-transaction');
+            console.log('Sincronização em segundo plano registrada');
+          } catch (err) {
+            console.error('Falha ao registrar sincronização em segundo plano:', err);
+          }
         }
       } catch (error) {
         console.error('Erro ao gerenciar o Service Worker:', error);

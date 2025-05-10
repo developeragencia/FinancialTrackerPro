@@ -11,6 +11,22 @@ export function SplashScreen({ onFinish, duration = 3000 }: SplashScreenProps) {
 
   useEffect(() => {
     console.log("SplashScreen montada, configurando temporizador");
+    
+    // Limpa o cache do navegador para evitar problemas de exibição
+    try {
+      caches.keys().then(cacheNames => {
+        cacheNames.forEach(cacheName => {
+          // Exclui apenas caches antigos, preservando o cache do aplicativo para a funcionalidade offline
+          if (!cacheName.includes('workbox') && !cacheName.includes('vale-cashback')) {
+            caches.delete(cacheName);
+          }
+        });
+      });
+      console.log('Cache do navegador limpo com sucesso');
+    } catch (err) {
+      console.error('Erro ao limpar cache do navegador:', err);
+    }
+    
     const timer = setTimeout(() => {
       console.log("Temporizador terminado, chamando onFinish");
       onFinish();
