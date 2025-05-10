@@ -55,6 +55,7 @@ import AdminLogs from "@/pages/admin/logs";
 import AdminSupport from "@/pages/admin/support";
 import AdminProfile from "@/pages/admin/profile";
 import AdminCustomers from "@/pages/admin/customers";
+import AdminMerchants from "@/pages/admin/merchants";
 
 // Invitation Pages
 import InvitePage from "@/pages/invite";
@@ -116,6 +117,7 @@ function Router() {
       <ProtectedRouteMobile path="/admin/dashboard" component={AdminDashboard} userType="admin" title="Dashboard" />
       <ProtectedRouteMobile path="/admin/users" component={AdminUsers} userType="admin" title="Usuários" />
       <ProtectedRouteMobile path="/admin/customers" component={AdminCustomers} userType="admin" title="Clientes" />
+      <ProtectedRouteMobile path="/admin/merchants" component={AdminMerchants} userType="admin" title="Lojistas" />
       <ProtectedRouteMobile path="/admin/stores" component={AdminStores} userType="admin" title="Lojas" />
       <ProtectedRouteMobile path="/admin/transactions" component={AdminTransactions} userType="admin" title="Transações" />
       <ProtectedRouteMobile path="/admin/transfers" component={AdminTransfers} userType="admin" title="Transferências" />
