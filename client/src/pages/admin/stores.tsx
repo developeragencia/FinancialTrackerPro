@@ -412,7 +412,8 @@ export default function AdminStores() {
       );
       
       if (foundStores.length > 0) {
-        setStoresToDelete(foundStores.map(store => `${store.id}: ${store.name} (${store.email})`));
+        // Armazenar os objetos completos de loja para facilitar a exclusão
+        setStoresToDelete(foundStores);
       }
     }
   };
@@ -1016,27 +1017,133 @@ export default function AdminStores() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-1 text-sm">
+            <ul className="space-y-2 text-sm">
               {storesToDelete.map((store, index) => (
-                <li key={index} className="flex items-center">
-                  <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
-                  {store}
+                <li key={index} className="flex items-center justify-between border-b pb-2">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500 mr-2"></div>
+                    <span>{store.id}: {store.name || store.store_name} ({store.email})</span>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={async () => {
+                      // Definir esta loja como a selecionada
+                      setSelectedStore(store);
+                      
+                      // Executar diretamente a exclusão
+                      setIsProcessing(true);
+                      
+                      try {
+                        const storeId = store.id;
+                        if (!storeId) {
+                          throw new Error("ID da loja não encontrado");
+                        }
+                        
+                        // API call to delete the store
+                        const response = await apiRequest("DELETE", `/api/admin/stores/${storeId}`);
+                        
+                        // Verificar se a resposta é válida
+                        if (response.ok) {
+                          toast({
+                            title: "Loja excluída",
+                            description: `${store.name || store.store_name} foi excluída com sucesso.`,
+                          });
+                          
+                          // Remover a loja da lista
+                          setStoresToDelete(prev => prev.filter(s => s.id !== store.id));
+                          
+                          // Atualizar dados
+                          queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
+                          queryClient.invalidateQueries({ queryKey: ['/api/admin/dashboard'] });
+                        } else {
+                          throw new Error("Erro ao excluir loja");
+                        }
+                      } catch (error) {
+                        console.error("Erro ao excluir loja:", error);
+                        toast({
+                          title: "Erro",
+                          description: error instanceof Error ? error.message : "Ocorreu um erro ao excluir a loja.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsProcessing(false);
+                      }
+                    }}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <XCircle className="h-4 w-4" />
+                    )}
+                    <span className="ml-2">Excluir</span>
+                  </Button>
                 </li>
               ))}
             </ul>
-            <Button 
-              variant="outline" 
-              className="mt-4 text-yellow-600 border-yellow-300 hover:bg-yellow-50"
-              onClick={() => {
-                toast({
-                  title: "Lojas marcadas para exclusão",
-                  description: "Você pode excluir cada loja individualmente usando o botão 'Excluir' na tabela.",
-                });
-              }}
-            >
-              <AlertCircle className="h-4 w-4 mr-2" />
-              Ver detalhes
-            </Button>
+            <div className="flex mt-4 justify-between">
+              <Button 
+                variant="outline" 
+                className="text-yellow-600 border-yellow-300 hover:bg-yellow-50"
+                onClick={() => {
+                  toast({
+                    title: "Lojas marcadas para exclusão",
+                    description: "Use os botões 'Excluir' ao lado de cada loja para removê-las.",
+                  });
+                }}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                Instruções
+              </Button>
+              
+              <Button 
+                variant="destructive"
+                onClick={async () => {
+                  setIsProcessing(true);
+                  
+                  try {
+                    // Processar exclusão em sequência para evitar problemas
+                    for (const store of storesToDelete) {
+                      try {
+                        await apiRequest("DELETE", `/api/admin/stores/${store.id}`);
+                      } catch (err) {
+                        console.error(`Erro ao excluir loja ${store.id}:`, err);
+                      }
+                    }
+                    
+                    toast({
+                      title: "Lojas excluídas",
+                      description: "Todas as lojas marcadas foram excluídas.",
+                    });
+                    
+                    // Limpar a lista
+                    setStoresToDelete([]);
+                    
+                    // Atualizar dados
+                    queryClient.invalidateQueries({ queryKey: ['/api/admin/stores'] });
+                    queryClient.invalidateQueries({ queryKey: ['/api/admin/dashboard'] });
+                  } catch (error) {
+                    console.error("Erro ao excluir lojas:", error);
+                    toast({
+                      title: "Erro",
+                      description: "Ocorreu um erro ao excluir algumas lojas.",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setIsProcessing(false);
+                  }
+                }}
+                disabled={isProcessing}
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <XCircle className="h-4 w-4 mr-2" />
+                )}
+                Excluir Todas
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
