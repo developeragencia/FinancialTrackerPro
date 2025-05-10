@@ -77,12 +77,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Buscar todas as notificações do usuário, ordenadas por data de criação (mais recentes primeiro)
+      // Aumentado o limite para garantir que todas as notificações sejam exibidas
       const userNotifications = await db
         .select()
         .from(notifications)
         .where(eq(notifications.user_id, req.user.id))
         .orderBy(desc(notifications.created_at))
-        .limit(50);
+        .limit(100);
 
       // Contar notificações não lidas
       const unreadCount = await db
@@ -2536,6 +2537,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           LEFT JOIN merchants m ON m.user_id = u.id
           WHERE r.referrer_id = ${merchantId}
           ORDER BY r.created_at DESC
+          LIMIT 100
           `
         );
         
