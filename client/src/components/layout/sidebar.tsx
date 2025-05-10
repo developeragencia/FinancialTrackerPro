@@ -82,7 +82,7 @@ export function Sidebar({
     { href: "/admin/users", icon: <Users className="mr-2 h-5 w-5" />, label: "Usuários" },
     { href: "/admin/customers", icon: <User className="mr-2 h-5 w-5" />, label: "Clientes" },
     { href: "/admin/merchants", icon: <Store className="mr-2 h-5 w-5" />, label: "Lojistas" },
-    { href: "/admin/stores", icon: <Building className="mr-2 h-5 w-5" />, label: "Lojas" },
+    { href: "/admin/stores", icon: <Building2 className="mr-2 h-5 w-5" />, label: "Lojas" },
     { href: "/admin/transactions", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Transações" },
     { href: "/admin/transfers", icon: <Landmark className="mr-2 h-5 w-5" />, label: "Transferências" },
     { href: "/admin/withdrawals", icon: <CreditCard className="mr-2 h-5 w-5" />, label: "Solicitações de Saque" },
