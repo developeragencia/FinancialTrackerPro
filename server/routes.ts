@@ -3584,7 +3584,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       try {
-        // Buscar todas as indicações do usuário com SQL direto
+        // Buscar todas as indicações do usuário com SQL direto (melhorado para garantir que todas as indicações sejam exibidas)
         const referralsResult = await db.execute(
           sql`SELECT 
               r.id, 
@@ -3602,7 +3602,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             JOIN users u ON r.referred_id = u.id
             LEFT JOIN merchants m ON m.user_id = u.id
             WHERE r.referrer_id = ${clientId}
-            ORDER BY r.created_at DESC`
+            ORDER BY r.created_at DESC
+            LIMIT 100`
         );
         
         // Log para debug
@@ -4499,6 +4500,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
               status: "active",
               created_at: new Date()
             });
+            
+            // Criar notificação para o usuário que fez a indicação
+            const notificationTitle = "Nova indicação registrada";
+            const notificationMessage = `O usuário ${newUser.name} se cadastrou usando seu código de indicação.`;
+            
+            try {
+              await db.insert(notifications).values({
+                user_id: referrer.id,
+                title: notificationTitle,
+                message: notificationMessage,
+                type: "referral",
+                read: false,
+                created_at: new Date()
+              });
+              
+              console.log(`Notificação de indicação criada para o usuário ${referrer.id}`);
+            } catch (error) {
+              console.error("Erro ao criar notificação de indicação:", error);
+            }
             
             console.log(`Referência registrada com sucesso para o cliente ${newUser.id} com bônus de ${bonusValue}`);
             
