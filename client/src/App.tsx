@@ -8,7 +8,7 @@ import { AuthProvider } from "@/hooks/use-auth.tsx";
 import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "./lib/protected-route";
 import { ProtectedRouteMobile } from "./lib/protected-route-mobile";
-import { PWAInstallPrompt } from "@/components/ui/pwa-install-prompt";
+import { AppDownload } from "@/components/ui/app-download";
 import { MobileProvider } from "@/hooks/use-mobile";
 import { SplashScreen } from "@/components/ui/splash-screen";
 import ClientCashbacks from "@/pages/client/cashbacks";
@@ -17,6 +17,7 @@ import ClientCashbacks from "@/pages/client/cashbacks";
 import Login from "@/pages/auth/login";
 import Register from "@/pages/auth/register";
 import ForgotPassword from "@/pages/auth/forgot-password";
+import DownloadsPage from "@/pages/downloads";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/dashboard";
@@ -71,6 +72,7 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/auth" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/downloads" component={DownloadsPage} />
       
       {/* Smart Home Route - Redirects to appropriate dashboard based on user type */}
       <ProtectedRoute path="/" component={() => {
@@ -168,7 +170,7 @@ function App() {
               ) : (
                 <>
                   <Router />
-                  <PWAInstallPrompt />
+                  <AppDownload />
                 </>
               )}
             </TooltipProvider>
