@@ -161,7 +161,7 @@ export default function AdminStores() {
   const [isCommissionDialogOpen, setIsCommissionDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [commissionRate, setCommissionRate] = useState<string>("2.0");
-  const [storesToDelete, setStoresToDelete] = useState<string[]>([]);
+  const [storesToDelete, setStoresToDelete] = useState<any[]>([]);
   const { toast } = useToast();
 
   // Query to get stores data

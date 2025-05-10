@@ -14,7 +14,6 @@ import {
   qrCodes,
   withdrawalRequests,
   settings,
-  withdrawalRequests,
   WithdrawalStatus
 } from "@shared/schema";
 import { createWithdrawalRequestNotification } from "./helpers/notification";
