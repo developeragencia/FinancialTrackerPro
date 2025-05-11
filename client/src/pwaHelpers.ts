@@ -97,8 +97,12 @@ export function registerServiceWorker() {
         // Registrar para sincronização em segundo plano se disponível
         if ('sync' in registration) {
           try {
-            await registration.sync.register('sync-transaction');
-            console.log('Sincronização em segundo plano registrada');
+            // Cast para garantir que o TypeScript entenda a propriedade sync
+            const syncManager = (registration as any).sync;
+            if (syncManager) {
+              await syncManager.register('sync-transaction');
+              console.log('Sincronização em segundo plano registrada');
+            }
           } catch (err) {
             console.error('Falha ao registrar sincronização em segundo plano:', err);
           }

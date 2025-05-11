@@ -9,6 +9,7 @@ import {
   ChevronRight, FileDown, HelpCircle, Globe 
 } from 'lucide-react';
 import { isMobileDevice, getDeviceOS } from '@/pwaHelpers';
+import { DownloadButton } from '@/components/download-button';
 
 export default function DownloadsPage() {
   const deviceOS = getDeviceOS();
@@ -93,12 +94,10 @@ export default function DownloadsPage() {
                     <p className="text-sm text-center text-muted-foreground mb-4">
                       Baixe o aplicativo completo para usar em seu dispositivo Android
                     </p>
-                    <a href="/app-files/vale-cashback-mobile.html" download="vale-cashback-app.html" className="w-full">
-                      <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
-                        <Download size={16} />
-                        Baixar Aplicativo
-                      </Button>
-                    </a>
+                    <DownloadButton 
+                      fileUrl="/app-files/vale-cashback-mobile.html" 
+                      fileName="Vale-Cashback-App.html" 
+                    />
                   </div>
                   
                   <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
