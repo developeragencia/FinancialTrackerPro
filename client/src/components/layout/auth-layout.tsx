@@ -104,33 +104,36 @@ export function AuthLayout({
 
         {/* Lado direito - Formulário */}
         <div className="flex-1 flex items-center justify-center p-6 bg-gray-50">
-          <Card className="w-full max-w-md shadow-lg border-0">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-2xl font-bold text-center text-gray-800">
-                {title}
-              </CardTitle>
-              {description && (
-                <CardDescription className="text-center text-gray-500 text-base">
-                  {description}
-                </CardDescription>
+          <div className="w-full max-w-md">
+            <DownloadBanner />
+            <Card className="w-full shadow-lg border-0">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-2xl font-bold text-center text-gray-800">
+                  {title}
+                </CardTitle>
+                {description && (
+                  <CardDescription className="text-center text-gray-500 text-base">
+                    {description}
+                  </CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>{children}</CardContent>
+              {footer && (
+                <CardFooter className="border-t border-gray-100 pt-4 text-center flex flex-col">
+                  {footer}
+                </CardFooter>
               )}
-            </CardHeader>
-            <CardContent>{children}</CardContent>
-            {footer && (
-              <CardFooter className="border-t border-gray-100 pt-4 text-center flex flex-col">
-                {footer}
-              </CardFooter>
-            )}
-            
-            {!footer && (
-              <CardFooter className="border-t border-gray-100 pt-4 text-center flex flex-col">
-                <div className="text-sm text-gray-500 mb-2">Não possui uma conta?</div>
-                <a href="/register" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
-                  Cadastrar nova conta <ChevronRight className="ml-1 h-4 w-4" />
-                </a>
-              </CardFooter>
-            )}
-          </Card>
+              
+              {!footer && (
+                <CardFooter className="border-t border-gray-100 pt-4 text-center flex flex-col">
+                  <div className="text-sm text-gray-500 mb-2">Não possui uma conta?</div>
+                  <a href="/register" className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800">
+                    Cadastrar nova conta <ChevronRight className="ml-1 h-4 w-4" />
+                  </a>
+                </CardFooter>
+              )}
+            </Card>
+          </div>
         </div>
       </div>
     </div>

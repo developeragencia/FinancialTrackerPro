@@ -80,6 +80,10 @@ function Router() {
       <Route path="/auth" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/downloads" component={DownloadsPage} />
+      <Route path="/download" component={() => {
+        window.location.href = "/download/";
+        return null;
+      }} />
       
       {/* Rotas demo não protegidas */}
       <Route path="/demo/merchant-transactions" component={DemoMerchantTransactionsPage} />
