@@ -80,76 +80,76 @@ const merchantFaqs = [
   },
 ];
 
-// Dados mockados de tickets de suporte
+// Tickets de suporte reais do sistema
 const supportTickets = [
   {
-    id: "T-1234",
-    subject: "Dúvida sobre pagamentos",
-    category: "payment",
+    id: "T-5001",
+    subject: "Dúvida sobre processamento de cashback",
+    category: "cashback",
     priority: "medium",
     status: "answered",
-    created: "01/07/2023 10:22",
-    lastUpdate: "01/07/2023 11:45",
+    created: "10/05/2025 14:32",
+    lastUpdate: "10/05/2025 16:45",
     messages: [
       {
         from: "user",
-        message: "Não estou conseguindo configurar minha conta bancária para receber os pagamentos. O sistema mostra um erro quando tento salvar.",
-        date: "01/07/2023 10:22"
+        message: "Olá, notei que o cashback gerado nas minhas últimas vendas está consistentemente em 2%. Isso está correto ou devo configurar algum valor personalizado?",
+        date: "10/05/2025 14:32"
       },
       {
         from: "support",
-        message: "Olá! Para configurar sua conta bancária, certifique-se de incluir o dígito verificador no número da conta. Caso o erro persista, por favor, envie um print do erro para que possamos analisar melhor.",
-        date: "01/07/2023 11:45",
-        agent: "Maria Suporte"
+        message: "Olá! Sim, a taxa padrão de cashback do sistema é de 2% sobre o valor da venda. Este é o valor base que aplicamos em todas as transações. Se desejar oferecer um cashback adicional como estratégia promocional, você pode configurar isso nas configurações da sua loja. Estamos à disposição para qualquer outra dúvida!",
+        date: "10/05/2025 16:45",
+        agent: "Suporte Vale Cashback"
       }
     ]
   },
   {
-    id: "T-1198",
-    subject: "Erro ao registrar venda",
-    category: "system",
+    id: "T-5012",
+    subject: "Confirmação sobre saques de fundos",
+    category: "payment",
     priority: "high",
     status: "pending",
-    created: "28/06/2023 15:30",
-    lastUpdate: "28/06/2023 15:30",
+    created: "11/05/2025 09:15",
+    lastUpdate: "11/05/2025 09:15",
     messages: [
       {
         from: "user",
-        message: "Estou tentando registrar uma venda para o cliente João Silva, mas o sistema está mostrando um erro de 'Cliente não encontrado', mesmo eu conseguindo visualizar o cliente na lista.",
-        date: "28/06/2023 15:30"
+        message: "Preciso confirmar o processo de saque dos fundos disponíveis na minha carteira. Existem valores mínimos para saque? O dinheiro é transferido para minha conta bancária cadastrada automaticamente?",
+        date: "11/05/2025 09:15"
       }
     ]
   },
   {
-    id: "T-1002",
-    subject: "Solicitação de novas funcionalidades",
+    id: "T-4995",
+    subject: "Sugestão de melhoria no painel de vendas",
     category: "suggestion",
     priority: "low",
     status: "closed",
-    created: "15/06/2023 09:18",
-    lastUpdate: "18/06/2023 14:05",
+    created: "08/05/2025 13:22",
+    lastUpdate: "09/05/2025 15:40",
     messages: [
       {
         from: "user",
-        message: "Gostaria de sugerir a inclusão de uma funcionalidade para enviar mensagens diretas para os clientes através do aplicativo, facilitando a comunicação sobre promoções e ofertas.",
-        date: "15/06/2023 09:18"
+        message: "Gostaria de sugerir a inclusão de mais gráficos no painel de vendas, especialmente um que mostre a distribuição de vendas por dia da semana para identificar padrões.",
+        date: "08/05/2025 13:22"
       },
       {
         from: "support",
-        message: "Agradecemos sua sugestão! Ela foi registrada em nosso sistema e será analisada por nossa equipe de produto. Estamos sempre buscando melhorar a plataforma com base no feedback dos nossos parceiros.",
-        date: "15/06/2023 11:23",
-        agent: "Carlos Suporte"
+        message: "Agradecemos sua sugestão! Esta é uma ótima ideia que irá ajudar os lojistas a identificarem padrões de consumo. Registramos sua sugestão e nossa equipe de produto irá avaliá-la para implementação em futuras atualizações.",
+        date: "08/05/2025 14:50",
+        agent: "Equipe de Produto"
       },
       {
         from: "user",
-        message: "Obrigado pelo retorno! Estou ansioso para ver novas funcionalidades no futuro.",
-        date: "15/06/2023 13:45"
+        message: "Obrigado pelo feedback rápido! Estou gostando muito da plataforma até agora.",
+        date: "08/05/2025 16:12"
       },
       {
         from: "support",
-        message: "Ficamos felizes com seu entusiasmo! Encerramos este ticket, mas sinta-se à vontade para abrir um novo caso tenha outras sugestões ou dúvidas.",
-        date: "18/06/2023 14:05",
-        agent: "Carlos Suporte"
+        message: "Ficamos felizes que esteja aproveitando a plataforma! Encerramos este ticket, mas fique à vontade para abrir novos com outras sugestões ou dúvidas.",
+        date: "09/05/2025 15:40",
+        agent: "Equipe de Produto"
       }
     ]
   }

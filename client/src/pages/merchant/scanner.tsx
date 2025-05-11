@@ -80,15 +80,15 @@ function QrScanner({ onScan, scanning }: QrScannerProps) {
     if (scanning) {
       setFakeScanActive(true);
       const timer = setTimeout(() => {
-        // Simular detecção de QR code com dados de cliente
-        const mockQrData = JSON.stringify({
+        // Simular detecção de QR code com dados de cliente real
+        const realQrData = JSON.stringify({
           type: "customer",
-          id: 123,
-          name: "Maria Silva",
-          email: "maria@example.com",
-          wallet_id: "WALLET123"
+          id: 28,
+          name: "Eliezer",
+          email: "eliezer@valecashback.com",
+          wallet_id: "WALLET28ELZ"
         });
-        onScan(mockQrData);
+        onScan(realQrData);
         setFakeScanActive(false);
       }, 3000);
       
