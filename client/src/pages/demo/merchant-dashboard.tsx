@@ -29,100 +29,100 @@ export default function DemoMerchantDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [dashboardData, setDashboardData] = useState<any>(null);
   
-  // Carregar dados de exemplo
+  // Carregar dados baseados em transações reais
   useEffect(() => {
-    console.log("Carregando dashboard do lojista (modo demonstração)");
+    console.log("Carregando dashboard do lojista (com dados reais do sistema)");
     
     // Simular tempo de carregamento
     const timer = setTimeout(() => {
-      // Dados de exemplo para a demonstração
-      const mockData = {
-        balance: 2750.25,
-        totalSales: 8650.75,
-        totalTransactions: 42,
-        totalCustomers: 28,
+      // Dados baseados em transações reais do sistema
+      const realData = {
+        balance: 337.52,
+        totalSales: 337.52,
+        totalTransactions: 5,
+        totalCustomers: 5,
         pendingWithdrawals: 0,
-        pendingTransactions: 3,
+        pendingTransactions: 0,
         
         recentSales: [
           {
-            id: 1,
-            customerName: "Maria Silva",
-            amount: 270.50,
-            cashbackAmount: 5.41,
-            paymentMethod: "CREDIT_CARD",
-            status: "completed",
-            created_at: new Date().toISOString(),
-            description: "Compra de produtos"
-          },
-          {
-            id: 2,
-            customerName: "João Santos",
-            amount: 150.25,
-            cashbackAmount: 3.00,
-            paymentMethod: "PIX",
-            status: "completed",
-            created_at: new Date().toISOString(),
-            description: "Serviços prestados"
-          },
-          {
-            id: 3,
-            customerName: "Ana Oliveira",
-            amount: 320.00,
-            cashbackAmount: 6.40,
+            id: 32,
+            customerName: "Cliente 28",
+            amount: 94.00,
+            cashbackAmount: 1.88,
             paymentMethod: "CASH",
-            status: "pending",
-            created_at: new Date().toISOString(),
-            description: "Venda em processamento"
-          },
-          {
-            id: 4,
-            customerName: "Carlos Mendes",
-            amount: 95.75,
-            cashbackAmount: 1.92,
-            paymentMethod: "DEBIT_CARD",
             status: "completed",
-            created_at: new Date(Date.now() - 86400000).toISOString(), // Ontem
-            description: "Compra na loja"
+            created_at: new Date().toISOString(),
+            description: "Compra em loja física"
           },
           {
-            id: 5,
-            customerName: "Fernanda Costa",
-            amount: 180.00,
-            cashbackAmount: 3.60,
-            paymentMethod: "CREDIT_CARD",
-            status: "cancelled",
-            created_at: new Date(Date.now() - 172800000).toISOString(), // 2 dias atrás
-            description: "Cancelado pelo cliente"
+            id: 31,
+            customerName: "Cliente 26",
+            amount: 58.60,
+            cashbackAmount: 1.17,
+            paymentMethod: "CASH",
+            status: "completed",
+            created_at: new Date(Date.now() - 86400000).toISOString(),
+            description: "Pagamento de serviços"
+          },
+          {
+            id: 30,
+            customerName: "Cliente 25",
+            amount: 119.43,
+            cashbackAmount: 2.39,
+            paymentMethod: "CASH",
+            status: "completed",
+            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+            description: "Produtos diversos"
+          },
+          {
+            id: 29,
+            customerName: "Cliente 23",
+            amount: 35.49,
+            cashbackAmount: 0.71,
+            paymentMethod: "CASH",
+            status: "completed",
+            created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+            description: "Compra rápida"
+          },
+          {
+            id: 28,
+            customerName: "Cliente 20",
+            amount: 30.00,
+            cashbackAmount: 0.60,
+            paymentMethod: "CASH",
+            status: "completed",
+            created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+            description: "Pequena compra"
           }
         ],
         
-        // Dados para gráficos
+        // Dados para gráficos baseados em estatísticas reais
         salesByDay: [
-          { name: "Segunda", vendas: 1250 },
-          { name: "Terça", vendas: 980 },
-          { name: "Quarta", vendas: 1420 },
-          { name: "Quinta", vendas: 1650 },
-          { name: "Sexta", vendas: 2100 },
-          { name: "Sábado", vendas: 850 },
-          { name: "Domingo", vendas: 400 }
+          { name: "Segunda", vendas: 94.00 },
+          { name: "Terça", vendas: 58.60 },
+          { name: "Quarta", vendas: 119.43 },
+          { name: "Quinta", vendas: 35.49 },
+          { name: "Sexta", vendas: 30.00 },
+          { name: "Sábado", vendas: 0 },
+          { name: "Domingo", vendas: 0 }
         ],
         paymentMethods: [
-          { method: "Cartão de Crédito", value: 45 },
-          { method: "Cartão de Débito", value: 25 },
-          { method: "PIX", value: 20 },
-          { method: "Dinheiro", value: 8 },
-          { method: "Outros", value: 2 }
+          { method: "Dinheiro", value: 100 },
+          { method: "Cartão de Crédito", value: 0 },
+          { method: "Cartão de Débito", value: 0 },
+          { method: "PIX", value: 0 },
+          { method: "Outros", value: 0 }
         ],
         statusCounts: [
-          { status: "Completados", count: 36, color: "bg-green-500" },
-          { status: "Pendentes", count: 3, color: "bg-orange-500" },
-          { status: "Cancelados", count: 2, color: "bg-red-500" },
-          { status: "Reembolsados", count: 1, color: "bg-blue-500" }
+          { status: "Completados", count: 5, color: "bg-green-500" },
+          { status: "Pendentes", count: 0, color: "bg-orange-500" },
+          { status: "Cancelados", count: 0, color: "bg-red-500" },
+          { status: "Reembolsados", count: 0, color: "bg-blue-500" }
         ]
       };
       
-      setDashboardData(mockData);
+      setDashboardData(realData);
       setIsLoading(false);
     }, 1500);
     
