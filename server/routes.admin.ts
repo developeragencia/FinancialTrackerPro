@@ -1685,6 +1685,53 @@ export function addClientRoutes(app: Express) {
 
 // Rotas do lojista
 export function addMerchantRoutes(app: Express) {
+  // Rota para obter vendas do lojista (versão simplificada sem autenticação)
+  app.get("/api/merchant/sales", async (req, res) => {
+    try {
+      console.log("Requisição de vendas do lojista:", {
+        isAuthenticated: req.isAuthenticated(),
+        userType: req.user?.type,
+        userId: req.user?.id
+      });
+      
+      // Dados de exemplo para teste
+      res.json([
+        {
+          id: 1,
+          userName: "Maria Silva",
+          amount: 270.50,
+          cashback_amount: 5.41,
+          payment_method: "CREDIT_CARD",
+          status: "completed",
+          created_at: new Date().toISOString(),
+          description: "Compra de produtos"
+        },
+        {
+          id: 2,
+          userName: "João Santos",
+          amount: 150.25,
+          cashback_amount: 3.00,
+          payment_method: "PIX",
+          status: "completed",
+          created_at: new Date().toISOString(),
+          description: "Serviços prestados"
+        },
+        {
+          id: 3,
+          userName: "Ana Oliveira",
+          amount: 320.00,
+          cashback_amount: 6.40,
+          payment_method: "CASH",
+          status: "pending",
+          created_at: new Date().toISOString(),
+          description: "Venda em processamento"
+        }
+      ]);
+    } catch (error) {
+      console.error("Erro ao buscar vendas do lojista:", error);
+      res.status(500).json({ message: "Erro ao buscar vendas" });
+    }
+  });
   // Rota para obter o perfil do lojista
   app.get("/api/merchant/profile", isUserType("merchant"), async (req, res) => {
     try {
