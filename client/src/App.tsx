@@ -62,6 +62,9 @@ import AdminMerchants from "@/pages/admin/merchants";
 // Invitation Pages
 import InvitePage from "@/pages/invite";
 
+// Demo Pages
+import DemoMerchantTransactionsPage from "@/pages/demo/merchant-transactions";
+
 // Other
 import NotFound from "@/pages/not-found";
 
@@ -74,6 +77,9 @@ function Router() {
       <Route path="/auth" component={Login} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/downloads" component={DownloadsPage} />
+      
+      {/* Rotas demo não protegidas */}
+      <Route path="/demo/merchant-transactions" component={DemoMerchantTransactionsPage} />
       
       {/* Smart Home Route - Redirects to appropriate dashboard based on user type */}
       <ProtectedRoute path="/" component={() => {
