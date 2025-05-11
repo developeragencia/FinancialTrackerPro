@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, Users, BarChart3, Store, ChevronRight } from "lucide-react";
+import { DownloadBanner } from "@/components/download-banner";
 
 interface AuthLayoutProps {
   children: React.ReactNode;

@@ -113,5 +113,5 @@ cd ..
 # Limpar diretório temporário
 rm -rf $TEMP_DIR
 
-echo "Pacote criado com sucesso: vale-cashback-netlify-package.zip"
+echo "Pacote criado com sucesso: vale-cashback-netlify-package.tar.gz"
 echo "Você pode fazer o download deste arquivo e implantá-lo no Netlify."
