@@ -1,0 +1,9 @@
+{
+  "name": "vale-cashback-download",
+  "version": "1.0.0",
+  "description": "Página de download do Vale Cashback",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Serving static files'"
+  }
+}
