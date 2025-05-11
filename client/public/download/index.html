@@ -99,10 +99,11 @@
                 <li>Backend em Node.js com Express</li>
                 <li>Banco de dados integrado (funciona com PostgreSQL ou IndexedDB)</li>
                 <li>Funcionalidades PWA para instalação em dispositivos móveis</li>
-                <li>Configuração pronta para Netlify</li>
+                <li>Configuração pronta para Netlify com plugin de funções</li>
+                <li>Configuração corrigida para build no Netlify</li>
             </ul>
             
-            <a href="vale-cashback-netlify-package.tar.gz" class="button" download>Baixar Pacote Completo (1.7 MB)</a>
+            <a href="vale-cashback-netlify-package.tar.gz" class="button" download>Baixar Pacote Completo (3.4 MB)</a>
         </div>
         
         <div class="card">
@@ -181,6 +182,20 @@
                 <li>Todas as transações são armazenadas localmente até que haja conexão com a internet</li>
                 <li>O código está otimizado para implantação no Netlify</li>
             </ul>
+        </div>
+        
+        <div class="card">
+            <h2>Correções no Build do Netlify</h2>
+            <p>Este pacote inclui correções específicas para resolver problemas de build no Netlify:</p>
+            
+            <ul>
+                <li><strong>Plugin de funções Netlify</strong> - Adicionamos o plugin <code>@netlify/plugin-functions-install-core</code> para instalação automática de dependências das funções serverless</li>
+                <li><strong>Dependências serverless</strong> - Configuramos corretamente a dependência <code>serverless-http</code> necessária para a API</li>
+                <li><strong>Arquivo package.json para funções</strong> - Criamos um arquivo package.json específico para a função Netlify em <code>netlify/functions/</code></li>
+                <li><strong>Correções no netlify.toml</strong> - Atualizamos as configurações de build para suportar funções serverless</li>
+            </ul>
+            
+            <p>Estas correções garantem que o deploy no Netlify funcione sem problemas. Se você encontrar qualquer dificuldade, por favor verifique o log de build para diagnóstico.</p>
         </div>
     </div>
 </body>
