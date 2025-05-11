@@ -421,35 +421,9 @@ export default function Register() {
                   )}
                 />
 
-                <FormField
-                  control={merchantForm.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>País</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Brasil" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={merchantForm.control}
-                  name="countryCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código do País</FormLabel>
-                      <FormControl>
-                        <Input placeholder="BR" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <FormField
                   control={merchantForm.control}
