@@ -80,8 +80,17 @@ export function setupAuth(app: Express) {
             return done(null, false, { message: 'Credenciais inválidas' });
           }
           
-          // Usamos a função comparePasswords para verificar a senha com hash
-          const passwordMatch = await storage.comparePasswords(password, user.password);
+          // Verificar se a senha foi hasheada (contém um ponto para separar hash e salt)
+          let passwordMatch = false;
+          
+          if (user.password.includes('.')) {
+            // Senha com hash, usamos comparePasswords
+            passwordMatch = await storage.comparePasswords(password, user.password);
+          } else {
+            // Senha sem hash (usuários iniciais), comparação direta temporária
+            passwordMatch = user.password === password;
+          }
+          
           if (!passwordMatch) {
             return done(null, false, { message: 'Credenciais inválidas' });
           }
