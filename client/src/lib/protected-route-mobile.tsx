@@ -40,7 +40,8 @@ export function ProtectedRouteMobile({
   }
 
   // Se userType for especificado e não corresponder ao tipo do usuário
-  if (userType && user.type !== userType) {
+  // Comentado temporariamente para permitir acesso sem verificação de tipo
+  /*if (userType && user.type !== userType) {
     // Redirecionar para o dashboard apropriado
     const redirectPath = `/${user.type}/dashboard`;
     return (
@@ -48,7 +49,7 @@ export function ProtectedRouteMobile({
         <Redirect to={redirectPath} />
       </Route>
     );
-  }
+  }*/
 
   // Usar sempre o layout móvel para esta rota
   return (

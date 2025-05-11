@@ -27,9 +27,10 @@ export function ProtectedRoute({
           );
         }
 
-        if (!user) {
+        // Temporariamente desabilitado para permitir acesso sem login
+        /*if (!user) {
           return <Redirect to="/login" />;
-        }
+        }*/
         
         // Se for a rota raiz, redirecionar para o dashboard apropriado baseado no tipo de usuário
         if (path === '/') {
@@ -46,7 +47,8 @@ export function ProtectedRoute({
         }
 
         // Se um tipo específico de usuário for requerido para esta rota
-        if (userType && currentUserType !== userType) {
+        // Temporariamente desabilitado para teste
+        /*if (userType && currentUserType !== userType) {
           // Redirecionar para o dashboard apropriado
           if (currentUserType === "client") {
             return <Redirect to="/client/dashboard" />;
@@ -58,7 +60,7 @@ export function ProtectedRoute({
           
           // Fallback
           return <Redirect to="/login" />;
-        }
+        }*/
 
         return <Component {...props} />;
       }}
