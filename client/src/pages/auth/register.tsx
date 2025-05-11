@@ -154,19 +154,7 @@ export default function Register() {
                 )}
               />
 
-              <FormField
-                control={clientForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome de usuário</FormLabel>
-                    <FormControl>
-                      <Input placeholder="joaosilva" {...field} disabled={loading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -374,19 +362,7 @@ export default function Register() {
                 />
               </div>
 
-              <FormField
-                control={merchantForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome de usuário</FormLabel>
-                    <FormControl>
-                      <Input placeholder="lojasilva" {...field} disabled={loading} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
 
 
