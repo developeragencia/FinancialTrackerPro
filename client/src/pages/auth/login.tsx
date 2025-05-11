@@ -15,7 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Loader2, User, Store, ShieldCheck } from "lucide-react";
+import { Loader2, User, Store, ShieldCheck, Info } from "lucide-react";
 import { motion } from "framer-motion";
 
 const formSchema = z.object({
@@ -201,6 +201,15 @@ export default function Login() {
         <p className="text-xs text-gray-400 mt-1">
           Não tem uma conta? <Link href="/register" className="text-blue-600 hover:underline">Cadastre-se</Link>
         </p>
+      </div>
+      
+      <div className="mt-4 text-center">
+        <Link href="/demo/fee-explanation">
+          <Button variant="outline" size="sm" className="gap-2">
+            <Info className="h-4 w-4" />
+            Entenda as taxas e cashback
+          </Button>
+        </Link>
       </div>
     </AuthLayout>
   );
