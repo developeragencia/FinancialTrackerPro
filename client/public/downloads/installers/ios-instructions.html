@@ -6,21 +6,15 @@
     <title>Instruções de Instalação - iOS - Vale Cashback</title>
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
             line-height: 1.6;
             color: #333;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
         }
-        h1 {
+        h1, h2 {
             color: #0066B3;
-            border-bottom: 2px solid #0066B3;
-            padding-bottom: 10px;
-        }
-        h2 {
-            color: #0070CD;
-            margin-top: 30px;
         }
         .step {
             background-color: #f8f9fa;
@@ -29,105 +23,137 @@
             margin-bottom: 20px;
             border-radius: 0 4px 4px 0;
         }
-        .step h3 {
-            margin-top: 0;
-            color: #0070CD;
+        .step-number {
+            display: inline-block;
+            background-color: #0066B3;
+            color: white;
+            width: 30px;
+            height: 30px;
+            text-align: center;
+            border-radius: 50%;
+            margin-right: 10px;
+            line-height: 30px;
         }
         img {
             max-width: 100%;
+            margin: 15px 0;
             border: 1px solid #ddd;
             border-radius: 4px;
-            margin: 10px 0;
         }
         .note {
             background-color: #fff3cd;
-            border-left: 4px solid #FF7700;
+            border-left: 4px solid #ffc107;
             padding: 15px;
             margin: 20px 0;
             border-radius: 0 4px 4px 0;
         }
-        .button {
+        .warning {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        a {
+            color: #0066B3;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .back-button {
             display: inline-block;
             background-color: #0066B3;
             color: white;
             padding: 10px 20px;
-            text-decoration: none;
             border-radius: 4px;
             margin-top: 20px;
+            text-decoration: none;
         }
-        .button:hover {
-            background-color: #0070CD;
-        }
-        .method {
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-        .method h2 {
-            margin-top: 0;
-            color: #0066B3;
+        .back-button:hover {
+            background-color: #004E8C;
+            text-decoration: none;
         }
     </style>
 </head>
 <body>
     <h1>Instruções de Instalação do Vale Cashback para iOS</h1>
     
+    <div class="warning">
+        <strong>Importante:</strong> A instalação de aplicativos fora da App Store em dispositivos iOS requer alguns passos adicionais. O processo pode variar dependendo da versão do iOS que você está usando.
+    </div>
+    
+    <div class="step">
+        <span class="step-number">1</span>
+        <strong>Baixe o arquivo IPA</strong>
+        <p>Se você não baixou ainda, <a href="/downloads/vale-cashback-ios.ipa">clique aqui para baixar o Vale Cashback para iOS</a>.</p>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">2</span>
+        <strong>Instale o AltStore (Recomendado)</strong>
+        <p>Para instalar aplicativos IPA no iOS, é necessário usar uma ferramenta como o AltStore:</p>
+        <ul>
+            <li>Acesse <a href="https://altstore.io" target="_blank">altstore.io</a> em seu computador</li>
+            <li>Baixe e instale o AltServer para Windows ou Mac</li>
+            <li>Conecte seu iPhone ao computador e siga as instruções para instalar o AltStore</li>
+            <li>O processo requer que você tenha um ID Apple e senha</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">3</span>
+        <strong>Instale o arquivo IPA usando o AltStore</strong>
+        <p>Depois de configurar o AltStore:</p>
+        <ul>
+            <li>Transfira o arquivo IPA para seu dispositivo iOS (via AirDrop, email, etc.)</li>
+            <li>Abra o AltStore em seu iPhone</li>
+            <li>Toque em "+" e selecione o arquivo IPA do Vale Cashback</li>
+            <li>Siga as instruções na tela para concluir a instalação</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">4</span>
+        <strong>Método alternativo: Sideloadly</strong>
+        <p>Uma alternativa ao AltStore é usar o Sideloadly:</p>
+        <ul>
+            <li>Acesse <a href="https://sideloadly.io" target="_blank">sideloadly.io</a> e baixe para seu computador</li>
+            <li>Instale o Sideloadly no seu computador</li>
+            <li>Conecte seu dispositivo iOS</li>
+            <li>Arraste o arquivo IPA para o Sideloadly e siga as instruções</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">5</span>
+        <strong>Confie no desenvolvedor</strong>
+        <p>Após a instalação:</p>
+        <ul>
+            <li>Vá para Configurações > Geral > Gerenciamento de Perfil & Dispositivo</li>
+            <li>Encontre o perfil do desenvolvedor para o Vale Cashback</li>
+            <li>Toque em "Confiar (nome do desenvolvedor)"</li>
+        </ul>
+    </div>
+    
+    <div class="step">
+        <span class="step-number">6</span>
+        <strong>Abra o aplicativo</strong>
+        <p>Agora você pode abrir o Vale Cashback a partir da sua tela inicial.</p>
+    </div>
+    
     <div class="note">
-        <strong>Importante:</strong> O iOS tem restrições para instalar aplicativos fora da App Store. Abaixo estão os métodos mais comuns para instalar o arquivo IPA no seu dispositivo.
-    </div>
-    
-    <div class="method">
-        <h2>Método 1: Usando o AltStore</h2>
-        
-        <div class="step">
-            <h3>Passo 1: Instalar o AltStore</h3>
-            <p>Primeiro, você precisa instalar o <a href="https://altstore.io/" target="_blank">AltStore</a> no seu computador e dispositivo iOS.</p>
-        </div>
-        
-        <div class="step">
-            <h3>Passo 2: Baixar o arquivo IPA</h3>
-            <p>Clique no botão "Baixar IPA" na página de downloads do Vale Cashback. Salve o arquivo vale-cashback-ios.ipa no seu computador.</p>
-        </div>
-        
-        <div class="step">
-            <h3>Passo 3: Transferir para o iPhone/iPad</h3>
-            <p>Abra o AltStore no seu dispositivo iOS e vá para a aba "My Apps".</p>
-            <p>Toque no símbolo "+" e selecione o arquivo IPA do Vale Cashback.</p>
-            <p>O AltStore instalará o aplicativo no seu dispositivo.</p>
-        </div>
-    </div>
-    
-    <div class="method">
-        <h2>Método 2: Usando o Sideloadly</h2>
-        
-        <div class="step">
-            <h3>Passo 1: Instalar o Sideloadly</h3>
-            <p>Baixe e instale o <a href="https://sideloadly.io/" target="_blank">Sideloadly</a> no seu computador.</p>
-        </div>
-        
-        <div class="step">
-            <h3>Passo 2: Conectar o dispositivo</h3>
-            <p>Conecte seu iPhone ou iPad ao computador com um cabo USB.</p>
-            <p>Certifique-se de que seu dispositivo confia no computador.</p>
-        </div>
-        
-        <div class="step">
-            <h3>Passo 3: Instalar o aplicativo</h3>
-            <p>Abra o Sideloadly, arraste o arquivo vale-cashback-ios.ipa para o programa.</p>
-            <p>Faça login com seu ID Apple e clique em "Start" para iniciar a instalação.</p>
-            <p>Aguarde a conclusão da instalação.</p>
-        </div>
+        <strong>Nota:</strong> Aplicativos instalados via sideloading no iOS podem expirar após 7 dias (contas gratuitas) ou 1 ano (contas de desenvolvedor pagas). Você precisará reinstalar periodicamente usando o mesmo método.
     </div>
     
     <div class="note">
-        <strong>Observação:</strong> Ao usar qualquer desses métodos, você precisará confiar no desenvolvedor do aplicativo nas configurações do iOS. Para fazer isso, vá para Configurações > Geral > Gerenciamento de Dispositivos, encontre o perfil do Vale Cashback e toque em "Confiar".
+        <strong>Alternativa mais simples:</strong> Para uma experiência sem complicações, você pode usar nossa versão web progressiva (PWA) abrindo <a href="https://app.valecashback.com">app.valecashback.com</a> no Safari, tocando no ícone de compartilhamento e selecionando "Adicionar à Tela de Início".
     </div>
     
     <div class="note">
-        <strong>Suporte:</strong> Se você encontrar algum problema durante a instalação, entre em contato com nossa equipe de suporte através do e-mail suporte@valecashback.com
+        <strong>Problemas com a instalação?</strong> Entre em contato com nossa equipe de suporte em suporte@valecashback.com ou pelo WhatsApp (555) 123-4567.
     </div>
     
-    <a href="/downloads" class="button">Voltar para a página de downloads</a>
+    <a href="/downloads" class="back-button">Voltar para Downloads</a>
 </body>
 </html>
