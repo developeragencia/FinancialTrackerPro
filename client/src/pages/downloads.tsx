@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Download, ArrowLeft } from 'lucide-react';
 import { Link } from 'wouter';
 import { getDeviceOS } from '@/pwaHelpers';
+import { LogoIcon } from '@/components/ui/icons';
 
 export default function DownloadsPage() {
   const deviceOS = getDeviceOS();
@@ -21,11 +22,9 @@ export default function DownloadsPage() {
       <AuthLayout title="Baixar Aplicativo" description="Escolha a versão do Vale Cashback para seu dispositivo">
         <div className="space-y-6">
           <div className="flex justify-center">
-            <img 
-              src="/icon-512.png" 
-              alt="Vale Cashback App" 
-              className="w-28 h-28 rounded-3xl shadow-lg"
-            />
+            <div className="bg-primary rounded-3xl shadow-lg w-28 h-28 flex items-center justify-center p-5">
+              <LogoIcon className="w-full h-full text-white" />
+            </div>
           </div>
           
           <div className="text-center">

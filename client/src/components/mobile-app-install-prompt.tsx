@@ -3,6 +3,7 @@ import { getDeviceOS, isMobileDevice } from '@/pwaHelpers';
 import { Button } from '@/components/ui/button';
 import { Download, X } from 'lucide-react';
 import { Link } from 'wouter';
+import { LogoIcon } from '@/components/ui/icons';
 
 export function MobileAppInstallPrompt() {
   const [showBanner, setShowBanner] = useState(false);
@@ -66,13 +67,9 @@ export function MobileAppInstallPrompt() {
   
   // Define a URL para download direto com base no sistema operacional
   const getDirectDownloadUrl = () => {
-    if (deviceOS === 'android') {
-      return '/downloads/vale-cashback-android.apk';
-    } else if (deviceOS === 'ios') {
-      return '/downloads/vale-cashback-ios.ipa';
-    } else {
-      return '/downloads';
-    }
+    // Usamos a URL da página de downloads para todos os dispositivos
+    // O link direto foi atualizado para garantir que o usuário possa acessar informações completas
+    return '/downloads';
   };
   
   return (
@@ -80,11 +77,9 @@ export function MobileAppInstallPrompt() {
       <div className="flex items-start justify-between">
         <div className="flex flex-1 items-center space-x-3">
           <div className="rounded-full bg-white p-2 w-12 h-12 flex items-center justify-center">
-            <img 
-              src="/icon-192.png" 
-              alt="Vale Cashback App" 
-              className="w-10 h-10 rounded-full"
-            />
+            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full">
+              <LogoIcon className="w-8 h-8" />
+            </div>
           </div>
           
           <div className="flex-1">
