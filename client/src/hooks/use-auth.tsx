@@ -72,10 +72,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string, type: UserType) => {
     setLoading(true);
     try {
-      const response = await apiRequest('POST', '/api/auth/login', {
-        email,
-        password,
-        type,
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          type,
+        }),
+        credentials: 'include', // Importante para cookies de sessão
       });
       
       const userData = await response.json();
@@ -134,7 +141,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      await apiRequest('POST', '/api/auth/logout', {});
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include', // Importante para cookies de sessão
+      });
       setUser(null);
       navigate('/login');
       

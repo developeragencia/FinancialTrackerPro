@@ -51,14 +51,15 @@ async function comparePasswords(supplied: string, stored: string) {
 export function setupAuth(app: Express) {
   const sessionSettings: session.SessionOptions = {
     secret: process.env.SESSION_SECRET || "vale-cashback-secret-key",
-    resave: true, // Alterado para true para manter a sessão ativa
-    saveUninitialized: false,
+    resave: true, // Manter sessão ativa
+    saveUninitialized: true, // Permitir sessões não inicializadas
     store: storage.sessionStore,
     cookie: {
       maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Desativando secure para ambiente de desenvolvimento
       httpOnly: true,
+      path: '/'
     }
   };
 
@@ -186,15 +187,32 @@ export function setupAuth(app: Express) {
   app.get("/api/auth/me", (req, res) => {
     console.log("Verificando autenticação do usuário:", {
       isAuthenticated: req.isAuthenticated(),
-      sessionID: req.sessionID
+      sessionID: req.sessionID,
+      userId: req.user?.id,
+      userType: req.user?.type,
+      cookies: req.headers.cookie
     });
     
     if (!req.isAuthenticated()) {
       return res.status(401).json({ message: "Usuário não autenticado" });
     }
     
+    // Garantir que o usuário esteja definido
+    if (!req.user) {
+      return res.status(500).json({ message: "Erro no servidor de autenticação" });
+    }
+    
     // Não enviar a senha para o cliente
     const { password: _, ...userWithoutPassword } = req.user as User;
+    
+    // Adicionar cookie de sessão segura (opcional)
+    res.cookie('user_authenticated', 'true', {
+      maxAge: 1000 * 60 * 60 * 24 * 30, // 30 dias
+      httpOnly: false,
+      path: '/',
+      sameSite: 'lax'
+    });
+    
     res.json(userWithoutPassword);
   });
 
