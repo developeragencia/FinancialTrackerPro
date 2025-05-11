@@ -26,6 +26,16 @@ export function getDeviceOS() {
     return 'android';
   }
   
+  // Windows detection
+  if (/Win/i.test(userAgent)) {
+    return 'windows';
+  }
+  
+  // Mac detection
+  if (/Mac/i.test(userAgent)) {
+    return 'mac';
+  }
+  
   return 'other';
 }
 

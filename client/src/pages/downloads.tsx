@@ -15,10 +15,12 @@ export default function DownloadsPage() {
   const isMobile = isMobileDevice();
   
   // Define qual aba deve estar selecionada por padrão com base no dispositivo do usuário
-  const defaultTab = deviceOS === 'ios' ? 'ios' : 
-                     deviceOS === 'android' ? 'android' : 
-                     deviceOS === 'windows' ? 'windows' : 
-                     deviceOS === 'mac' ? 'mac' : 'android';
+  let defaultTab = 'android';
+  
+  if (deviceOS === 'ios') defaultTab = 'ios';
+  else if (deviceOS === 'android') defaultTab = 'android';
+  else if (deviceOS === 'windows') defaultTab = 'windows';
+  else if (deviceOS === 'mac') defaultTab = 'mac';
   
   // Registra a visualização da página
   useEffect(() => {
@@ -87,30 +89,30 @@ export default function DownloadsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
                     <Smartphone size={48} className="text-primary mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Download Direto</h3>
+                    <h3 className="text-lg font-medium mb-2">Aplicativo Mobile</h3>
                     <p className="text-sm text-center text-muted-foreground mb-4">
-                      Baixe o APK diretamente e instale no seu dispositivo Android
+                      Baixe o aplicativo completo para usar em seu dispositivo Android
                     </p>
-                    <a href="/downloads/vale-cashback-android.apk" className="w-full">
-                      <Button className="w-full gap-2">
+                    <a href="/app-files/vale-cashback-mobile.html" download="vale-cashback-app.html" className="w-full">
+                      <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
                         <Download size={16} />
-                        Baixar APK
+                        Baixar Aplicativo
                       </Button>
                     </a>
                   </div>
                   
                   <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
                     <Globe size={48} className="text-primary mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Versão Web (PWA)</h3>
+                    <h3 className="text-lg font-medium mb-2">Acessar Online</h3>
                     <p className="text-sm text-center text-muted-foreground mb-4">
-                      Use a versão web e adicione à sua tela inicial como um aplicativo
+                      Acesse o aplicativo online e adicione à sua tela inicial
                     </p>
-                    <Link href="/" className="w-full">
+                    <a href="/" className="w-full">
                       <Button variant="outline" className="w-full gap-2">
                         <Globe size={16} />
-                        Usar Versão Web
+                        Acessar Online
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </CardContent>
@@ -143,30 +145,30 @@ export default function DownloadsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
                     <Apple size={48} className="text-primary mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Download para iOS</h3>
+                    <h3 className="text-lg font-medium mb-2">Aplicativo Mobile</h3>
                     <p className="text-sm text-center text-muted-foreground mb-4">
-                      Baixe o arquivo IPA e instale usando AltStore ou Sideloadly
+                      Baixe o aplicativo completo para usar em seu iPhone ou iPad
                     </p>
-                    <a href="/downloads/vale-cashback-ios.ipa" className="w-full">
-                      <Button className="w-full gap-2">
+                    <a href="/app-files/vale-cashback-mobile.html" download="vale-cashback-app.html" className="w-full">
+                      <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700">
                         <Download size={16} />
-                        Baixar IPA
+                        Baixar Aplicativo
                       </Button>
                     </a>
                   </div>
                   
                   <div className="flex flex-col items-center justify-center p-6 border rounded-lg">
                     <Globe size={48} className="text-primary mb-4" />
-                    <h3 className="text-lg font-medium mb-2">Versão Web (PWA)</h3>
+                    <h3 className="text-lg font-medium mb-2">Acessar Online</h3>
                     <p className="text-sm text-center text-muted-foreground mb-4">
-                      No Safari, use "Adicionar à Tela de Início" para instalar como um app
+                      Acesse o aplicativo online e adicione à sua tela inicial
                     </p>
-                    <Link href="/" className="w-full">
+                    <a href="/" className="w-full">
                       <Button variant="outline" className="w-full gap-2">
                         <Globe size={16} />
-                        Usar Versão Web
+                        Acessar Online
                       </Button>
-                    </Link>
+                    </a>
                   </div>
                 </div>
               </CardContent>
