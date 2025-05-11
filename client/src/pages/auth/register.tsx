@@ -26,7 +26,6 @@ import { Loader2 } from "lucide-react";
 
 const clientFormSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
-  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
   invitationCode: z.string().optional(),
@@ -41,7 +40,6 @@ const clientFormSchema = z.object({
 
 const merchantFormSchema = z.object({
   name: z.string().min(3, { message: "Nome deve ter pelo menos 3 caracteres" }),
-  username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
   storeName: z.string().min(3, { message: "Nome da loja deve ter pelo menos 3 caracteres" }),
@@ -68,7 +66,6 @@ export default function Register() {
     resolver: zodResolver(clientFormSchema),
     defaultValues: {
       name: "",
-      username: "",
       email: "",
       phone: "",
       invitationCode: "",
@@ -83,7 +80,6 @@ export default function Register() {
     resolver: zodResolver(merchantFormSchema),
     defaultValues: {
       name: "",
-      username: "",
       email: "",
       phone: "",
       storeName: "",
