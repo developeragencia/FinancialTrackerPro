@@ -82,7 +82,7 @@ export function MobileAppInstallPrompt() {
           
           <div className="flex-1">
             <h3 className="font-bold text-lg">{message.title}</h3>
-            <p className="text-sm text-blue-100">{message.description}</p>
+            <p className="text-sm text-white opacity-85">{message.description}</p>
           </div>
         </div>
         
@@ -98,7 +98,7 @@ export function MobileAppInstallPrompt() {
       <div className="mt-3 flex flex-col sm:flex-row gap-2">
         <Link href="/downloads" className="flex-1">
           <Button 
-            className="w-full bg-white text-blue-600 hover:bg-blue-50 font-bold"
+            className="w-full bg-white text-primary hover:bg-blue-50 font-bold"
           >
             <Download className="mr-2 h-4 w-4" />
             Baixar Agora
