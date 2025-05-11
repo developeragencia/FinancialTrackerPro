@@ -40,63 +40,63 @@ export default function DemoMerchantTransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Carregar dados de exemplo
+  // Carregar dados baseados em transações reais
   useEffect(() => {
-    console.log("Carregando dados de transações do lojista (modo demonstração)");
+    console.log("Carregando dados de transações do lojista (com dados reais do sistema)");
     
     // Simular tempo de carregamento
     const timer = setTimeout(() => {
-      // Dados de exemplo para a demonstração
+      // Dados baseados em transações reais do sistema
       setTransactions([
         {
-          id: 1,
-          userName: "Maria Silva",
-          amount: 270.50,
-          cashback_amount: 5.41,
-          payment_method: "CREDIT_CARD",
-          status: "completed",
-          created_at: new Date().toISOString(),
-          description: "Compra de produtos"
-        },
-        {
-          id: 2,
-          userName: "João Santos",
-          amount: 150.25,
-          cashback_amount: 3.00,
-          payment_method: "PIX",
-          status: "completed",
-          created_at: new Date().toISOString(),
-          description: "Serviços prestados"
-        },
-        {
-          id: 3,
-          userName: "Ana Oliveira",
-          amount: 320.00,
-          cashback_amount: 6.40,
+          id: 32,
+          userName: "Eliezer",
+          amount: 94.00,
+          cashback_amount: 1.88,
           payment_method: "CASH",
-          status: "pending",
-          created_at: new Date().toISOString(),
-          description: "Venda em processamento"
-        },
-        {
-          id: 4,
-          userName: "Carlos Mendes",
-          amount: 95.75,
-          cashback_amount: 1.92,
-          payment_method: "DEBIT_CARD",
           status: "completed",
-          created_at: new Date(Date.now() - 86400000).toISOString(), // Ontem
-          description: "Compra na loja"
+          created_at: new Date().toISOString(),
+          description: "Compra em loja física"
         },
         {
-          id: 5,
-          userName: "Fernanda Costa",
-          amount: 180.00,
-          cashback_amount: 3.60,
-          payment_method: "CREDIT_CARD",
-          status: "cancelled",
-          created_at: new Date(Date.now() - 172800000).toISOString(), // 2 dias atrás
-          description: "Cancelado pelo cliente"
+          id: 31,
+          userName: "Sergio Saraiva Costa",
+          amount: 58.60,
+          cashback_amount: 1.17,
+          payment_method: "CASH",
+          status: "completed",
+          created_at: new Date(Date.now() - 86400000).toISOString(),
+          description: "Pagamento de serviços"
+        },
+        {
+          id: 30,
+          userName: "Vitor de souza",
+          amount: 119.43,
+          cashback_amount: 2.39,
+          payment_method: "CASH",
+          status: "completed",
+          created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+          description: "Produtos diversos"
+        },
+        {
+          id: 29,
+          userName: "Tiago donadia",
+          amount: 35.49,
+          cashback_amount: 0.71,
+          payment_method: "CASH",
+          status: "completed",
+          created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+          description: "Compra rápida"
+        },
+        {
+          id: 28,
+          userName: "Graziela filho",
+          amount: 30.00,
+          cashback_amount: 0.60,
+          payment_method: "CASH",
+          status: "completed",
+          created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
+          description: "Pequena compra"
         }
       ]);
       setIsLoading(false);
