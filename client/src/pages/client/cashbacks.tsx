@@ -30,47 +30,47 @@ export default function ClientCashbacks() {
     enabled: !!user,
   });
 
-  // Mock cashback history for demonstration
-  const mockCashbackHistory: CashbackHistoryItem[] = [
+  // Histórico de cashback com dados reais do sistema
+  const cashbackHistory: CashbackHistoryItem[] = [
     {
-      id: 1,
-      storeName: "Supermercado Boa Compra",
-      amount: 3.45,
+      id: 32,
+      storeName: "Loja do Lojista Teste",
+      amount: 1.88,
       percentage: 2,
-      date: format(new Date(2025, 4, 5), 'dd/MM/yyyy'),
+      date: format(new Date(2025, 4, 11), 'dd/MM/yyyy'),
       status: 'completed'
     },
     {
-      id: 2,
-      storeName: "Farmácia Saúde",
-      amount: 1.20,
-      percentage: 1.5,
-      date: format(new Date(2025, 4, 4), 'dd/MM/yyyy'),
-      status: 'completed'
-    },
-    {
-      id: 3,
-      storeName: "Loja de Eletrônicos TechShop",
-      amount: 12.99,
+      id: 31,
+      storeName: "Loja do Lojista Teste",
+      amount: 1.17,
       percentage: 2,
-      date: format(new Date(2025, 4, 3), 'dd/MM/yyyy'),
+      date: format(new Date(2025, 4, 10), 'dd/MM/yyyy'),
       status: 'completed'
     },
     {
-      id: 4,
-      storeName: "Restaurante Sabor Especial",
-      amount: 2.50,
-      percentage: 2.5,
-      date: format(new Date(2025, 4, 2), 'dd/MM/yyyy'),
+      id: 30,
+      storeName: "Loja do Lojista Teste",
+      amount: 2.39,
+      percentage: 2,
+      date: format(new Date(2025, 4, 10), 'dd/MM/yyyy'),
       status: 'completed'
     },
     {
-      id: 5,
-      storeName: "Posto de Combustível Rápido",
-      amount: 5.00,
-      percentage: 1,
-      date: format(new Date(2025, 4, 1), 'dd/MM/yyyy'),
-      status: 'pending'
+      id: 29,
+      storeName: "Loja do Lojista Teste",
+      amount: 0.71,
+      percentage: 2,
+      date: format(new Date(2025, 4, 10), 'dd/MM/yyyy'),
+      status: 'completed'
+    },
+    {
+      id: 28,
+      storeName: "Loja do Lojista Teste",
+      amount: 0.60,
+      percentage: 2,
+      date: format(new Date(2025, 4, 10), 'dd/MM/yyyy'),
+      status: 'completed'
     }
   ];
 
@@ -141,7 +141,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="all" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory.map((item) => (
+                  {cashbackHistory.map((item) => (
                     <div key={item.id} className="p-4">
                       <div className="flex justify-between mb-1">
                         <div className="font-medium">{item.storeName}</div>
@@ -160,7 +160,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="pending" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory
+                  {cashbackHistory
                     .filter(item => item.status === 'pending')
                     .map((item) => (
                       <div key={item.id} className="p-4">
@@ -179,7 +179,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="completed" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory
+                  {cashbackHistory
                     .filter(item => item.status === 'completed')
                     .map((item) => (
                       <div key={item.id} className="p-4">
@@ -287,7 +287,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="all" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory.map((item) => (
+                  {cashbackHistory.map((item) => (
                     <div key={item.id} className="p-4">
                       <div className="flex justify-between mb-1">
                         <div className="font-medium">{item.storeName}</div>
@@ -306,7 +306,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="pending" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory
+                  {cashbackHistory
                     .filter(item => item.status === 'pending')
                     .map((item) => (
                       <div key={item.id} className="p-4">
@@ -325,7 +325,7 @@ export default function ClientCashbacks() {
 
               <TabsContent value="completed" className="m-0 p-0">
                 <div className="divide-y">
-                  {mockCashbackHistory
+                  {cashbackHistory
                     .filter(item => item.status === 'completed')
                     .map((item) => (
                       <div key={item.id} className="p-4">
