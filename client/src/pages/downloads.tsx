@@ -50,7 +50,8 @@ export default function DownloadsPage() {
               <div className="mt-4 grid gap-3">
                 <a 
                   href="/downloads/vale-cashback-android.apk" 
-                  download
+                  download="vale-cashback-android.apk"
+                  type="application/vnd.android.package-archive"
                   className="bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg text-center flex items-center justify-center gap-2"
                 >
                   <Download className="h-5 w-5" />
@@ -85,7 +86,8 @@ export default function DownloadsPage() {
               <div className="mt-4 grid gap-3">
                 <a 
                   href="/downloads/vale-cashback-ios.ipa" 
-                  download
+                  download="vale-cashback-ios.ipa"
+                  type="application/octet-stream"
                   className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg text-center flex items-center justify-center gap-2"
                 >
                   <Download className="h-5 w-5" />
@@ -120,7 +122,8 @@ export default function DownloadsPage() {
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <a 
                   href="/downloads/vale-cashback-windows.exe" 
-                  download
+                  download="vale-cashback-windows.exe"
+                  type="application/vnd.microsoft.portable-executable"
                   className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg text-center text-sm"
                 >
                   Windows (.exe)
@@ -128,7 +131,8 @@ export default function DownloadsPage() {
                 
                 <a 
                   href="/downloads/vale-cashback-mac.dmg" 
-                  download
+                  download="vale-cashback-mac.dmg"
+                  type="application/x-apple-diskimage"
                   className="bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg text-center text-sm"
                 >
                   macOS (.dmg)
@@ -149,8 +153,10 @@ export default function DownloadsPage() {
           <div className="bg-amber-50 border border-amber-200 rounded-md p-4 text-amber-800 text-sm">
             <p className="font-medium mb-1">Instruções de instalação:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Para Android: Habilite a instalação de fontes desconhecidas nas configurações do seu dispositivo.</li>
-              <li>Para iOS: É necessário utilizar o AltStore ou ter um dispositivo com jailbreak para instalar o arquivo IPA.</li>
+              <li>Para Android: Após baixar o arquivo APK, abra-o para iniciar a instalação. <a href="/downloads/installers/android-instructions.html" target="_blank" className="font-medium underline">Ver instruções detalhadas</a></li>
+              <li>Para iOS: Após download, use o AltStore ou Sideloadly para instalar o aplicativo. <a href="/downloads/installers/ios-instructions.html" target="_blank" className="font-medium underline">Ver instruções detalhadas</a></li>
+              <li>Para Windows: Execute o arquivo .exe baixado e siga as instruções do instalador que aparecerá na tela.</li>
+              <li>Para macOS: Abra o arquivo .dmg, arraste o aplicativo para a pasta Aplicativos e inicie-o normalmente.</li>
               <li>Para instruções detalhadas, visite nossa <a href="#" className="underline">central de ajuda</a>.</li>
             </ul>
           </div>
