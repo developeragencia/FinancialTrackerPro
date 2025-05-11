@@ -10,7 +10,14 @@ const PRECACHE_ASSETS = [
   '/favicon.ico',
   '/manifest.json',
   '/assets/index.css',
-  '/assets/index.js'
+  '/assets/index.js',
+  '/downloads/vale-cashback-android.apk',
+  '/downloads/vale-cashback-ios.ipa',
+  '/downloads/vale-cashback-windows.exe',
+  '/downloads/vale-cashback-mac.dmg',
+  '/downloads/installers/android-instructions.html',
+  '/downloads/installers/ios-instructions.html',
+  '/offline.html'
 ];
 
 // Instalação do Service Worker
@@ -142,6 +149,49 @@ self.addEventListener('sync', event => {
     event.waitUntil(syncTransactions());
   }
 });
+
+// Suporte para downloads de aplicativo
+self.addEventListener('fetch', event => {
+  // Detecta solicitações de download de APK, IPA, EXE, DMG
+  if (event.request.url.match(/\.(apk|ipa|exe|dmg)$/)) {
+    console.log('[Service Worker] Manipulando download de aplicativo:', event.request.url);
+    
+    // Adiciona cabeçalhos específicos para downloads de aplicativos
+    const requestWithHeaders = new Request(event.request.url, {
+      method: event.request.method,
+      headers: new Headers({
+        'Content-Type': getContentType(event.request.url),
+        'Content-Disposition': `attachment; filename="${getFileName(event.request.url)}"`,
+        'X-Content-Type-Options': 'nosniff',
+      }),
+      mode: 'cors',
+      cache: 'no-cache',
+    });
+    
+    event.respondWith(
+      fetch(requestWithHeaders)
+        .catch(error => {
+          console.error('[Service Worker] Erro ao fazer download:', error);
+          return caches.match(event.request);
+        })
+    );
+  }
+});
+
+// Função auxiliar para determinar o tipo de conteúdo com base na extensão do arquivo
+function getContentType(url) {
+  if (url.endsWith('.apk')) return 'application/vnd.android.package-archive';
+  if (url.endsWith('.ipa')) return 'application/octet-stream';
+  if (url.endsWith('.exe')) return 'application/vnd.microsoft.portable-executable';
+  if (url.endsWith('.dmg')) return 'application/x-apple-diskimage';
+  return 'application/octet-stream';
+}
+
+// Função auxiliar para extrair o nome do arquivo da URL
+function getFileName(url) {
+  const parts = url.split('/');
+  return parts[parts.length - 1];
+}
 
 // Exemplo de função de sincronização para transações offline
 async function syncTransactions() {
