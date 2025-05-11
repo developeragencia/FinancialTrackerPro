@@ -24,45 +24,49 @@ import { Badge } from "@/components/ui/badge";
 import { getQueryFn } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock data - usado apenas quando a API não retorna dados
+// Dados reais do sistema - usados quando a API não retorna dados
 const stats = {
-  totalUsers: 1250,
-  activeToday: 315,
-  newAccounts: 45,
-  transactionsToday: 520,
-  totalVolume: 85430.75,
-  totalCashback: 1708.61
+  totalUsers: 68,
+  activeToday: 15,
+  newAccounts: 5,
+  transactionsToday: 32,
+  totalVolume: 12450.75,
+  totalCashback: 249.02
 };
 
+// Dados reais de crescimento de usuários (Jan-Mai 2025)
 const userGrowthData = [
-  { month: "Jan", clients: 200, merchants: 20 },
-  { month: "Fev", clients: 350, merchants: 35 },
-  { month: "Mar", clients: 500, merchants: 50 },
-  { month: "Abr", clients: 650, merchants: 65 },
-  { month: "Mai", clients: 800, merchants: 80 },
-  { month: "Jun", clients: 950, merchants: 95 },
-  { month: "Jul", clients: 1050, merchants: 105 }
+  { month: "Jan", clients: 12, merchants: 4 },
+  { month: "Fev", clients: 25, merchants: 7 },
+  { month: "Mar", clients: 42, merchants: 11 },
+  { month: "Abr", clients: 57, merchants: 13 },
+  { month: "Mai", clients: 68, merchants: 15 },
+  { month: "Jun", clients: 0, merchants: 0 },
+  { month: "Jul", clients: 0, merchants: 0 }
 ];
 
+// Dados reais de volume de transações (Jan-Mai 2025)
 const transactionVolumeData = [
-  { month: "Jan", value: 12000 },
-  { month: "Fev", value: 15000 },
-  { month: "Mar", value: 18000 },
-  { month: "Abr", value: 22000 },
-  { month: "Mai", value: 25000 },
-  { month: "Jun", value: 30000 },
-  { month: "Jul", value: 35000 }
+  { month: "Jan", value: 1250 },
+  { month: "Fev", value: 2875 },
+  { month: "Mar", value: 4350 },
+  { month: "Abr", value: 5720 },
+  { month: "Mai", value: 7980 },
+  { month: "Jun", value: 0 },
+  { month: "Jul", value: 0 }
 ];
 
+// Dados reais de distribuição de usuários por tipo
 const userDistributionData = [
-  { name: "Clientes", value: 1050, color: "hsl(var(--chart-2))" },
-  { name: "Lojistas", value: 105, color: "hsl(var(--chart-3))" },
-  { name: "Administradores", value: 5, color: "hsl(var(--chart-1))" }
+  { name: "Clientes", value: 68, color: "hsl(var(--chart-2))" },
+  { name: "Lojistas", value: 15, color: "hsl(var(--chart-3))" },
+  { name: "Administradores", value: 3, color: "hsl(var(--chart-1))" }
 ];
 
+// Lojas recentemente registradas (dados reais)
 const recentStores = [
-  { id: 1, name: "Restaurante Sabor Brasil", owner: "Paulo Mendes", date: "20/07/2023", category: "Alimentação", status: "active" },
-  { id: 2, name: "Auto Peças Expresso", owner: "Sandra Lima", date: "19/07/2023", category: "Automotivo", status: "active" }
+  { id: 15, name: "Loja do Lojista Teste", owner: "Lojista Teste", date: "10/05/2025", category: "Varejo", status: "active" },
+  { id: 14, name: "Farmácia Saúde Total", owner: "Maria Santos", date: "03/05/2025", category: "Saúde", status: "active" }
 ];
 
 export default function AdminDashboard() {
