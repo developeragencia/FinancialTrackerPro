@@ -29,8 +29,6 @@ const clientFormSchema = z.object({
   username: z.string().min(3, { message: "Nome de usuário deve ter pelo menos 3 caracteres" }),
   email: z.string().email({ message: "Email inválido" }),
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
-  country: z.string().optional(),
-  countryCode: z.string().optional(),
   invitationCode: z.string().optional(),
   securityQuestion: z.string().min(1, { message: "Selecione uma pergunta de segurança" }),
   securityAnswer: z.string().min(2, { message: "Forneça uma resposta para a pergunta de segurança" }),
@@ -48,8 +46,6 @@ const merchantFormSchema = z.object({
   phone: z.string().min(10, { message: "Telefone inválido" }).optional(),
   storeName: z.string().min(3, { message: "Nome da loja deve ter pelo menos 3 caracteres" }),
   category: z.string().min(1, { message: "Selecione uma categoria" }),
-  country: z.string().optional(),
-  countryCode: z.string().optional(),
   companyLogo: z.any().optional(),
   invitationCode: z.string().optional(),
   securityQuestion: z.string().min(1, { message: "Selecione uma pergunta de segurança" }),
@@ -75,8 +71,6 @@ export default function Register() {
       username: "",
       email: "",
       phone: "",
-      country: "",
-      countryCode: "",
       invitationCode: "",
       securityQuestion: "",
       securityAnswer: "",
@@ -94,8 +88,6 @@ export default function Register() {
       phone: "",
       storeName: "",
       category: "",
-      country: "",
-      countryCode: "",
       companyLogo: "",
       invitationCode: "",
       securityQuestion: "",
@@ -189,36 +181,6 @@ export default function Register() {
                       <FormLabel>Telefone</FormLabel>
                       <FormControl>
                         <Input placeholder="(11) 99999-9999" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={clientForm.control}
-                  name="country"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>País</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Brasil" {...field} disabled={loading} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={clientForm.control}
-                  name="countryCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Código do País</FormLabel>
-                      <FormControl>
-                        <Input placeholder="BR" {...field} disabled={loading} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
