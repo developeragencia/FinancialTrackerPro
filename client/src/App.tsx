@@ -66,6 +66,7 @@ import InvitePage from "@/pages/invite";
 import DemoMerchantTransactionsPage from "@/pages/demo/merchant-transactions";
 import DemoMerchantDashboardPage from "@/pages/demo/merchant-dashboard";
 import DemoMerchantSalesPage from "@/pages/demo/merchant-sales";
+import FeeExplanationPage from "@/pages/demo/fee-explanation";
 
 // Other
 import NotFound from "@/pages/not-found";
@@ -84,6 +85,7 @@ function Router() {
       <Route path="/demo/merchant-transactions" component={DemoMerchantTransactionsPage} />
       <Route path="/demo/merchant-dashboard" component={DemoMerchantDashboardPage} />
       <Route path="/demo/merchant-sales" component={DemoMerchantSalesPage} />
+      <Route path="/demo/fee-explanation" component={FeeExplanationPage} />
       
       {/* Smart Home Route - Redirects to appropriate dashboard based on user type */}
       <ProtectedRoute path="/" component={() => {
