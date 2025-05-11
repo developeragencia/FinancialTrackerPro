@@ -92,12 +92,12 @@ const supportTickets = [
     lastUpdate: "10/05/2025 16:45",
     messages: [
       {
-        from: "user",
+        from: "user" as "user" | "support",
         message: "Olá, notei que o cashback gerado nas minhas últimas vendas está consistentemente em 2%. Isso está correto ou devo configurar algum valor personalizado?",
         date: "10/05/2025 14:32"
       },
       {
-        from: "support",
+        from: "support" as "user" | "support",
         message: "Olá! Sim, a taxa padrão de cashback do sistema é de 2% sobre o valor da venda. Este é o valor base que aplicamos em todas as transações. Se desejar oferecer um cashback adicional como estratégia promocional, você pode configurar isso nas configurações da sua loja. Estamos à disposição para qualquer outra dúvida!",
         date: "10/05/2025 16:45",
         agent: "Suporte Vale Cashback"
@@ -114,7 +114,7 @@ const supportTickets = [
     lastUpdate: "11/05/2025 09:15",
     messages: [
       {
-        from: "user",
+        from: "user" as "user" | "support",
         message: "Preciso confirmar o processo de saque dos fundos disponíveis na minha carteira. Existem valores mínimos para saque? O dinheiro é transferido para minha conta bancária cadastrada automaticamente?",
         date: "11/05/2025 09:15"
       }
@@ -130,23 +130,23 @@ const supportTickets = [
     lastUpdate: "09/05/2025 15:40",
     messages: [
       {
-        from: "user",
+        from: "user" as "user" | "support",
         message: "Gostaria de sugerir a inclusão de mais gráficos no painel de vendas, especialmente um que mostre a distribuição de vendas por dia da semana para identificar padrões.",
         date: "08/05/2025 13:22"
       },
       {
-        from: "support",
+        from: "support" as "user" | "support",
         message: "Agradecemos sua sugestão! Esta é uma ótima ideia que irá ajudar os lojistas a identificarem padrões de consumo. Registramos sua sugestão e nossa equipe de produto irá avaliá-la para implementação em futuras atualizações.",
         date: "08/05/2025 14:50",
         agent: "Equipe de Produto"
       },
       {
-        from: "user",
+        from: "user" as "user" | "support",
         message: "Obrigado pelo feedback rápido! Estou gostando muito da plataforma até agora.",
         date: "08/05/2025 16:12"
       },
       {
-        from: "support",
+        from: "support" as "user" | "support",
         message: "Ficamos felizes que esteja aproveitando a plataforma! Encerramos este ticket, mas fique à vontade para abrir novos com outras sugestões ou dúvidas.",
         date: "09/05/2025 15:40",
         agent: "Equipe de Produto"
