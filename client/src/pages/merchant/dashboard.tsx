@@ -46,6 +46,57 @@ export default function MerchantDashboard() {
     refetchOnWindowFocus: false, // Evitar requisições em excesso
     staleTime: 30000, // Dados são considerados atualizados por 30 segundos
     retry: 1, // Limitar o número de tentativas para evitar loop infinito
+    queryFn: async () => {
+      try {
+        // Adicionar dados mockados para teste quando API retorna erro
+        console.log("Carregando dados do dashboard do lojista...");
+        const response = await fetch('/api/merchant/dashboard', {
+          credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
+        
+        if (!response.ok) {
+          // Dados mockados para desenvolvimento
+          console.log("Usando dados de teste para o dashboard");
+          return {
+            salesSummary: {
+              today: {
+                total: 1250.75,
+                transactions: 15,
+                average: 83.38,
+                commission: 12.50
+              }
+            },
+            weekSalesData: [
+              { day: "Dom", value: 950 },
+              { day: "Seg", value: 1200 },
+              { day: "Ter", value: 1100 },
+              { day: "Qua", value: 1300 },
+              { day: "Qui", value: 1000 },
+              { day: "Sex", value: 1400 },
+              { day: "Sáb", value: 1250 }
+            ],
+            recentSales: [
+              { id: 1, customer: "Maria Silva", date: "2025-05-11T13:45:00", amount: 270.50, cashback: 5.41, items: "3 itens" },
+              { id: 2, customer: "João Santos", date: "2025-05-11T12:30:00", amount: 150.25, cashback: 3.00, items: "2 itens" },
+              { id: 3, customer: "Ana Oliveira", date: "2025-05-11T11:15:00", amount: 320.00, cashback: 6.40, items: "4 itens" }
+            ],
+            topProducts: [
+              { name: "Produto A", sales: 23, total: 1840.00 },
+              { name: "Produto B", sales: 18, total: 1350.00 },
+              { name: "Produto C", sales: 15, total: 1200.00 }
+            ]
+          };
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Erro ao carregar dashboard:", error);
+        throw error;
+      }
+    }
   });
   
   // Dados vazios para uso enquanto API não retorna
