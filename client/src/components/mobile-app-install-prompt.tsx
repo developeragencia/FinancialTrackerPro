@@ -73,13 +73,11 @@ export function MobileAppInstallPrompt() {
   };
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-blue-600 text-white p-4 z-50 shadow-lg">
+    <div className="fixed bottom-0 left-0 right-0 bg-primary text-white p-4 z-50 shadow-lg">
       <div className="flex items-start justify-between">
         <div className="flex flex-1 items-center space-x-3">
           <div className="rounded-full bg-white p-2 w-12 h-12 flex items-center justify-center">
-            <div className="flex items-center justify-center w-10 h-10 bg-white rounded-full">
-              <LogoIcon className="w-8 h-8" />
-            </div>
+            <LogoIcon className="w-10 h-10 text-primary" />
           </div>
           
           <div className="flex-1">

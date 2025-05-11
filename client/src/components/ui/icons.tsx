@@ -37,9 +37,11 @@ export function LogoIcon(props: React.SVGProps<SVGSVGElement>) {
       strokeLinejoin="round"
       {...props}
     >
-      <path d="M12 2L2 7l10 5 10-5-10-5z" />
-      <path d="M2 17l10 5 10-5" />
-      <path d="M2 12l10 5 10-5" />
+      <path d="M19 5l-7-3-7 3" />
+      <path d="M5 6.5v6.5l7 3 7-3v-6.5" />
+      <path d="M5 13l7 3 7-3" fill="currentColor" strokeOpacity="0.5" />
+      <path d="M12 16v4" />
+      <path d="M8 13.5v2.5l4 2 4-2v-2.5" stroke="currentColor" strokeOpacity="0.7" />
     </svg>
   );
 }
