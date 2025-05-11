@@ -34,15 +34,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function loadUser() {
       try {
+        console.log('Carregando dados do usuário...');
         const response = await fetch('/api/auth/me', {
           credentials: 'include',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
         });
+        
+        console.log('Resposta da API:', response.status);
         
         if (response.ok) {
           const userData = await response.json();
+          console.log('Usuário carregado:', userData);
           setUser(userData);
         } else if (response.status === 401 && user) {
           // Se recebermos 401 mas tínhamos um usuário antes, a sessão expirou
+          console.log('Sessão expirada');
           setUser(null);
           navigate('/login');
           toast({
@@ -50,6 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             description: 'Sua sessão expirou. Por favor, faça login novamente.',
             variant: 'destructive',
           });
+        } else if (response.status === 401) {
+          console.log('Não autenticado, redirecionando para login');
+          setUser(null);
         }
       } catch (error) {
         console.error('Failed to load user', error);

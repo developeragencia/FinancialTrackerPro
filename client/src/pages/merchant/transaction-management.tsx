@@ -61,28 +61,36 @@ export default function TransactionManagementPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
+  // Dados básicos para testes
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [cancelReason, setCancelReason] = useState("");
   const [refundReason, setRefundReason] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [editPaymentMethod, setEditPaymentMethod] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Estado para controle de diálogos
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
-  // Buscar transações
-  const { data: transactions, isLoading } = useQuery({
-    queryKey: ['/api/merchant/sales'],
-    queryFn: async () => {
-      const res = await fetch('/api/merchant/sales');
-      if (!res.ok) throw new Error('Erro ao buscar vendas');
-      return res.json();
+  console.log("Usuário na página de transações:", user);
+  
+  // Transações simplificadas para teste
+  const transactions = [
+    {
+      id: 1, 
+      userName: "Cliente Teste", 
+      amount: 100, 
+      cashback_amount: 2, 
+      payment_method: "CREDIT_CARD", 
+      status: "completed",
+      created_at: new Date().toISOString(),
+      description: "Transação teste"
     }
-  });
+  ];
+  const isLoading = false;
   
   // Filtrar transações com base no termo de busca
   const filteredTransactions = transactions?.filter((transaction: any) => {
